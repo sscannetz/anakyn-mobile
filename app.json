@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Anakyn Gems",
+    "slug": "anakyn-gems",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#550a19"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.anakyngems.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "ใช้กล้องถ่ายรูปสินค้า",
+        "NSPhotoLibraryUsageDescription": "เลือกรูปสินค้าจากคลังรูป"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#550a19"
+      },
+      "package": "com.anakyngems.app",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "เลือกรูปสินค้าจากคลังรูป",
+          "cameraPermission": "ถ่ายรูปสินค้า"
+        }
+      ]
+    ]
+  }
+}
