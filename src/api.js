@@ -9,7 +9,7 @@ import { getToken } from './storage';
 //   - Android emulator: http://10.0.2.2:4000/api
 //   - iOS simulator:    http://localhost:4000/api
 //   - อุปกรณ์จริง:      http://<IP ของเครื่อง>:4000/api
-export const BASE_URL = 'http://192.168.1.101:4000/api'; // ← แก้ตรงนี้
+export const BASE_URL = 'https://anakyn-backend.onrender.com/api';
 
 async function request(path, { method = 'GET', body, auth = true } = {}) {
   const headers = { 'Content-Type': 'application/json' };
