@@ -9,12 +9,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../api';
 import { clearSession } from '../storage';
 
+const STORE_KEY = 'anakyn_store_open';
+
 const T = {
   th: {
-    dateLabel: 'วันนี้', openStatus: 'เปิดร้านแล้ว',
+    dateLabel: 'วันนี้', openStatus: 'เปิดร้านแล้ว', closedStatus: 'ปิดร้านแล้ว',
     todayLabel: 'ยอดขายวันนี้', stockLabel: 'สินค้าในสต๊อก', stockSub: 'ชิ้น',
     profitLabel: 'กำไรเดือนนี้', profitSub: 'ก่อน VAT',
     menuTitle: 'เมนูทั้งหมด',
@@ -35,7 +38,7 @@ const T = {
     due: 'นัดรับ', logout: 'ออกจากระบบ',
   },
   en: {
-    dateLabel: 'Today', openStatus: 'Store open',
+    dateLabel: 'Today', openStatus: 'Store open', closedStatus: 'Store closed',
     todayLabel: "Today's sales", stockLabel: 'Items in stock', stockSub: 'items',
     profitLabel: 'Monthly profit', profitSub: 'before VAT',
     menuTitle: 'All modules',
@@ -57,7 +60,7 @@ const T = {
   },
 };
 
-const fmt   = (n) => Math.round(Number(n)).toLocaleString('th-TH');
+const fmt   = (n) => { const x = Number(n); return Math.round(Number.isFinite(x) ? x : 0).toLocaleString('th-TH'); };
 const fmtCp = (n) => { n = Number(n); return n >= 1000 ? `฿${(n/1000).toFixed(0)}k` : `฿${fmt(n)}`; };
 
 const POSTATUS_LABEL = { pending: 'รอส่ง', sent: 'ส่งแล้ว', received: 'รับแล้ว', cancelled: 'ยกเลิก' };
@@ -72,12 +75,25 @@ export default function HomeScreen({ navigation, route }) {
   const [lang, setLang] = useState('th');
   const t = T[lang];
 
+  const [storeOpen, setStoreOpen]       = useState(true);
   const [summary, setSummary]           = useState(null);
   const [recentSales, setRecentSales]   = useState([]);
   const [pendingPOs, setPendingPOs]     = useState([]);
   const [pendingSrvs, setPendingSrvs]   = useState([]);
   const [loading, setLoading]           = useState(true);
   const [refreshing, setRefreshing]     = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(STORE_KEY).then(val => {
+      if (val !== null) setStoreOpen(val === 'true');
+    });
+  }, []);
+
+  const toggleStore = async () => {
+    const next = !storeOpen;
+    setStoreOpen(next);
+    await AsyncStorage.setItem(STORE_KEY, String(next));
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -133,10 +149,15 @@ export default function HomeScreen({ navigation, route }) {
 
         <View style={styles.dateStrip}>
           <Text style={styles.dateText}>{t.dateLabel} <Text style={styles.dateBold}>{todayStr}</Text></Text>
-          <View style={styles.openRow}>
-            <View style={styles.greenDot} />
-            <Text style={styles.dateBold}>{t.openStatus}</Text>
-          </View>
+          <TouchableOpacity onPress={toggleStore} style={styles.openRow} activeOpacity={0.7}>
+            <View style={[styles.statusDot, { backgroundColor: storeOpen ? '#7ec878' : '#e05c5c' }]} />
+            <Text style={styles.dateBold}>{storeOpen ? t.openStatus : t.closedStatus}</Text>
+            <MaterialCommunityIcons
+              name={storeOpen ? 'toggle-switch' : 'toggle-switch-off'}
+              size={18}
+              color={storeOpen ? '#7ec878' : '#e05c5c'}
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -297,8 +318,8 @@ const styles = StyleSheet.create({
   },
   dateText: { fontSize: 12, color: '#d4a0ac' },
   dateBold: { fontWeight: '600', color: '#f0d0d8' },
-  openRow:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  greenDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#7ec878' },
+  openRow:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statusDot: { width: 7, height: 7, borderRadius: 4 },
   scroll: { flex: 1 },
   scrollContent: { padding: 14, paddingBottom: 30 },
   kpiMain: {

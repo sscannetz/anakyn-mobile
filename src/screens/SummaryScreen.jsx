@@ -39,8 +39,8 @@ const T = {
   },
 };
 
-const fmt    = (n) => Math.round(Number(n)).toLocaleString('th-TH');
-const fmtCp  = (n) => n >= 1000000 ? `${(n/1000000).toFixed(1)}M` : n >= 1000 ? `${(n/1000).toFixed(0)}k` : String(Math.round(n));
+const fmt    = (n) => { const x = Number(n); return Math.round(Number.isFinite(x) ? x : 0).toLocaleString('th-TH'); };
+const fmtCp  = (n) => { n = Number(n); if (!Number.isFinite(n)) n = 0; return n >= 1000000 ? `${(n/1000000).toFixed(1)}M` : n >= 1000 ? `${(n/1000).toFixed(0)}k` : String(Math.round(n)); };
 
 function KPICard({ label, value, sub, icon, col, bg, subUp }) {
   return (

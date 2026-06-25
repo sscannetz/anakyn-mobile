@@ -26,9 +26,14 @@
       },
       "package": "com.anakyngems.app",
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -42,6 +47,16 @@
           "cameraPermission": "ถ่ายรูปสินค้า"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "16c7109a-3428-4de8-8858-c16423186977"
+      }
+    },
+    "owner": "sscannetz",
+    "runtimeVersion": "exposdk:54.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/16c7109a-3428-4de8-8858-c16423186977"
+    }
   }
 }

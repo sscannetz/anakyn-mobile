@@ -89,7 +89,10 @@ const T = {
   },
 };
 
-const fmt = (n) => Math.round(Number(n)).toLocaleString('th-TH');
+const fmt = (n) => {
+  const num = Number(n);
+  return Math.round(Number.isFinite(num) ? num : 0).toLocaleString('th-TH');
+};
 const initD = () => ({ id: Date.now() + Math.random(), weight: '', qty: '1', shape: '', color: '', clarity: '', hasCert: false, certLab: 'GIA', certNo: '', cost: '' });
 
 const categoryMap = { 'แหวน':'ring','สร้อยคอ':'necklace','ต่างหู':'earring','กำไล':'bracelet','จี้':'pendant','อื่นๆ':'other', 'Ring':'ring','Necklace':'necklace','Earring':'earring','Bracelet':'bracelet','Pendant':'pendant','Other':'other' };

@@ -24,7 +24,10 @@ const STATUS_LABELS = {
   en: { received: 'Received', repairing: 'Repairing', qc: 'QC', notified: 'Notified', picked_up: 'Picked up' },
 };
 
-const fmt = (n) => Math.round(Number(n)).toLocaleString('th-TH');
+const fmt = (n) => {
+  const num = Number(n);
+  return Math.round(Number.isFinite(num) ? num : 0).toLocaleString('th-TH');
+};
 
 export default function ServiceOrderScreen({ navigation }) {
   const insets = useSafeAreaInsets();

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { getToken } from './src/storage';
@@ -31,6 +31,26 @@ export default function App() {
     getToken().then(token => {
       setInitialRoute(token ? 'Home' : 'Login');
     });
+  }, []);
+
+  // ── แก้ปัญหาเลื่อนหน้าไม่ได้บนเว็บ (Expo web) ──
+  // RN-web + React Navigation ตั้ง body overflow:hidden และ card สูงเท่าเนื้อหา
+  // ทำให้เนื้อหาที่ล้นจอถูกตัดและเลื่อนไม่ได้ จึง inject CSS ให้ทั้งหน้าเลื่อนได้ (web เท่านั้น)
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const style = document.createElement('style');
+    style.id = 'anakyn-web-scroll-fix';
+    // โหลดฟอนต์ไอคอน MaterialCommunityIcons จาก CDN (เวอร์ชันตรงกับ @expo/vector-icons ที่ติดตั้ง)
+    // กันปัญหาไฟล์ฟอนต์ภายในถูกตัดตอน deploy (path มีคำว่า node_modules) แล้วไอคอนกลายเป็นกรอบสี่เหลี่ยม
+    const ICON_TTF = 'https://unpkg.com/@expo/vector-icons@15.1.1/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf';
+    style.textContent = `
+      @font-face { font-family: 'material-community'; src: url('${ICON_TTF}') format('truetype'); font-display: swap; }
+      html { height: 100%; }
+      body { height: auto !important; min-height: 100%; overflow-y: auto !important; }
+      #root { height: auto !important; min-height: 100vh; display: flex; flex-direction: column; }
+      #root > div { flex: 1 0 auto; }
+    `;
+    if (!document.getElementById('anakyn-web-scroll-fix')) document.head.appendChild(style);
   }, []);
 
   if (!initialRoute) {

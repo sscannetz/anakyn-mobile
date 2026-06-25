@@ -11,7 +11,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
 
-const fmt = (n) => Math.round(Number(n)).toLocaleString('th-TH');
+const fmt = (n) => {
+  const num = Number(n);
+  return Math.round(Number.isFinite(num) ? num : 0).toLocaleString('th-TH');
+};
 
 const STATUS_STYLE = {
   draft:    { bg: '#f5f5f5', col: '#666' },
@@ -100,7 +103,7 @@ export default function QuotationScreen({ navigation }) {
             <TouchableOpacity key={qt.id} onPress={() => setSelQt(qt)} style={s.card}>
               <View style={{ flex: 1 }}>
                 <Text style={s.cardNo}>{qt.quotation_no}</Text>
-                <Text style={s.cardSub}>{qt.customer_name || 'ไม่ระบุ'} · {new Date(qt.created_at).toLocaleDateString('th-TH')}</Text>
+                <Text style={s.cardSub}>{qt.customer_name || 'ไม่ระบุ'} · {new Date(qt.created_at || qt.issued_at).toLocaleDateString('th-TH')}</Text>
               </View>
               <View style={{ alignItems: 'flex-end', gap: 4 }}>
                 <Text style={s.cardAmt}>฿{fmt(qt.grand_total)}</Text>

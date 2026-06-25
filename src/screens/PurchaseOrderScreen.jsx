@@ -11,7 +11,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
 
-const fmt = (n) => Math.round(Number(n)).toLocaleString('th-TH');
+const fmt = (n) => {
+  const num = Number(n);
+  return Math.round(Number.isFinite(num) ? num : 0).toLocaleString('th-TH');
+};
 
 const STATUS_STYLE = {
   pending:   { bg: '#fff8e1', col: '#854F0B' },

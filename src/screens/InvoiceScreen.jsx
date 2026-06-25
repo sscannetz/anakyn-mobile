@@ -34,7 +34,10 @@ const T = {
   },
 };
 
-const fmt = (n) => Math.round(Number(n)).toLocaleString('th-TH');
+const fmt = (n) => {
+  const num = Number(n);
+  return Math.round(Number.isFinite(num) ? num : 0).toLocaleString('th-TH');
+};
 
 const STATUS_STYLE = {
   draft:  { bg: '#f5f5f5', col: '#666',    label: 'Draft'    },
