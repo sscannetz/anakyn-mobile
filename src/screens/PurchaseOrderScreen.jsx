@@ -10,6 +10,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
+import { printPO } from '../print';
+import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, TRow, GrandTotal, DocFooter, fmtBaht } from '../components/DocLayout';
 
 const fmt = (n) => {
   const num = Number(n);
@@ -94,7 +96,7 @@ export default function PurchaseOrderScreen({ navigation }) {
         {orders.map(o => {
           const st = STATUS_STYLE[o.status] || STATUS_STYLE.pending;
           return (
-            <TouchableOpacity key={o.id} onPress={() => setSelPO(o)} style={s.card}>
+            <TouchableOpacity key={o.id} onPress={() => { setSelPO(o); api.getPurchaseOrder(o.id).then(full => setSelPO(prev => prev && prev.id === o.id ? { ...prev, ...full } : prev)).catch(() => {}); }} style={s.card}>
               <View style={{ flex: 1 }}>
                 <Text style={s.cardNo}>{o.po_no}</Text>
                 <Text style={s.cardSub}>{o.supplier_name || 'ไม่ระบุ'} · {new Date(o.created_at).toLocaleDateString('th-TH')}</Text>
@@ -160,16 +162,45 @@ export default function PurchaseOrderScreen({ navigation }) {
       {/* DETAIL MODAL */}
       <Modal visible={!!selPO} animationType="slide" presentationStyle="pageSheet">
         {selPO && (
-          <View style={s.modal}>
+          <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 30 }}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>{selPO.po_no}</Text>
-              <TouchableOpacity onPress={() => setSelPO(null)}>
-                <MaterialCommunityIcons name="close" size={22} color="#550a19" />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                <TouchableOpacity onPress={() => printPO(selPO)}>
+                  <MaterialCommunityIcons name="printer" size={22} color="#550a19" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setSelPO(null)}>
+                  <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+                </TouchableOpacity>
+              </View>
             </View>
-            <Text style={s.cardSub}>{selPO.supplier_name}</Text>
-            <Text style={[s.cardAmt, { fontSize: 20, color: '#550a19', marginVertical: 8 }]}>฿{fmt(selPO.total)}</Text>
-            <Text style={s.fieldLabel}>{lang === 'th' ? 'อัปเดตสถานะ' : 'Update status'}</Text>
+            <DocWrapper>
+              <DocHeader badge={lang === 'th' ? 'ใบสั่งซื้อ' : 'PURCHASE ORDER'} docNo={selPO.po_no}
+                meta={[
+                  ['วันที่', new Date(selPO.created_at).toLocaleDateString('th-TH')],
+                  ['ต้องการภายใน', selPO.needed_by ? new Date(selPO.needed_by).toLocaleDateString('th-TH') : '—'],
+                  ['สถานะ', slabs[selPO.status] || selPO.status || '—'],
+                ]} />
+              <Parties
+                seller={{ label: lang === 'th' ? 'ผู้ขาย (ซัพพลายเออร์)' : 'SUPPLIER', name: selPO.supplier_name || 'ไม่ระบุ', sub: selPO.phone || '—' }}
+                buyer={{ label: lang === 'th' ? 'ผู้สั่งซื้อ' : 'BUYER', name: 'Anakyn Gems Co., Ltd.', sub: '123 ถ.สีลม กรุงเทพฯ 10500' }}
+              />
+              <Sec>
+                <SL>{lang === 'th' ? 'รายการสั่งซื้อ' : 'ITEMS'}</SL>
+                <ItemHead cols={['รายการ', 'จำนวน', 'รวม']} />
+                {(selPO.items || []).map((it, i) => (
+                  <ItemRow key={i} name={it.item_name || it.name || `รายการที่ ${i + 1}`}
+                    sub={it.unit ? `${Number(it.qty) || 0} ${it.unit} × ${fmtBaht(it.unit_price ?? it.price)}` : null}
+                    qty={Number(it.qty) || 0}
+                    price={it.line_total ?? ((Number(it.qty) || 0) * Number(it.unit_price ?? it.price ?? 0))} />
+                ))}
+                {(selPO.items || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
+              </Sec>
+              <GrandTotal label={lang === 'th' ? 'ยอดรวมทั้งสิ้น' : 'Grand Total'} value={fmtBaht(selPO.total)} />
+              <DocFooter>เอกสารสั่งซื้อ · Anakyn Gems Co., Ltd.</DocFooter>
+            </DocWrapper>
+
+            <Text style={[s.fieldLabel, { marginTop: 16 }]}>{lang === 'th' ? 'อัปเดตสถานะ' : 'Update status'}</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
               {['pending','sent','received','cancelled'].map(st => {
                 const stStyle = STATUS_STYLE[st];
@@ -181,7 +212,7 @@ export default function PurchaseOrderScreen({ navigation }) {
                 );
               })}
             </View>
-          </View>
+          </ScrollView>
         )}
       </Modal>
     </View>

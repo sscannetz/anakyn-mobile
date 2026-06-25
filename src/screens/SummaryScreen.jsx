@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
+import { printSummary } from '../print';
 
 const T = {
   th: {
@@ -100,6 +101,14 @@ export default function SummaryScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
+
+        {!loading && (
+          <TouchableOpacity onPress={() => printSummary(d, t.periods[period])}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-end', backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, paddingHorizontal: 11, paddingVertical: 7, marginBottom: 10 }}>
+            <MaterialCommunityIcons name="printer" size={15} color="#550a19" />
+            <Text style={{ fontSize: 12, color: '#550a19', fontWeight: '500' }}>{lang === 'th' ? 'ปริ้น / บันทึก PDF' : 'Print / Save PDF'}</Text>
+          </TouchableOpacity>
+        )}
 
         {/* KPI GRID */}
         <View style={s.kpiGrid}>

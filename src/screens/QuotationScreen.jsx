@@ -10,6 +10,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
+import { printQuotation } from '../print';
+import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, TRow, GrandTotal, DocFooter, fmtBaht } from '../components/DocLayout';
 
 const fmt = (n) => {
   const num = Number(n);
@@ -211,16 +213,47 @@ export default function QuotationScreen({ navigation }) {
       {/* DETAIL MODAL */}
       <Modal visible={!!selQt} animationType="slide" presentationStyle="pageSheet">
         {selQt && (
-          <View style={s.modal}>
+          <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 30 }}>
             <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>{selQt.quotation_no}</Text>
-              <TouchableOpacity onPress={() => setSelQt(null)}>
-                <MaterialCommunityIcons name="close" size={22} color="#550a19" />
-              </TouchableOpacity>
+              <Text style={s.modalTitle}>{selQt.quote_no || selQt.quotation_no}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                <TouchableOpacity onPress={() => printQuotation(selQt)}>
+                  <MaterialCommunityIcons name="printer" size={22} color="#550a19" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setSelQt(null)}>
+                  <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+                </TouchableOpacity>
+              </View>
             </View>
-            <Text style={s.cardSub}>{selQt.customer_name || 'ไม่ระบุ'}</Text>
-            <Text style={[s.cardAmt, { fontSize: 20, color: '#550a19', marginVertical: 8 }]}>฿{fmt(selQt.grand_total)}</Text>
-            <Text style={s.fieldLabel}>{lang === 'th' ? 'อัปเดตสถานะ' : 'Update status'}</Text>
+            <DocWrapper>
+              <DocHeader badge={lang === 'th' ? 'ใบเสนอราคา' : 'QUOTATION'} docNo={selQt.quote_no || selQt.quotation_no}
+                meta={[
+                  ['วันที่', new Date(selQt.created_at || selQt.issued_at).toLocaleDateString('th-TH')],
+                  ['ยืนราคาถึง', selQt.valid_until ? new Date(selQt.valid_until).toLocaleDateString('th-TH') : '—'],
+                  ['VAT', selQt.vat_applied === false ? 'ไม่มี' : '7%'],
+                ]} />
+              <Parties
+                seller={{ label: lang === 'th' ? 'ผู้เสนอราคา' : 'FROM', name: 'Anakyn Gems Co., Ltd.', sub: '123 ถ.สีลม กรุงเทพฯ 10500' }}
+                buyer={{ label: lang === 'th' ? 'ลูกค้า' : 'TO', name: selQt.customer_name || 'ไม่ระบุ', sub: selQt.phone || '—' }}
+              />
+              <Sec>
+                <SL>{lang === 'th' ? 'รายการสินค้า' : 'ITEMS'}</SL>
+                <ItemHead cols={['รายการ', 'จำนวน', 'ราคา']} />
+                {(selQt.items || []).map((it, i) => (
+                  <ItemRow key={i} name={it.name || it.product_name || `รายการที่ ${i + 1}`} sub={it.sku}
+                    qty={Number(it.qty) || 1} price={it.unit_price ?? it.price} />
+                ))}
+                {(selQt.items || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
+              </Sec>
+              <Sec>
+                <TRow label={lang === 'th' ? 'มูลค่าก่อน VAT' : 'Subtotal'} value={fmtBaht(selQt.subtotal ?? selQt.grand_total)} />
+                <TRow label="VAT 7%" value={fmtBaht(selQt.vat_amount)} />
+              </Sec>
+              <GrandTotal label={lang === 'th' ? 'ยอดรวมทั้งสิ้น' : 'Grand Total'} value={fmtBaht(selQt.grand_total)} />
+              <DocFooter>ใบเสนอราคานี้มีผลตามวันที่ยืนราคา · Anakyn Gems Co., Ltd.</DocFooter>
+            </DocWrapper>
+
+            <Text style={[s.fieldLabel, { marginTop: 16 }]}>{lang === 'th' ? 'อัปเดตสถานะ' : 'Update status'}</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
               {['draft','sent','accepted','rejected','expired'].map(st => {
                 const stStyle = STATUS_STYLE[st] || STATUS_STYLE.draft;
@@ -232,7 +265,7 @@ export default function QuotationScreen({ navigation }) {
                 );
               })}
             </View>
-          </View>
+          </ScrollView>
         )}
       </Modal>
     </View>

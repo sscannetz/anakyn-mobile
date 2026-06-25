@@ -10,6 +10,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
+import { printInvoice } from '../print';
+import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, TRow, GrandTotal, DocFooter, fmtBaht } from '../components/DocLayout';
 
 const T = {
   th: {
@@ -94,7 +96,7 @@ export default function InvoiceScreen({ navigation }) {
         {invoices.map(inv => {
           const st = STATUS_STYLE[inv.status] || STATUS_STYLE.draft;
           return (
-            <TouchableOpacity key={inv.id} onPress={() => setSelInvoice(inv)} style={styles.card}>
+            <TouchableOpacity key={inv.id} onPress={() => { setSelInvoice(inv); api.getInvoice(inv.id).then(full => setSelInvoice(prev => prev && prev.id === inv.id ? { ...prev, ...full } : prev)).catch(() => {}); }} style={styles.card}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardNo}>{inv.invoice_no}</Text>
                 <Text style={styles.cardSub}>{inv.customer_name || 'ไม่ระบุ'} · {new Date(inv.issued_at).toLocaleDateString('th-TH')}</Text>
@@ -157,51 +159,41 @@ export default function InvoiceScreen({ navigation }) {
           <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 30 }}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{selInvoice.invoice_no}</Text>
-              <TouchableOpacity onPress={() => setSelInvoice(null)}>
-                <MaterialCommunityIcons name="close" size={22} color="#550a19" />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.docHeader}>
-              <View>
-                <Text style={styles.docBrandLg}>ANAKYN</Text>
-                <Text style={styles.docBrandSm}>GEMS</Text>
-              </View>
-              <View style={styles.docBadge}>
-                <Text style={styles.docBadgeText}>{t.badge}</Text>
-                <Text style={styles.docNo}>{selInvoice.invoice_no}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                <TouchableOpacity onPress={() => printInvoice(selInvoice)}>
+                  <MaterialCommunityIcons name="printer" size={22} color="#550a19" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setSelInvoice(null)}>
+                  <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+                </TouchableOpacity>
               </View>
             </View>
-            <View style={styles.docParties}>
-              <View style={styles.docParty}>
-                <Text style={styles.docPartyLabel}>{t.seller}</Text>
-                <Text style={styles.docPartyName}>Anakyn Gems Co., Ltd.</Text>
-                <Text style={styles.docPartySub}>123 ถ.สีลม กรุงเทพฯ 10500</Text>
-              </View>
-              <View style={[styles.docParty, { borderLeftWidth: 0.5, borderLeftColor: '#f0e4e8' }]}>
-                <Text style={styles.docPartyLabel}>{t.buyer}</Text>
-                <Text style={styles.docPartyName}>{selInvoice.customer_name || 'ไม่ระบุ'}</Text>
-                <Text style={styles.docPartySub}>{selInvoice.customer_phone || '—'}</Text>
-              </View>
-            </View>
-            {(selInvoice.items || []).map((item, i) => (
-              <View key={i} style={styles.itemRow}>
-                <Text style={[styles.itemName, { flex: 1 }]}>{item.product_name || item.name}</Text>
-                <Text style={styles.itemAmt}>฿{fmt(item.unit_price)}</Text>
-              </View>
-            ))}
-            {[
-              [t.subtotal, selInvoice.subtotal || selInvoice.grand_total],
-              [t.vat, selInvoice.vat_amount || 0],
-            ].map(([l, v]) => (
-              <View key={l} style={styles.totalRow}>
-                <Text style={styles.totalLabel}>{l}</Text>
-                <Text style={styles.totalVal}>฿{fmt(v)}</Text>
-              </View>
-            ))}
-            <View style={styles.grandRow}>
-              <Text style={styles.grandLabel}>{t.grand}</Text>
-              <Text style={styles.grandVal}>฿{fmt(selInvoice.grand_total)}</Text>
-            </View>
+            <DocWrapper>
+              <DocHeader badge={t.badge} docNo={selInvoice.invoice_no}
+                meta={[
+                  ['วันที่', selInvoice.issued_at ? new Date(selInvoice.issued_at).toLocaleDateString('th-TH') : '—'],
+                  ['อ้างอิง', selInvoice.sale_no || '—'],
+                  ['VAT', selInvoice.vat_applied === false ? 'ไม่มี' : '7%'],
+                ]} />
+              <Parties
+                seller={{ label: t.seller, name: 'Anakyn Gems Co., Ltd.', sub: '123 ถ.สีลม กรุงเทพฯ 10500' }}
+                buyer={{ label: t.buyer, name: selInvoice.customer_name || 'ไม่ระบุ', sub: selInvoice.customer_phone || '—' }}
+              />
+              <Sec>
+                <SL>รายการสินค้า</SL>
+                <ItemHead cols={['รายการ', '', 'ราคา']} />
+                {(selInvoice.items || []).map((item, i) => (
+                  <ItemRow key={i} name={item.product_name || item.name} sub={item.sku} price={item.unit_price ?? item.line_total} />
+                ))}
+                {(selInvoice.items || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
+              </Sec>
+              <Sec>
+                <TRow label={t.subtotal} value={fmtBaht(selInvoice.subtotal ?? selInvoice.grand_total)} />
+                <TRow label={t.vat} value={fmtBaht(selInvoice.vat_amount)} />
+              </Sec>
+              <GrandTotal label={t.grand} value={fmtBaht(selInvoice.grand_total)} />
+              <DocFooter>ขอบคุณที่ใช้บริการ · Anakyn Gems Co., Ltd.</DocFooter>
+            </DocWrapper>
           </ScrollView>
         )}
       </Modal>

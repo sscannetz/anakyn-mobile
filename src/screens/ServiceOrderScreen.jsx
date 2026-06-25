@@ -10,6 +10,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
+import { printServiceOrder } from '../print';
+import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, InfoRow, GrandTotal, DocFooter, fmtBaht } from '../components/DocLayout';
 
 const STATUS_STYLE = {
   received:  { bg: '#fff8e1', col: '#854F0B' },
@@ -147,18 +149,47 @@ export default function ServiceOrderScreen({ navigation }) {
       {/* DETAIL MODAL */}
       <Modal visible={!!selSO} animationType="slide" presentationStyle="pageSheet">
         {selSO && (
-          <View style={s.modal}>
+          <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 30 }}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>{selSO.service_no}</Text>
-              <TouchableOpacity onPress={() => setSelSO(null)}>
-                <MaterialCommunityIcons name="close" size={22} color="#550a19" />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                <TouchableOpacity onPress={() => printServiceOrder(selSO)}>
+                  <MaterialCommunityIcons name="printer" size={22} color="#550a19" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setSelSO(null)}>
+                  <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+                </TouchableOpacity>
+              </View>
             </View>
-            <Text style={s.cardTitle}>{selSO.product_name}</Text>
-            <Text style={s.cardSub}>{selSO.customer_name} · {selSO.customer_phone || '—'}</Text>
-            {selSO.estimated_cost > 0 && <Text style={[s.cardAmt, { fontSize: 20, color: '#550a19', marginVertical: 8 }]}>฿{fmt(selSO.estimated_cost)}</Text>}
-            {selSO.issue_description && <Text style={[s.cardSub, { marginBottom: 12 }]}>{selSO.issue_description}</Text>}
-            <Text style={s.fieldLabel}>{lang === 'th' ? 'อัปเดตสถานะ' : 'Update status'}</Text>
+            <DocWrapper>
+              <DocHeader badge={lang === 'th' ? 'ใบสั่งซ่อม' : 'SERVICE ORDER'} docNo={selSO.service_no}
+                meta={[
+                  ['วันที่รับ', new Date(selSO.received_at || selSO.created_at).toLocaleDateString('th-TH')],
+                  ['นัดรับ', selSO.pickup_date ? new Date(selSO.pickup_date).toLocaleDateString('th-TH') : '—'],
+                  ['สถานะ', slabs[selSO.status] || selSO.status || '—'],
+                ]} />
+              <Parties
+                buyer={{ label: lang === 'th' ? 'ลูกค้า' : 'CUSTOMER', name: selSO.customer_name || 'ไม่ระบุ', sub: selSO.customer_phone || '—' }}
+              />
+              <Sec>
+                <InfoRow label={lang === 'th' ? 'สินค้าที่ซ่อม' : 'Item'} value={selSO.product_name} />
+                {!!selSO.issue_description && <InfoRow label={lang === 'th' ? 'อาการ / ปัญหา' : 'Issue'} value={selSO.issue_description} />}
+              </Sec>
+              <Sec>
+                <SL>{lang === 'th' ? 'รายการซ่อม / บริการ' : 'SERVICES'}</SL>
+                <ItemHead cols={['รายการ', '', 'ค่าบริการ']} />
+                {(selSO.services || []).map((sv, i) => (
+                  <ItemRow key={i} name={sv.name || `บริการที่ ${i + 1}`}
+                    price={sv.is_warranty ? 0 : sv.price}
+                    sub={sv.is_warranty ? (lang === 'th' ? 'ประกัน (ฟรี)' : 'Warranty') : null} />
+                ))}
+                {(selSO.services || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
+              </Sec>
+              <GrandTotal label={lang === 'th' ? 'ค่าซ่อมรวม' : 'Total'} value={fmtBaht(selSO.total_cost ?? selSO.estimated_cost)} />
+              <DocFooter>ใบสั่งซ่อม · Anakyn Gems Co., Ltd.</DocFooter>
+            </DocWrapper>
+
+            <Text style={[s.fieldLabel, { marginTop: 16 }]}>{lang === 'th' ? 'อัปเดตสถานะ' : 'Update status'}</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
               {['received','repairing','qc','notified','picked_up'].map(st => {
                 const stStyle = STATUS_STYLE[st];
@@ -170,7 +201,7 @@ export default function ServiceOrderScreen({ navigation }) {
                 );
               })}
             </View>
-          </View>
+          </ScrollView>
         )}
       </Modal>
     </View>

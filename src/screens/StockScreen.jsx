@@ -12,6 +12,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
+import { printStock } from '../print';
 
 const GOLD_BAHT_GRAMS = 15.244;
 const GOLD_OPTIONS = [
@@ -480,6 +481,13 @@ export default function StockScreen({ navigation }) {
         {/* CURRENT STOCK */}
         <Sec>
           <SecHead icon="view-list">{t.currentStock} {!loadingList && `(${stockList.length})`}</SecHead>
+          {stockList.length > 0 && (
+            <TouchableOpacity onPress={() => printStock(stockList)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, paddingHorizontal: 11, paddingVertical: 7, marginBottom: 10 }}>
+              <MaterialCommunityIcons name="printer" size={15} color="#550a19" />
+              <Text style={{ fontSize: 12, color: '#550a19', fontWeight: '500' }}>{lang === 'th' ? 'ปริ้น / บันทึก PDF' : 'Print / Save PDF'}</Text>
+            </TouchableOpacity>
+          )}
           {loadingList && <ActivityIndicator color="#550a19" />}
           {stockList.slice(0, 8).map(p => (
             <View key={p.id} style={s.stockItem}>
