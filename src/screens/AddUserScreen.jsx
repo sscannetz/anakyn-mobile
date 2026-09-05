@@ -1,10 +1,13 @@
 // ══════════════════════════════════════════════════════
-// AddUserScreen.jsx — React Native (Admin only)
+// AddUserScreen.jsx — จัดการผู้ใช้ (Admin only)
+//   • เพิ่มผู้ใช้ใหม่
+//   • แก้ไขข้อมูลผู้ใช้ (ชื่อ/ชื่อเล่น/เบอร์/อีเมล/บทบาท/สถานะ/รหัสผ่าน)
+//   • ลบผู้ใช้
 // ══════════════════════════════════════════════════════
 import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, Modal,
+  StyleSheet, ActivityIndicator, Modal, Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -14,69 +17,119 @@ import { getRole } from '../storage';
 
 const T = {
   th: {
-    pageTitle: 'จัดการผู้ใช้', addUser: 'เพิ่มผู้ใช้ใหม่',
-    name: 'ชื่อ-นามสกุล', email: 'อีเมล', password: 'รหัสผ่าน',
-    confirmPw: 'ยืนยันรหัสผ่าน', role: 'บทบาท',
-    saveBtn: 'บันทึก', saving: 'กำลังบันทึก...',
+    pageTitle: 'จัดการผู้ใช้', addUser: 'เพิ่มผู้ใช้ใหม่', editUser: 'แก้ไขข้อมูลผู้ใช้',
+    name: 'ชื่อ-นามสกุล', nickname: 'ชื่อเล่น', phone: 'เบอร์โทร',
+    email: 'อีเมล', password: 'รหัสผ่าน', confirmPw: 'ยืนยันรหัสผ่าน', role: 'บทบาท',
+    pwHintEdit: 'เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยนรหัสผ่าน',
+    pwHintNew: 'อย่างน้อย 8 ตัวอักษร',
+    status: 'สถานะการใช้งาน',
+    saveBtn: 'บันทึก', saveEditBtn: 'บันทึกการแก้ไข', saving: 'กำลังบันทึก...',
     adminOnly: 'เฉพาะ Admin เท่านั้น', noUsers: 'ยังไม่มีผู้ใช้',
     pwMismatch: 'รหัสผ่านไม่ตรงกัน', fillAll: 'กรุณากรอกข้อมูลให้ครบ',
+    pwShort: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร',
     deleteConfirm: 'ต้องการลบผู้ใช้นี้?', confirmYes: 'ลบ', confirmNo: 'ยกเลิก',
     roles: { admin: 'ผู้ดูแลระบบ', staff: 'พนักงาน' },
     statusActive: 'ใช้งาน', statusInactive: 'ระงับ',
+    optional: '(ไม่บังคับ)',
   },
   en: {
-    pageTitle: 'Manage Users', addUser: 'Add new user',
-    name: 'Full Name', email: 'Email', password: 'Password',
-    confirmPw: 'Confirm Password', role: 'Role',
-    saveBtn: 'Save', saving: 'Saving...',
+    pageTitle: 'Manage Users', addUser: 'Add new user', editUser: 'Edit user',
+    name: 'Full Name', nickname: 'Nickname', phone: 'Phone',
+    email: 'Email', password: 'Password', confirmPw: 'Confirm Password', role: 'Role',
+    pwHintEdit: 'Leave blank to keep current password',
+    pwHintNew: 'At least 8 characters',
+    status: 'Account status',
+    saveBtn: 'Save', saveEditBtn: 'Save changes', saving: 'Saving...',
     adminOnly: 'Admin only', noUsers: 'No users yet',
     pwMismatch: 'Passwords do not match', fillAll: 'Please fill all fields',
+    pwShort: 'Password must be at least 8 characters',
     deleteConfirm: 'Delete this user?', confirmYes: 'Delete', confirmNo: 'Cancel',
     roles: { admin: 'Administrator', staff: 'Staff' },
     statusActive: 'Active', statusInactive: 'Inactive',
+    optional: '(optional)',
   },
 };
 
+const nameOf = (u) => u?.full_name || u?.name || '';
+
 export default function AddUserScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const [lang, setLang]     = useState('th');
-  const [users, setUsers]   = useState([]);
+  const [lang, setLang]       = useState('th');
+  const [users, setUsers]     = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-  const [name, setName]     = useState('');
-  const [email, setEmail]   = useState('');
-  const [password, setPassword] = useState('');
+
+  // modal: null = ปิด | { mode:'new' } | { mode:'edit', user }
+  const [form, setForm]       = useState(null);
+  const [fullName, setFullName]   = useState('');
+  const [nickname, setNickname]   = useState('');
+  const [phone, setPhone]         = useState('');
+  const [email, setEmail]         = useState('');
+  const [password, setPassword]   = useState('');
   const [confirmPw, setConfirmPw] = useState('');
-  const [role, setRole]     = useState('staff');
-  const [showPw, setShowPw] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState('');
+  const [role, setRole]           = useState('staff');
+  const [isActive, setIsActive]   = useState(true);
+  const [showPw, setShowPw]   = useState(false);
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState('');
   const [delTarget, setDelTarget] = useState(null);
+  const [delError, setDelError]   = useState('');
   const t = T[lang];
+  const isEdit = form?.mode === 'edit';
 
   useEffect(() => {
     getRole().then(r => setIsAdmin(r === 'admin'));
     api.getUsers().then(setUsers).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  const reset = () => {
-    setName(''); setEmail(''); setPassword(''); setConfirmPw('');
-    setRole('staff'); setError('');
+  const openNew = () => {
+    setFullName(''); setNickname(''); setPhone(''); setEmail('');
+    setPassword(''); setConfirmPw(''); setRole('staff'); setIsActive(true);
+    setError(''); setShowPw(false);
+    setForm({ mode: 'new' });
+  };
+
+  const openEdit = (u) => {
+    setFullName(nameOf(u)); setNickname(u.nickname || ''); setPhone(u.phone || '');
+    setEmail(u.email || ''); setPassword(''); setConfirmPw('');
+    setRole(u.role || 'staff'); setIsActive(u.is_active !== false);
+    setError(''); setShowPw(false);
+    setForm({ mode: 'edit', user: u });
   };
 
   const handleSave = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
+    if (!fullName.trim() || !email.trim() || (!isEdit && !password.trim())) {
       setError(t.fillAll); return;
     }
-    if (password !== confirmPw) {
-      setError(t.pwMismatch); return;
-    }
+    if (password && password.length < 8) { setError(t.pwShort); return; }
+    if (password && password !== confirmPw) { setError(t.pwMismatch); return; }
+
     setSaving(true); setError('');
     try {
-      const u = await api.createUser({ name, email, password, role });
-      setUsers(prev => [u, ...prev]);
-      setShowNew(false); reset();
+      if (isEdit) {
+        const body = {
+          full_name: fullName.trim(),
+          nickname: nickname.trim(),
+          phone: phone.trim(),
+          email: email.trim(),
+          role,
+          is_active: isActive,
+        };
+        if (password) body.password = password;
+        const u = await api.updateUser(form.user.id, body);
+        setUsers(prev => prev.map(x => (x.id === u.id ? u : x)));
+      } else {
+        const u = await api.createUser({
+          full_name: fullName.trim(),
+          nickname: nickname.trim(),
+          phone: phone.trim(),
+          email: email.trim(),
+          password,
+          role,
+        });
+        setUsers(prev => [u, ...prev]);
+      }
+      setForm(null);
     } catch (err) {
       setError(err.message || 'เกิดข้อผิดพลาด');
     } finally { setSaving(false); }
@@ -84,11 +137,19 @@ export default function AddUserScreen({ navigation }) {
 
   const handleDelete = async () => {
     if (!delTarget) return;
+    setDelError('');
     try {
-      await api.deleteUser(delTarget.id);
-      setUsers(prev => prev.filter(u => u.id !== delTarget.id));
-    } catch (_) {}
-    setDelTarget(null);
+      const r = await api.deleteUser(delTarget.id);
+      if (r?.deactivated && r.user) {
+        // ลบไม่ได้เพราะมีเอกสารอ้างอิง → backend เปลี่ยนเป็นระงับให้แทน
+        setUsers(prev => prev.map(x => (x.id === r.user.id ? r.user : x)));
+      } else {
+        setUsers(prev => prev.filter(u => u.id !== delTarget.id));
+      }
+      setDelTarget(null);
+    } catch (err) {
+      setDelError(err.message || 'ลบไม่สำเร็จ');
+    }
   };
 
   if (!isAdmin && !loading) {
@@ -107,7 +168,7 @@ export default function AddUserScreen({ navigation }) {
     <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
       <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')}
         rightComponent={
-          <TouchableOpacity onPress={() => { reset(); setShowNew(true); }} style={s.iconBtn}>
+          <TouchableOpacity onPress={openNew} style={s.iconBtn}>
             <MaterialCommunityIcons name="plus" size={16} color="#f5e0e5" />
           </TouchableOpacity>
         }
@@ -117,15 +178,19 @@ export default function AddUserScreen({ navigation }) {
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
         {!loading && users.length === 0 && <Text style={s.emptyText}>{t.noUsers}</Text>}
         {users.map(u => (
-          <View key={u.id} style={s.card}>
+          <TouchableOpacity key={u.id} activeOpacity={0.7} onPress={() => openEdit(u)} style={s.card}>
             <View style={[s.avatar, { backgroundColor: u.role === 'admin' ? '#fdf0f2' : '#e0f0ff' }]}>
               <Text style={[s.avatarText, { color: u.role === 'admin' ? '#550a19' : '#1a3a60' }]}>
-                {(u.name || u.email || '?').slice(0, 1).toUpperCase()}
+                {(nameOf(u) || u.email || '?').slice(0, 1).toUpperCase()}
               </Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.userName}>{u.name || '—'}</Text>
+              <Text style={s.userName}>
+                {nameOf(u) || '—'}
+                {!!u.nickname && <Text style={s.userNick}>  ({u.nickname})</Text>}
+              </Text>
               <Text style={s.userEmail}>{u.email}</Text>
+              {!!u.phone && <Text style={s.userEmail}>{u.phone}</Text>}
               <View style={s.tagRow}>
                 <View style={[s.tag, { backgroundColor: u.role === 'admin' ? '#fdf0f2' : '#e0f0ff' }]}>
                   <Text style={[s.tagText, { color: u.role === 'admin' ? '#550a19' : '#1a3a60' }]}>{t.roles[u.role] || u.role}</Text>
@@ -137,20 +202,23 @@ export default function AddUserScreen({ navigation }) {
                 </View>
               </View>
             </View>
-            <TouchableOpacity onPress={() => setDelTarget(u)} style={s.delBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity onPress={() => openEdit(u)} style={s.actBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <MaterialCommunityIcons name="pencil-outline" size={18} color="#550a19" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setDelError(''); setDelTarget(u); }} style={s.actBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <MaterialCommunityIcons name="trash-can-outline" size={18} color="#c0a0a8" />
             </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
         ))}
         <View style={{ height: 20 }} />
       </ScrollView>
 
-      {/* ADD USER MODAL */}
-      <Modal visible={showNew} animationType="slide" presentationStyle="pageSheet">
+      {/* ADD / EDIT USER MODAL */}
+      <Modal visible={!!form} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setForm(null)}>
         <View style={s.modal}>
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>{t.addUser}</Text>
-            <TouchableOpacity onPress={() => setShowNew(false)}>
+            <Text style={s.modalTitle}>{isEdit ? t.editUser : t.addUser}</Text>
+            <TouchableOpacity onPress={() => setForm(null)}>
               <MaterialCommunityIcons name="close" size={22} color="#550a19" />
             </TouchableOpacity>
           </View>
@@ -158,7 +226,18 @@ export default function AddUserScreen({ navigation }) {
             {!!error && <View style={s.errBox}><Text style={s.errText}>{error}</Text></View>}
 
             <Text style={s.fieldLabel}>{t.name}</Text>
-            <TextInput style={s.input} value={name} onChangeText={setName} autoCapitalize="words" placeholderTextColor="#c0a0a8" />
+            <TextInput style={s.input} value={fullName} onChangeText={setFullName} autoCapitalize="words" placeholderTextColor="#c0a0a8" />
+
+            <View style={s.row2}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.fieldLabel}>{t.nickname} <Text style={s.optional}>{t.optional}</Text></Text>
+                <TextInput style={s.input} value={nickname} onChangeText={setNickname} placeholderTextColor="#c0a0a8" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.fieldLabel}>{t.phone} <Text style={s.optional}>{t.optional}</Text></Text>
+                <TextInput style={s.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholderTextColor="#c0a0a8" />
+              </View>
+            </View>
 
             <Text style={s.fieldLabel}>{t.email}</Text>
             <TextInput style={s.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor="#c0a0a8" />
@@ -166,17 +245,23 @@ export default function AddUserScreen({ navigation }) {
             <Text style={s.fieldLabel}>{t.password}</Text>
             <View style={s.pwRow}>
               <TextInput style={[s.input, { flex: 1, marginBottom: 0 }]} value={password} onChangeText={setPassword}
-                secureTextEntry={!showPw} autoCapitalize="none" placeholderTextColor="#c0a0a8" />
+                secureTextEntry={!showPw} autoCapitalize="none"
+                placeholder={isEdit ? '••••••••' : ''} placeholderTextColor="#c0a0a8" />
               <TouchableOpacity onPress={() => setShowPw(v => !v)} style={s.eyeBtn}>
                 <MaterialCommunityIcons name={showPw ? 'eye-off' : 'eye'} size={18} color="#c0a0a8" />
               </TouchableOpacity>
             </View>
+            <Text style={s.hint}>{isEdit ? t.pwHintEdit : t.pwHintNew}</Text>
 
-            <Text style={[s.fieldLabel, { marginTop: 10 }]}>{t.confirmPw}</Text>
-            <TextInput style={s.input} value={confirmPw} onChangeText={setConfirmPw}
-              secureTextEntry={!showPw} autoCapitalize="none" placeholderTextColor="#c0a0a8" />
+            {(!isEdit || !!password) && (
+              <>
+                <Text style={[s.fieldLabel, { marginTop: 8 }]}>{t.confirmPw}</Text>
+                <TextInput style={s.input} value={confirmPw} onChangeText={setConfirmPw}
+                  secureTextEntry={!showPw} autoCapitalize="none" placeholderTextColor="#c0a0a8" />
+              </>
+            )}
 
-            <Text style={s.fieldLabel}>{t.role}</Text>
+            <Text style={[s.fieldLabel, { marginTop: 6 }]}>{t.role}</Text>
             <View style={s.roleRow}>
               {['staff', 'admin'].map(r => (
                 <TouchableOpacity key={r} onPress={() => setRole(r)}
@@ -189,21 +274,36 @@ export default function AddUserScreen({ navigation }) {
               ))}
             </View>
 
+            {isEdit && (
+              <View style={s.switchRow}>
+                <View>
+                  <Text style={s.switchLabel}>{t.status}</Text>
+                  <Text style={s.hint}>{isActive ? t.statusActive : t.statusInactive}</Text>
+                </View>
+                <Switch value={isActive} onValueChange={setIsActive}
+                  trackColor={{ false: '#e0d0d5', true: '#a8d5b5' }}
+                  thumbColor={isActive ? '#1a5c28' : '#fff'} />
+              </View>
+            )}
+
             <TouchableOpacity onPress={handleSave} disabled={saving} style={[s.saveBtn, { opacity: saving ? 0.7 : 1, marginTop: 16 }]}>
-              {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="account-plus" size={18} color="#fff5f7" />}
-              <Text style={s.saveBtnText}>{saving ? t.saving : t.saveBtn}</Text>
+              {saving
+                ? <ActivityIndicator color="#fff5f7" size="small" />
+                : <MaterialCommunityIcons name={isEdit ? 'content-save' : 'account-plus'} size={18} color="#fff5f7" />}
+              <Text style={s.saveBtnText}>{saving ? t.saving : (isEdit ? t.saveEditBtn : t.saveBtn)}</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
       </Modal>
 
       {/* DELETE CONFIRM MODAL */}
-      <Modal visible={!!delTarget} animationType="fade" transparent>
+      <Modal visible={!!delTarget} animationType="fade" transparent onRequestClose={() => setDelTarget(null)}>
         <View style={s.overlay}>
           <View style={s.confirmBox}>
             <MaterialCommunityIcons name="trash-can" size={28} color="#c62828" style={{ marginBottom: 8 }} />
             <Text style={s.confirmMsg}>{t.deleteConfirm}</Text>
-            {delTarget && <Text style={s.confirmName}>{delTarget.name || delTarget.email}</Text>}
+            {delTarget && <Text style={s.confirmName}>{nameOf(delTarget) || delTarget.email}</Text>}
+            {!!delError && <Text style={s.confirmErr}>{delError}</Text>}
             <View style={s.confirmBtns}>
               <TouchableOpacity onPress={() => setDelTarget(null)} style={[s.confirmBtn, { backgroundColor: '#f9f4f5' }]}>
                 <Text style={[s.confirmBtnText, { color: '#806070' }]}>{t.confirmNo}</Text>
@@ -228,11 +328,12 @@ const s = StyleSheet.create({
   avatar:     { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
   avatarText: { fontSize: 16, fontWeight: '500' },
   userName:   { fontSize: 13, fontWeight: '500', color: '#2c1015' },
+  userNick:   { fontSize: 11, fontWeight: '400', color: '#a07080' },
   userEmail:  { fontSize: 11, color: '#a07080', marginTop: 1 },
   tagRow:     { flexDirection: 'row', gap: 5, marginTop: 5 },
   tag:        { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 },
   tagText:    { fontSize: 9, fontWeight: '500' },
-  delBtn:     { padding: 4 },
+  actBtn:     { padding: 5 },
   iconBtn:    { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
   modal:      { flex: 1, backgroundColor: '#fff', padding: 16 },
   modalHeader:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
@@ -240,18 +341,24 @@ const s = StyleSheet.create({
   errBox:     { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 12 },
   errText:    { fontSize: 12, color: '#a32d2d' },
   fieldLabel: { fontSize: 11, color: '#a07080', marginBottom: 4 },
+  optional:   { fontSize: 10, color: '#c0a0a8' },
+  hint:       { fontSize: 10, color: '#c0a0a8', marginTop: 4 },
   input:      { backgroundColor: '#f9f4f5', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 8, padding: 9, fontSize: 13, color: '#2c1015', marginBottom: 10 },
+  row2:       { flexDirection: 'row', gap: 10 },
   pwRow:      { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 0 },
   eyeBtn:     { padding: 8, marginLeft: -4 },
   roleRow:    { flexDirection: 'row', gap: 8, marginBottom: 6 },
   roleBtn:    { flex: 1, borderWidth: 0.5, borderRadius: 10, paddingVertical: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
   roleBtnText:{ fontSize: 12, fontWeight: '500' },
+  switchRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f9f4f5', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginTop: 12 },
+  switchLabel:{ fontSize: 12, fontWeight: '500', color: '#2c1015' },
   saveBtn:    { backgroundColor: '#550a19', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 },
   saveBtnText:{ fontSize: 15, fontWeight: '500', color: '#fff5f7' },
   overlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
   confirmBox: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: 280, alignItems: 'center' },
   confirmMsg: { fontSize: 14, color: '#2c1015', textAlign: 'center', marginBottom: 4 },
   confirmName:{ fontSize: 13, fontWeight: '500', color: '#550a19', textAlign: 'center', marginBottom: 16 },
+  confirmErr: { fontSize: 11, color: '#a32d2d', textAlign: 'center', marginBottom: 12 },
   confirmBtns:{ flexDirection: 'row', gap: 10, width: '100%' },
   confirmBtn: { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   confirmBtnText: { fontSize: 13, fontWeight: '500' },

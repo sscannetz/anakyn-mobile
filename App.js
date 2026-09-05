@@ -2,13 +2,14 @@
 // App.js — Root navigator สำหรับ Anakyn Gems Mobile
 // ══════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { getToken } from './src/storage';
+import { getPendingSku, clearPendingSku } from './src/scan';
 
 import LoginScreen       from './src/screens/LoginScreen';
 import HomeScreen        from './src/screens/HomeScreen';
@@ -19,9 +20,22 @@ import QuotationScreen   from './src/screens/QuotationScreen';
 import PurchaseOrderScreen from './src/screens/PurchaseOrderScreen';
 import ServiceOrderScreen  from './src/screens/ServiceOrderScreen';
 import SummaryScreen     from './src/screens/SummaryScreen';
+import ReceiptScreen     from './src/screens/ReceiptScreen';
 import AddUserScreen     from './src/screens/AddUserScreen';
 
 const Stack = createStackNavigator();
+const navRef = createNavigationContainerRef();
+
+// ── สแกน QR บนป้ายสินค้า → เด้งไปหน้าบันทึกการขายพร้อมสินค้าชิ้นนั้น ──
+// รอจนผู้ใช้อยู่หน้า Home ก่อน (เผื่อยังไม่ได้ล็อกอิน จะได้เด้งหลังล็อกอินเสร็จ)
+// แล้ว push หน้า Sale ทับ เพื่อให้กดย้อนกลับมา Home ได้ตามปกติ
+function routeScannedSku() {
+  const sku = getPendingSku();
+  if (!sku || !navRef.isReady()) return;
+  if (navRef.getCurrentRoute()?.name !== 'Home') return;
+  clearPendingSku();
+  navRef.navigate('Sale', { scanSku: sku });
+}
 
 export default function App() {
   const [initialRoute, setInitialRoute] = useState(null);
@@ -47,8 +61,10 @@ export default function App() {
       @font-face { font-family: 'material-community'; src: url('${ICON_TTF}') format('truetype'); font-display: swap; }
       html { height: 100%; }
       body { height: auto !important; min-height: 100%; overflow-y: auto !important; }
-      #root { height: auto !important; min-height: 100vh; display: flex; flex-direction: column; }
-      #root > div { flex: 1 0 auto; }
+      /* จำกัดความกว้างเป็นคอลัมน์กลางจอ กันเนื้อหายืดเต็มจอใหญ่ (Windows/iPad) แล้วตัวหนังสือดูจิ๋ว
+         บนมือถือ (จอ < 620px) จะเต็มจอตามปกติเพราะ width:100% */
+      #root { height: auto !important; min-height: 100vh; display: flex; flex-direction: column; align-items: center; background: #efe6e9; }
+      #root > div { flex: 1 0 auto; width: 100%; max-width: 620px; box-shadow: 0 0 24px rgba(85,10,25,0.10); }
     `;
     if (!document.getElementById('anakyn-web-scroll-fix')) document.head.appendChild(style);
   }, []);
@@ -64,7 +80,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <NavigationContainer>
+        <NavigationContainer ref={navRef} onReady={routeScannedSku} onStateChange={routeScannedSku}>
           <StatusBar style="light" backgroundColor="#550a19" />
           <Stack.Navigator
             initialRouteName={initialRoute}
@@ -79,6 +95,7 @@ export default function App() {
             <Stack.Screen name="PurchaseOrder" component={PurchaseOrderScreen}  />
             <Stack.Screen name="ServiceOrder"  component={ServiceOrderScreen}   />
             <Stack.Screen name="Summary"       component={SummaryScreen}        />
+            <Stack.Screen name="Receipt"       component={ReceiptScreen}        />
             <Stack.Screen name="AddUser"       component={AddUserScreen}        />
           </Stack.Navigator>
         </NavigationContainer>

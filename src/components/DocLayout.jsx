@@ -2,7 +2,8 @@
 // DocLayout.jsx — ชุด component เอกสารทางการ (RN) ใช้ร่วมกันทุกหน้า
 // แปลงดีไซน์จากเวอร์ชันเว็บ (DocWrapper / DocHeader / Parties / Sec / ...)
 // ══════════════════════════════════════════════════════
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export const DOC = {
   maroon: '#550a19', cream: '#fff5f7', rose: '#d4a0ac', mute: '#a07080',
@@ -133,6 +134,63 @@ export function DocFooter({ children }) {
   return <Text style={d.footer}>{children}</Text>;
 }
 
+// ── แถว VAT: เปิด/ปิด + ใส่ % เอง ──
+export function VatRow({ enabled, rate, amount, onToggle, onRate, lang = 'th' }) {
+  return (
+    <View style={d.vatRow}>
+      <Text style={d.vatLabel}>VAT</Text>
+      <View style={d.vatRight}>
+        {enabled ? (
+          <View style={d.vatRateBox}>
+            <TextInput
+              value={String(rate)}
+              onChangeText={onRate}
+              keyboardType="numeric"
+              maxLength={5}
+              selectTextOnFocus
+              style={d.vatInput}
+            />
+            <Text style={d.vatPct}>%</Text>
+          </View>
+        ) : null}
+        <Text style={[d.vatAmt, { color: enabled ? DOC.ink : '#b08090' }]}>{enabled ? fmtBaht(amount) : '—'}</Text>
+        <View style={d.vatToggle}>
+          {[[lang === 'th' ? 'มี' : 'On', true], [lang === 'th' ? 'ไม่มี' : 'Off', false]].map(([lbl, val]) => (
+            <TouchableOpacity key={String(val)} onPress={() => onToggle(val)}
+              style={[d.vatSeg, enabled === val && d.vatSegOn]} activeOpacity={0.8}>
+              <Text style={[d.vatSegText, enabled === val && d.vatSegTextOn]}>{lbl}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ── ปุ่มล่างสุด: สั่งปริ้น + บันทึก PDF (แยกกัน) + ปุ่มย้อนกลับ ──
+export function DocActions({ onPrint, onSavePdf, onBack, lang = 'th' }) {
+  return (
+    <View style={d.actionsWrap}>
+      <View style={d.actions}>
+        <TouchableOpacity onPress={onPrint} style={[d.actBtn, d.actPrint]} activeOpacity={0.85}>
+          <MaterialCommunityIcons name="printer" size={18} color="#fff5f7" />
+          <Text style={d.actPrintText}>{lang === 'th' ? 'สั่งปริ้น' : 'Print'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onSavePdf} style={[d.actBtn, d.actPdf]} activeOpacity={0.85}>
+          <MaterialCommunityIcons name="file-pdf-box" size={19} color="#550a19" />
+          <Text style={d.actPdfText}>{lang === 'th' ? 'บันทึก PDF' : 'Save PDF'}</Text>
+        </TouchableOpacity>
+      </View>
+      {onBack && (
+        <TouchableOpacity onPress={onBack} style={d.actBack} activeOpacity={0.85}>
+          <MaterialCommunityIcons name="arrow-left" size={18} color="#806070" />
+          <Text style={d.actBackText}>{lang === 'th' ? 'ย้อนกลับ' : 'Back'}</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
 export { fmtBaht };
 
 const d = StyleSheet.create({
@@ -183,4 +241,27 @@ const d = StyleSheet.create({
   infoVal: { fontSize: 13, fontWeight: '500', color: DOC.ink, lineHeight: 18 },
 
   footer: { paddingHorizontal: 14, paddingVertical: 10, textAlign: 'center', fontSize: 10, color: DOC.mute, lineHeight: 16, borderBottomWidth: 0.5, borderBottomColor: DOC.line },
+
+  vatRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
+  vatLabel: { fontSize: 12, color: DOC.sub },
+  vatRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  vatRateBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: DOC.soft, borderWidth: 0.5, borderColor: DOC.chipBd, borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2 },
+  vatInput: { fontSize: 12, fontWeight: '600', color: DOC.maroon, minWidth: 26, paddingVertical: 1, textAlign: 'right' },
+  vatPct: { fontSize: 11, color: DOC.mute, marginLeft: 1 },
+  vatAmt: { fontSize: 12, fontWeight: '600', minWidth: 56, textAlign: 'right' },
+  vatToggle: { flexDirection: 'row', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 20, overflow: 'hidden' },
+  vatSeg: { paddingHorizontal: 11, paddingVertical: 4, backgroundColor: '#fff' },
+  vatSegOn: { backgroundColor: DOC.maroon },
+  vatSegText: { fontSize: 11, fontWeight: '500', color: DOC.mute },
+  vatSegTextOn: { color: '#f5e0e5' },
+
+  actionsWrap: { marginTop: 16 },
+  actions: { flexDirection: 'row', gap: 10 },
+  actBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 13, borderRadius: 12 },
+  actPrint: { backgroundColor: DOC.maroon },
+  actPrintText: { fontSize: 14, fontWeight: '600', color: '#fff5f7' },
+  actPdf: { backgroundColor: '#fff', borderWidth: 1, borderColor: DOC.maroon },
+  actPdfText: { fontSize: 14, fontWeight: '600', color: DOC.maroon },
+  actBack: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 13, borderRadius: 12, backgroundColor: '#f9f4f5', borderWidth: 1, borderColor: '#e8d5d9', marginTop: 10 },
+  actBackText: { fontSize: 14, fontWeight: '600', color: '#806070' },
 });

@@ -10,8 +10,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
-import { printQuotation } from '../print';
-import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, TRow, GrandTotal, DocFooter, fmtBaht } from '../components/DocLayout';
+import { printQuotation, saveQuotation } from '../print';
+import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, TRow, VatRow, GrandTotal, DocFooter, DocActions, fmtBaht } from '../components/DocLayout';
 
 const fmt = (n) => {
   const num = Number(n);
@@ -43,9 +43,12 @@ export default function QuotationScreen({ navigation }) {
   const [selCustId, setSelCustId]   = useState(null);
   const [notes, setNotes]           = useState('');
   const [vatOn, setVatOn]           = useState(true);
+  const [vatRate, setVatRate]       = useState('7');   // อัตรา VAT ตอนสร้าง (ปรับเองได้)
   const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState('');
   const [selQt, setSelQt]           = useState(null);
+  const [dVatOn, setDVatOn]         = useState(true);
+  const [dVatRate, setDVatRate]     = useState('7');
   const [showProdPicker, setShowProdPicker] = useState(false);
   const [prodQuery, setProdQuery]   = useState('');
 
@@ -60,7 +63,7 @@ export default function QuotationScreen({ navigation }) {
   const filteredProds = products.filter(p => !prodQuery || p.name.toLowerCase().includes(prodQuery.toLowerCase()) || p.sku.toLowerCase().includes(prodQuery.toLowerCase()));
 
   const subtotal  = selProds.reduce((s, sp) => s + Number(sp.price), 0);
-  const vatAmt    = vatOn ? Math.round(subtotal * 0.07) : 0;
+  const vatAmt    = vatOn ? Math.round(subtotal * (parseFloat(vatRate) || 0) / 100) : 0;
   const total     = subtotal + vatAmt;
 
   const handleCreate = async () => {
@@ -71,6 +74,7 @@ export default function QuotationScreen({ navigation }) {
         customer_id: selCustId,
         items: selProds.map(sp => ({ product_id: sp.id, qty: 1, unit_price: sp.price })),
         vat_enabled: vatOn,
+        vat_rate: parseFloat(vatRate) || 7,
         notes,
       });
       setQuotations(prev => [qt, ...prev]);
@@ -102,7 +106,12 @@ export default function QuotationScreen({ navigation }) {
         {quotations.map(qt => {
           const st = STATUS_STYLE[qt.status] || STATUS_STYLE.draft;
           return (
-            <TouchableOpacity key={qt.id} onPress={() => setSelQt(qt)} style={s.card}>
+            <TouchableOpacity key={qt.id} onPress={() => {
+                const b = Number(qt.subtotal) || 0;
+                setDVatOn(qt.vat_applied !== false);
+                setDVatRate(b > 0 && Number(qt.vat_amount) > 0 ? String(Math.round(Number(qt.vat_amount) / b * 100)) : '7');
+                setSelQt(qt);
+              }} style={s.card}>
               <View style={{ flex: 1 }}>
                 <Text style={s.cardNo}>{qt.quotation_no}</Text>
                 <Text style={s.cardSub}>{qt.customer_name || 'ไม่ระบุ'} · {new Date(qt.created_at || qt.issued_at).toLocaleDateString('th-TH')}</Text>
@@ -158,14 +167,20 @@ export default function QuotationScreen({ navigation }) {
               </View>
             ))}
             <View style={s.vatRow}>
-              {[['VAT 7%', true],['ไม่มี VAT', false]].map(([l, v]) => (
-                <TouchableOpacity key={l} onPress={() => setVatOn(v)} style={[s.vatBtn, { backgroundColor: vatOn === v ? '#550a19' : '#f9f4f5', borderColor: vatOn === v ? '#550a19' : '#e8d5d9' }]}>
+              {[[lang === 'th' ? 'มี VAT' : 'Incl. VAT', true],[lang === 'th' ? 'ไม่มี VAT' : 'Excl. VAT', false]].map(([l, v]) => (
+                <TouchableOpacity key={String(v)} onPress={() => setVatOn(v)} style={[s.vatBtn, { backgroundColor: vatOn === v ? '#550a19' : '#f9f4f5', borderColor: vatOn === v ? '#550a19' : '#e8d5d9' }]}>
                   <Text style={[s.vatBtnText, { color: vatOn === v ? '#f5e0e5' : '#a07080' }]}>{l}</Text>
                 </TouchableOpacity>
               ))}
+              {vatOn && (
+                <View style={s.rateBox}>
+                  <TextInput value={vatRate} onChangeText={setVatRate} keyboardType="numeric" maxLength={5} selectTextOnFocus style={s.rateInput} />
+                  <Text style={s.ratePct}>%</Text>
+                </View>
+              )}
             </View>
             <View style={s.totalBox}>
-              {[[lang === 'th' ? 'รวม' : 'Subtotal', subtotal], ['VAT 7%', vatAmt]].map(([l, v]) => (
+              {[[lang === 'th' ? 'รวม' : 'Subtotal', subtotal], [`VAT ${vatOn ? (parseFloat(vatRate) || 0) : 0}%`, vatAmt]].map(([l, v]) => (
                 <View key={l} style={s.totalRow}><Text style={s.totalLabel}>{l}</Text><Text style={s.totalVal}>฿{fmt(v)}</Text></View>
               ))}
               <View style={[s.totalRow, { borderTopWidth: 0.5, borderTopColor: '#e8c0c8', marginTop: 6, paddingTop: 6 }]}>
@@ -213,58 +228,58 @@ export default function QuotationScreen({ navigation }) {
       {/* DETAIL MODAL */}
       <Modal visible={!!selQt} animationType="slide" presentationStyle="pageSheet">
         {selQt && (
-          <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 30 }}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>{selQt.quote_no || selQt.quotation_no}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                <TouchableOpacity onPress={() => printQuotation(selQt)}>
-                  <MaterialCommunityIcons name="printer" size={22} color="#550a19" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setSelQt(null)}>
-                  <MaterialCommunityIcons name="close" size={22} color="#550a19" />
-                </TouchableOpacity>
-              </View>
-            </View>
-            <DocWrapper>
-              <DocHeader badge={lang === 'th' ? 'ใบเสนอราคา' : 'QUOTATION'} docNo={selQt.quote_no || selQt.quotation_no}
-                meta={[
-                  ['วันที่', new Date(selQt.created_at || selQt.issued_at).toLocaleDateString('th-TH')],
-                  ['ยืนราคาถึง', selQt.valid_until ? new Date(selQt.valid_until).toLocaleDateString('th-TH') : '—'],
-                  ['VAT', selQt.vat_applied === false ? 'ไม่มี' : '7%'],
-                ]} />
-              <Parties
-                seller={{ label: lang === 'th' ? 'ผู้เสนอราคา' : 'FROM', name: 'Anakyn Gems Co., Ltd.', sub: '123 ถ.สีลม กรุงเทพฯ 10500' }}
-                buyer={{ label: lang === 'th' ? 'ลูกค้า' : 'TO', name: selQt.customer_name || 'ไม่ระบุ', sub: selQt.phone || '—' }}
-              />
-              <Sec>
-                <SL>{lang === 'th' ? 'รายการสินค้า' : 'ITEMS'}</SL>
-                <ItemHead cols={['รายการ', 'จำนวน', 'ราคา']} />
-                {(selQt.items || []).map((it, i) => (
-                  <ItemRow key={i} name={it.name || it.product_name || `รายการที่ ${i + 1}`} sub={it.sku}
-                    qty={Number(it.qty) || 1} price={it.unit_price ?? it.price} />
-                ))}
-                {(selQt.items || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
-              </Sec>
-              <Sec>
-                <TRow label={lang === 'th' ? 'มูลค่าก่อน VAT' : 'Subtotal'} value={fmtBaht(selQt.subtotal ?? selQt.grand_total)} />
-                <TRow label="VAT 7%" value={fmtBaht(selQt.vat_amount)} />
-              </Sec>
-              <GrandTotal label={lang === 'th' ? 'ยอดรวมทั้งสิ้น' : 'Grand Total'} value={fmtBaht(selQt.grand_total)} />
-              <DocFooter>ใบเสนอราคานี้มีผลตามวันที่ยืนราคา · Anakyn Gems Co., Ltd.</DocFooter>
-            </DocWrapper>
-
-            <Text style={[s.fieldLabel, { marginTop: 16 }]}>{lang === 'th' ? 'อัปเดตสถานะ' : 'Update status'}</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-              {['draft','sent','accepted','rejected','expired'].map(st => {
-                const stStyle = STATUS_STYLE[st] || STATUS_STYLE.draft;
-                return (
-                  <TouchableOpacity key={st} onPress={() => handleUpdateStatus(selQt.id, st)}
-                    style={[s.stBtn, { backgroundColor: selQt.status === st ? stStyle.col : stStyle.bg, borderColor: stStyle.col }]}>
-                    <Text style={[s.stBtnText, { color: selQt.status === st ? '#fff' : stStyle.col }]}>{slabs[st]}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+          <ScrollView style={s.modal} contentContainerStyle={{ paddingTop: 16, paddingBottom: 30 }}>
+            {(() => {
+              const base = Number(selQt.subtotal ?? selQt.grand_total) || 0;
+              const rate = parseFloat(dVatRate) || 0;
+              const vatAmt = dVatOn ? Math.round(base * rate / 100) : 0;
+              const grand = base + vatAmt;
+              const docObj = { ...selQt, subtotal: base, vat_amount: vatAmt, grand_total: grand, vat_applied: dVatOn, vat_rate: rate };
+              return (
+                <>
+                  <DocWrapper>
+                    <DocHeader badge={lang === 'th' ? 'ใบเสนอราคา' : 'QUOTATION'} docNo={selQt.quote_no || selQt.quotation_no}
+                      meta={[
+                        ['วันที่', new Date(selQt.created_at || selQt.issued_at).toLocaleDateString('th-TH')],
+                        ['ยืนราคาถึง', selQt.valid_until ? new Date(selQt.valid_until).toLocaleDateString('th-TH') : '—'],
+                        ['VAT', dVatOn ? `${rate}%` : 'ไม่มี'],
+                      ]} />
+                    <Parties
+                      seller={{ label: lang === 'th' ? 'ผู้เสนอราคา' : 'FROM', name: 'Anakyn Gems Co., Ltd.', sub: '123 ถ.สีลม กรุงเทพฯ 10500' }}
+                      buyer={{ label: lang === 'th' ? 'ลูกค้า' : 'TO', name: selQt.customer_name || 'ไม่ระบุ', sub: selQt.phone || '—' }}
+                    />
+                    <Sec>
+                      <SL>{lang === 'th' ? 'รายการสินค้า' : 'ITEMS'}</SL>
+                      <ItemHead cols={['รายการ', 'จำนวน', 'ราคา']} />
+                      {(selQt.items || []).map((it, i) => (
+                        <ItemRow key={i} name={it.name || it.product_name || `รายการที่ ${i + 1}`} sub={it.sku}
+                          qty={Number(it.qty) || 1} price={it.unit_price ?? it.price} />
+                      ))}
+                      {(selQt.items || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
+                    </Sec>
+                    <Sec>
+                      <TRow label={lang === 'th' ? 'มูลค่าก่อน VAT' : 'Subtotal'} value={fmtBaht(base)} />
+                      <VatRow enabled={dVatOn} rate={dVatRate} amount={vatAmt} onToggle={setDVatOn} onRate={setDVatRate} lang={lang} />
+                    </Sec>
+                    <GrandTotal label={lang === 'th' ? 'ยอดรวมทั้งสิ้น' : 'Grand Total'} value={fmtBaht(grand)} />
+                    <DocFooter>ใบเสนอราคานี้มีผลตามวันที่ยืนราคา · Anakyn Gems Co., Ltd.</DocFooter>
+                  </DocWrapper>
+                  <Text style={[s.fieldLabel, { marginTop: 16 }]}>{lang === 'th' ? 'อัปเดตสถานะ' : 'Update status'}</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                    {['draft','sent','accepted','rejected','expired'].map(st => {
+                      const stStyle = STATUS_STYLE[st] || STATUS_STYLE.draft;
+                      return (
+                        <TouchableOpacity key={st} onPress={() => handleUpdateStatus(selQt.id, st)}
+                          style={[s.stBtn, { backgroundColor: selQt.status === st ? stStyle.col : stStyle.bg, borderColor: stStyle.col }]}>
+                          <Text style={[s.stBtnText, { color: selQt.status === st ? '#fff' : stStyle.col }]}>{slabs[st]}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  <DocActions lang={lang} onPrint={() => printQuotation(docObj)} onSavePdf={() => saveQuotation(docObj)} onBack={() => setSelQt(null)} />
+                </>
+              );
+            })()}
           </ScrollView>
         )}
       </Modal>
@@ -293,9 +308,12 @@ const s = StyleSheet.create({
   addItemBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 10, padding: 10, marginBottom: 8 },
   addItemText:{ fontSize: 12, fontWeight: '500', color: '#550a19' },
   selectedProd: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9f4f5', borderRadius: 8, padding: 8, marginBottom: 6 },
-  vatRow:     { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  vatBtn:     { flex: 1, borderWidth: 0.5, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
+  vatRow:     { flexDirection: 'row', gap: 8, marginBottom: 12, alignItems: 'stretch' },
+  vatBtn:     { flex: 1, borderWidth: 0.5, borderRadius: 10, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' },
   vatBtnText: { fontSize: 12, fontWeight: '500' },
+  rateBox:    { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fdf5f7', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 10, paddingHorizontal: 10 },
+  rateInput:  { fontSize: 14, fontWeight: '600', color: '#550a19', minWidth: 28, textAlign: 'right', paddingVertical: 0 },
+  ratePct:    { fontSize: 12, color: '#a07080', marginLeft: 2 },
   totalBox:   { backgroundColor: '#fdf5f7', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8c0c8', padding: 12, marginBottom: 12 },
   totalRow:   { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
   totalLabel: { fontSize: 12, color: '#806070' },

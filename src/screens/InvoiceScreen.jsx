@@ -3,15 +3,15 @@
 // ══════════════════════════════════════════════════════
 import { useState, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   ActivityIndicator, Modal, FlatList,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
-import { printInvoice } from '../print';
-import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, TRow, GrandTotal, DocFooter, fmtBaht } from '../components/DocLayout';
+import { printInvoice, saveInvoice } from '../print';
+import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, TRow, VatRow, GrandTotal, DocFooter, DocActions, fmtBaht } from '../components/DocLayout';
 
 const T = {
   th: {
@@ -58,9 +58,12 @@ export default function InvoiceScreen({ navigation }) {
   const [showNew, setShowNew]     = useState(false);
   const [selSaleId, setSelSaleId] = useState(null);
   const [vatOn, setVatOn]         = useState(true);
+  const [vatRate, setVatRate]     = useState('7');   // อัตรา VAT ตอนสร้าง (ปรับเองได้)
   const [issuing, setIssuing]     = useState(false);
   const [error, setError]         = useState('');
   const [selInvoice, setSelInvoice] = useState(null);
+  const [dVatOn, setDVatOn]   = useState(true);   // VAT ของหน้ารายละเอียด (ปรับสดได้)
+  const [dVatRate, setDVatRate] = useState('7');
 
   useEffect(() => {
     api.getInvoices().then(setInvoices).finally(() => setLoading(false));
@@ -73,7 +76,7 @@ export default function InvoiceScreen({ navigation }) {
     if (!selSaleId) { setError(lang === 'th' ? 'กรุณาเลือกรายการขาย' : 'Please select a sale'); return; }
     setIssuing(true); setError('');
     try {
-      const inv = await api.createInvoice({ sale_id: selSaleId, vat_enabled: vatOn });
+      const inv = await api.createInvoice({ sale_id: selSaleId, vat_applied: vatOn, vat_rate: parseFloat(vatRate) || 7 });
       setInvoices(prev => [inv, ...prev]);
       setShowNew(false); setSelSaleId(null);
     } catch (err) { setError(err.message || 'ไม่สามารถออกใบกำกับได้'); }
@@ -96,7 +99,13 @@ export default function InvoiceScreen({ navigation }) {
         {invoices.map(inv => {
           const st = STATUS_STYLE[inv.status] || STATUS_STYLE.draft;
           return (
-            <TouchableOpacity key={inv.id} onPress={() => { setSelInvoice(inv); api.getInvoice(inv.id).then(full => setSelInvoice(prev => prev && prev.id === inv.id ? { ...prev, ...full } : prev)).catch(() => {}); }} style={styles.card}>
+            <TouchableOpacity key={inv.id} onPress={() => {
+                const b = Number(inv.subtotal ?? inv.tax_base) || 0;
+                setDVatOn(inv.vat_applied !== false);
+                setDVatRate(b > 0 && Number(inv.vat_amount) > 0 ? String(Math.round(Number(inv.vat_amount) / b * 100)) : '7');
+                setSelInvoice(inv);
+                api.getInvoice(inv.id).then(full => setSelInvoice(prev => prev && prev.id === inv.id ? { ...prev, ...full } : prev)).catch(() => {});
+              }} style={styles.card}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardNo}>{inv.invoice_no}</Text>
                 <Text style={styles.cardSub}>{inv.customer_name || 'ไม่ระบุ'} · {new Date(inv.issued_at).toLocaleDateString('th-TH')}</Text>
@@ -144,6 +153,12 @@ export default function InvoiceScreen({ navigation }) {
                 <Text style={[styles.vatBtnText, { color: vatOn === val ? '#f5e0e5' : '#a07080' }]}>{label}</Text>
               </TouchableOpacity>
             ))}
+            {vatOn && (
+              <View style={styles.rateBox}>
+                <TextInput value={vatRate} onChangeText={setVatRate} keyboardType="numeric" maxLength={5} selectTextOnFocus style={styles.rateInput} />
+                <Text style={styles.ratePct}>%</Text>
+              </View>
+            )}
           </View>
           <TouchableOpacity onPress={handleIssue} disabled={issuing}
             style={[styles.issueBtn, { opacity: issuing ? 0.7 : 1 }]}>
@@ -156,44 +171,45 @@ export default function InvoiceScreen({ navigation }) {
       {/* INVOICE DETAIL MODAL */}
       <Modal visible={!!selInvoice} animationType="slide" presentationStyle="pageSheet">
         {selInvoice && (
-          <ScrollView style={styles.modal} contentContainerStyle={{ paddingBottom: 30 }}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{selInvoice.invoice_no}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                <TouchableOpacity onPress={() => printInvoice(selInvoice)}>
-                  <MaterialCommunityIcons name="printer" size={22} color="#550a19" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setSelInvoice(null)}>
-                  <MaterialCommunityIcons name="close" size={22} color="#550a19" />
-                </TouchableOpacity>
-              </View>
-            </View>
-            <DocWrapper>
-              <DocHeader badge={t.badge} docNo={selInvoice.invoice_no}
-                meta={[
-                  ['วันที่', selInvoice.issued_at ? new Date(selInvoice.issued_at).toLocaleDateString('th-TH') : '—'],
-                  ['อ้างอิง', selInvoice.sale_no || '—'],
-                  ['VAT', selInvoice.vat_applied === false ? 'ไม่มี' : '7%'],
-                ]} />
-              <Parties
-                seller={{ label: t.seller, name: 'Anakyn Gems Co., Ltd.', sub: '123 ถ.สีลม กรุงเทพฯ 10500' }}
-                buyer={{ label: t.buyer, name: selInvoice.customer_name || 'ไม่ระบุ', sub: selInvoice.customer_phone || '—' }}
-              />
-              <Sec>
-                <SL>รายการสินค้า</SL>
-                <ItemHead cols={['รายการ', '', 'ราคา']} />
-                {(selInvoice.items || []).map((item, i) => (
-                  <ItemRow key={i} name={item.product_name || item.name} sub={item.sku} price={item.unit_price ?? item.line_total} />
-                ))}
-                {(selInvoice.items || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
-              </Sec>
-              <Sec>
-                <TRow label={t.subtotal} value={fmtBaht(selInvoice.subtotal ?? selInvoice.grand_total)} />
-                <TRow label={t.vat} value={fmtBaht(selInvoice.vat_amount)} />
-              </Sec>
-              <GrandTotal label={t.grand} value={fmtBaht(selInvoice.grand_total)} />
-              <DocFooter>ขอบคุณที่ใช้บริการ · Anakyn Gems Co., Ltd.</DocFooter>
-            </DocWrapper>
+          <ScrollView style={styles.modal} contentContainerStyle={{ paddingTop: 16, paddingBottom: 30 }}>
+            {(() => {
+              const base = Number(selInvoice.subtotal ?? selInvoice.tax_base ?? selInvoice.grand_total) || 0;
+              const rate = parseFloat(dVatRate) || 0;
+              const vatAmt = dVatOn ? Math.round(base * rate / 100) : 0;
+              const grand = base + vatAmt;
+              const docObj = { ...selInvoice, subtotal: base, vat_amount: vatAmt, grand_total: grand, vat_applied: dVatOn, vat_rate: rate };
+              return (
+                <>
+                  <DocWrapper>
+                    <DocHeader badge={t.badge} docNo={selInvoice.invoice_no}
+                      meta={[
+                        ['วันที่', selInvoice.issued_at ? new Date(selInvoice.issued_at).toLocaleDateString('th-TH') : '—'],
+                        ['อ้างอิง', selInvoice.sale_no || '—'],
+                        ['VAT', dVatOn ? `${rate}%` : 'ไม่มี'],
+                      ]} />
+                    <Parties
+                      seller={{ label: t.seller, name: 'Anakyn Gems Co., Ltd.', sub: '123 ถ.สีลม กรุงเทพฯ 10500' }}
+                      buyer={{ label: t.buyer, name: selInvoice.customer_name || 'ไม่ระบุ', sub: selInvoice.customer_phone || '—' }}
+                    />
+                    <Sec>
+                      <SL>รายการสินค้า</SL>
+                      <ItemHead cols={['รายการ', '', 'ราคา']} />
+                      {(selInvoice.items || []).map((item, i) => (
+                        <ItemRow key={i} name={item.product_name || item.name} sub={item.sku} price={item.unit_price ?? item.line_total} />
+                      ))}
+                      {(selInvoice.items || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
+                    </Sec>
+                    <Sec>
+                      <TRow label={t.subtotal} value={fmtBaht(base)} />
+                      <VatRow enabled={dVatOn} rate={dVatRate} amount={vatAmt} onToggle={setDVatOn} onRate={setDVatRate} lang={lang} />
+                    </Sec>
+                    <GrandTotal label={t.grand} value={fmtBaht(grand)} />
+                    <DocFooter>ขอบคุณที่ใช้บริการ · Anakyn Gems Co., Ltd.</DocFooter>
+                  </DocWrapper>
+                  <DocActions lang={lang} onPrint={() => printInvoice(docObj)} onSavePdf={() => saveInvoice(docObj)} onBack={() => setSelInvoice(null)} />
+                </>
+              );
+            })()}
           </ScrollView>
         )}
       </Modal>
@@ -219,9 +235,12 @@ const styles = StyleSheet.create({
   errText:      { fontSize: 12, color: '#a32d2d' },
   fieldLabel:   { fontSize: 11, color: '#a07080', marginBottom: 4 },
   saleRow:      { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
-  vatRow:       { flexDirection: 'row', gap: 8, marginBottom: 14 },
-  vatBtn:       { flex: 1, borderWidth: 0.5, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  vatRow:       { flexDirection: 'row', gap: 8, marginBottom: 14, alignItems: 'stretch' },
+  vatBtn:       { flex: 1, borderWidth: 0.5, borderRadius: 10, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
   vatBtnText:   { fontSize: 13, fontWeight: '500' },
+  rateBox:      { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fdf5f7', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 10, paddingHorizontal: 10 },
+  rateInput:    { fontSize: 15, fontWeight: '600', color: '#550a19', minWidth: 30, textAlign: 'right', paddingVertical: 0 },
+  ratePct:      { fontSize: 13, color: '#a07080', marginLeft: 2 },
   issueBtn:     { backgroundColor: '#550a19', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   issueBtnText: { fontSize: 15, fontWeight: '500', color: '#fff5f7' },
   docHeader:    { backgroundColor: '#550a19', padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginHorizontal: -16, marginBottom: 0 },

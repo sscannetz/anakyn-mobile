@@ -79,6 +79,7 @@ export const api = {
   // ── Users (admin only) ──
   getUsers: () => request('/users'),
   createUser: (data) => request('/users', { method: 'POST', body: data }),
+  updateUser: (id, data) => request(`/users/${id}`, { method: 'PUT', body: data }),
   deleteUser: (id) => request(`/users/${id}`, { method: 'DELETE' }),
 
   // ── Service Orders ──
@@ -87,6 +88,13 @@ export const api = {
   createServiceOrder: (data) => request('/service-orders', { method: 'POST', body: data }),
   updateServiceStatus: (id, status) =>
     request(`/service-orders/${id}/status`, { method: 'PATCH', body: { status } }),
+  deleteServiceOrder: (id) => request(`/service-orders/${id}`, { method: 'DELETE' }),
+
+  // ── Receipts (ใบเสร็จรับเงิน) ──
+  getReceipts: () => request('/receipts'),
+  getReceipt: (id) => request(`/receipts/${id}`),
+  createReceipt: (data) => request('/receipts', { method: 'POST', body: data }),
+  deleteReceipt: (id) => request(`/receipts/${id}`, { method: 'DELETE' }),
 
   // ── Customers ──
   getCustomers: (search) => request(`/customers${search ? `?search=${search}` : ''}`),

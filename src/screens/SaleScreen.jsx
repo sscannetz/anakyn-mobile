@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════════════
 // SaleScreen.jsx — React Native version of AnakynSalePage
 // ══════════════════════════════════════════════════════
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Modal, FlatList,
@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
+import { normSku } from '../scan';
 
 const T = {
   th: {
@@ -80,7 +81,7 @@ function SecHead({ icon, children }) {
   );
 }
 
-export default function SaleScreen({ navigation }) {
+export default function SaleScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const [lang, setLang] = useState('th');
   const t = T[lang];
@@ -100,6 +101,7 @@ export default function SaleScreen({ navigation }) {
   const [showCustPicker, setShowCustPicker] = useState(false);
   const [custQuery, setCustQuery]         = useState('');
   const [selCustId, setSelCustId]         = useState(null);
+  const [manualCust, setManualCust]       = useState('');   // ชื่อลูกค้าที่พิมพ์เอง (ไม่มีในระบบ)
   const [vatOn, setVatOn]                 = useState(true);
   const [vipOn, setVipOn]                 = useState(true);
   const [extraDisc, setExtraDisc]         = useState('0');
@@ -130,6 +132,27 @@ export default function SaleScreen({ navigation }) {
     setShowPicker(false); setPickerQuery('');
   };
 
+  // ── สแกน QR บนป้าย → หยิบสินค้าชิ้นนั้นใส่ตะกร้าอัตโนมัติ ──
+  const scanSku  = route?.params?.scanSku;
+  const scanned  = useRef(new Set());   // กันเพิ่มซ้ำถ้า effect ถูกเรียกหลายรอบ
+  const [scanNote, setScanNote] = useState(null);  // { ok, text }
+
+  useEffect(() => {
+    if (!scanSku || loadingStock) return;
+    if (scanned.current.has(scanSku)) return;
+    scanned.current.add(scanSku);
+
+    const key = normSku(scanSku);
+    const p = stockList.find(x => normSku(x.sku) === key);
+    if (p) {
+      addToCart(p);
+      setScanNote({ ok: true, text: `${p.name} · ${p.sku}` });
+    } else {
+      setScanNote({ ok: false, text: scanSku });
+    }
+    navigation.setParams({ scanSku: undefined });
+  }, [scanSku, loadingStock, stockList]);
+
   const filteredStock = stockList.filter(p =>
     !pickerQuery.trim() ||
     p.name.toLowerCase().includes(pickerQuery.toLowerCase()) ||
@@ -145,8 +168,9 @@ export default function SaleScreen({ navigation }) {
     if (cartItems.length === 0) { setSaveError(lang === 'th' ? 'กรุณาเพิ่มสินค้าก่อน' : 'Please add items first'); return; }
     setSaving(true); setSaveError(''); setSaveSuccess(false);
     try {
-      await api.createSale({
+      const sale = await api.createSale({
         customer_id: selCustId,
+        customer_name: !selCustId && manualCust.trim() ? manualCust.trim() : undefined,
         items: cartItems.map(it => ({ product_id: it.product_id, qty: 1, unit_price: it.price })),
         vip_discount: vipAmt,
         extra_discount: parseFloat(extraDisc) || 0,
@@ -154,8 +178,25 @@ export default function SaleScreen({ navigation }) {
         payment_methods: selPay.map(key => ({ method: key, amount: grandTotal })),
       });
       setSaveSuccess(true);
-      setCartItems([]); setExtraDisc('0'); setSplitCash('0'); setSplitQr(null);
+      setCartItems([]); setExtraDisc('0'); setSplitCash('0'); setSplitQr(null); setManualCust(''); setCustQuery('');
       api.getProducts({ available: 'true' }).then(setStockList);
+      // ── ออกใบเสร็จอัตโนมัติ แล้วเด้งไปหน้าใบเสร็จเพื่อสั่งปริ้น ──
+      try {
+        const payMap = { cash: 'cash', qr: 'transfer', transfer: 'transfer', card: 'card' };
+        const rc = await api.createReceipt({
+          sale_id: sale.id,
+          payment_method: payMap[selPay[0]] || 'other',
+        });
+        if (rc && rc.id) {
+          navigation.navigate('Receipt', { openReceiptId: rc.id });
+        } else {
+          navigation.navigate('Receipt');
+        }
+      } catch (e) {
+        // การขายบันทึกแล้ว แต่ออกใบเสร็จอัตโนมัติไม่สำเร็จ — แจ้งให้เห็น (ไม่เงียบ) + พาไปหน้าใบเสร็จให้ออกเอง
+        setSaveError((lang === 'th' ? 'บันทึกการขายแล้ว แต่ออกใบเสร็จอัตโนมัติไม่สำเร็จ: ' : 'Sale saved but auto-receipt failed: ') + (e?.message || ''));
+        navigation.navigate('Receipt');
+      }
     } catch (err) {
       setSaveError(err.message || 'ไม่สามารถบันทึกการขายได้');
     } finally {
@@ -171,6 +212,23 @@ export default function SaleScreen({ navigation }) {
 
         {!!saveError && <View style={s.errBox}><Text style={s.errText}>{saveError}</Text></View>}
         {saveSuccess && <View style={s.okBox}><Text style={s.okText}>{t.saveSuccess}</Text></View>}
+
+        {/* แจ้งผลการสแกน QR จากป้ายสินค้า */}
+        {!!scanNote && (
+          <View style={[s.scanBox, !scanNote.ok && s.scanBoxErr]}>
+            <MaterialCommunityIcons
+              name={scanNote.ok ? 'qrcode-scan' : 'alert-circle-outline'}
+              size={16} color={scanNote.ok ? '#1a5c28' : '#a32d2d'} />
+            <Text style={[s.scanText, !scanNote.ok && { color: '#a32d2d' }]}>
+              {scanNote.ok
+                ? (lang === 'th' ? `เพิ่มจากการสแกน: ${scanNote.text}` : `Added from scan: ${scanNote.text}`)
+                : (lang === 'th' ? `ไม่พบสินค้า ${scanNote.text} ในสต๊อก (อาจขายไปแล้ว)` : `Product ${scanNote.text} not found in stock`)}
+            </Text>
+            <TouchableOpacity onPress={() => setScanNote(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <MaterialCommunityIcons name="close" size={14} color={scanNote.ok ? '#1a5c28' : '#a32d2d'} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* ADD ITEMS */}
         <Sec>
@@ -218,10 +276,61 @@ export default function SaleScreen({ navigation }) {
         {/* CUSTOMER */}
         <Sec>
           <SecHead icon="account">{t.customer}</SecHead>
-          <TouchableOpacity onPress={() => setShowCustPicker(true)} style={s.searchBar}>
-            <MaterialCommunityIcons name="magnify" size={15} color="#b08090" />
-            <Text style={s.searchPh}>{t.searchMember}</Text>
-          </TouchableOpacity>
+          {/* พิมพ์ = ค้นหาในตัว + ใช้ชื่อที่พิมพ์เองได้ (ลูกค้า walk-in) */}
+          {!selCust && !manualCust && (
+            <>
+              <View style={s.searchBar}>
+                <MaterialCommunityIcons name="magnify" size={15} color="#b08090" />
+                <TextInput
+                  style={s.searchInput}
+                  value={custQuery}
+                  onChangeText={setCustQuery}
+                  placeholder={t.searchMember}
+                  placeholderTextColor="#b08090"
+                />
+                {!!custQuery && (
+                  <TouchableOpacity onPress={() => setCustQuery('')}>
+                    <MaterialCommunityIcons name="close-circle" size={15} color="#c0a0a8" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {!!custQuery.trim() && (
+                <View style={s.custResults}>
+                  {filteredCusts.slice(0, 5).map(c => (
+                    <TouchableOpacity key={c.id} onPress={() => { setSelCustId(c.id); setCustQuery(''); }} style={s.custResultRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.custName}>{c.full_name}</Text>
+                        <Text style={s.custSub}>{c.phone || '—'}</Text>
+                      </View>
+                      {c.is_vip && <View style={s.vipBadge}><Text style={s.vipText}>VIP</Text></View>}
+                    </TouchableOpacity>
+                  ))}
+                  {/* ไม่มีในระบบ → ใช้ชื่อที่พิมพ์ */}
+                  <TouchableOpacity onPress={() => { setManualCust(custQuery.trim()); setCustQuery(''); }} style={s.custAddRow}>
+                    <MaterialCommunityIcons name="account-plus" size={15} color="#550a19" />
+                    <Text style={s.custAddText}>
+                      {lang === 'th' ? `ใช้ชื่อ "${custQuery.trim()}"` : `Use "${custQuery.trim()}"`}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
+          )}
+          {/* ลูกค้าที่พิมพ์ชื่อเอง */}
+          {manualCust && !selCust && (
+            <View style={s.custCard}>
+              <View style={s.custAvatar}>
+                <Text style={s.custAvatarText}>{initials(manualCust)}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.custName}>{manualCust}</Text>
+                <Text style={s.custSub}>{lang === 'th' ? 'ลูกค้าใหม่ (พิมพ์เอง)' : 'New customer'}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setManualCust('')} style={s.removeBtn}>
+                <MaterialCommunityIcons name="close" size={10} color="#550a19" />
+              </TouchableOpacity>
+            </View>
+          )}
           {selCust ? (
             <View style={s.custCard}>
               <View style={s.custAvatar}>
@@ -238,9 +347,9 @@ export default function SaleScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
             </View>
-          ) : (
+          ) : (!manualCust && !custQuery.trim() && (
             <Text style={[s.emptyText, { marginBottom: 0 }]}>{t.noCustomer}</Text>
-          )}
+          ))}
 
           {selCust?.is_vip && (
             <View style={s.toggleRow}>
@@ -429,11 +538,19 @@ const s = StyleSheet.create({
   errText: { fontSize: 12, color: '#a32d2d' },
   okBox:  { backgroundColor: '#e8f5e9', borderWidth: 0.5, borderColor: '#a8d8b0', borderRadius: 8, padding: 10, marginBottom: 10 },
   okText: { fontSize: 12, color: '#1a5c28' },
+  scanBox:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#e8f5e9', borderWidth: 0.5, borderColor: '#a8d8b0', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9, marginBottom: 10 },
+  scanBoxErr: { backgroundColor: '#fdf0f2', borderColor: '#e8c0c8' },
+  scanText:   { flex: 1, fontSize: 12, color: '#1a5c28', fontWeight: '500' },
   sec: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 12, marginBottom: 10 },
   secHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   secHeadText: { fontSize: 11, fontWeight: '500', color: '#550a19', letterSpacing: 1.5 },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#f9f4f5', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 10, marginBottom: 8 },
   searchPh: { fontSize: 13, color: '#b08090' },
+  searchInput:   { flex: 1, fontSize: 13, color: '#2c1015', paddingVertical: 0 },
+  custResults:   { borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10, marginTop: 6, overflow: 'hidden', backgroundColor: '#fff' },
+  custResultRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
+  custAddRow:    { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, paddingVertical: 11, backgroundColor: '#fdf0f2' },
+  custAddText:   { fontSize: 13, fontWeight: '600', color: '#550a19' },
   fromStockBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8c0c8', padding: 10, marginBottom: 10 },
   fromStockText: { fontSize: 12, fontWeight: '500', color: '#550a19' },
   cartCard: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1.5, borderColor: '#550a19', padding: 12, marginBottom: 8 },

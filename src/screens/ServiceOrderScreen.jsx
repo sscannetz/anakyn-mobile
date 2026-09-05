@@ -10,8 +10,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
-import { printServiceOrder } from '../print';
-import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, InfoRow, GrandTotal, DocFooter, fmtBaht } from '../components/DocLayout';
+import { printServiceOrder, saveServiceOrder } from '../print';
+import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, InfoRow, TRow, VatRow, GrandTotal, DocFooter, DocActions, fmtBaht } from '../components/DocLayout';
 
 const STATUS_STYLE = {
   received:  { bg: '#fff8e1', col: '#854F0B' },
@@ -39,6 +39,8 @@ export default function ServiceOrderScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [selSO, setSelSO]   = useState(null);
+  const [dVatOn, setDVatOn]   = useState(false);
+  const [dVatRate, setDVatRate] = useState('7');
   const [custName, setCustName]   = useState('');
   const [custPhone, setCustPhone] = useState('');
   const [prodName, setProdName]   = useState('');
@@ -47,6 +49,7 @@ export default function ServiceOrderScreen({ navigation }) {
   const [dueDate, setDueDate]     = useState('');
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState('');
+  const [confirmDel, setConfirmDel] = useState(false);  // แตะครั้งแรก = ขอยืนยัน, ครั้งที่สอง = ลบจริง
   const slabs = STATUS_LABELS[lang];
 
   useEffect(() => {
@@ -82,6 +85,20 @@ export default function ServiceOrderScreen({ navigation }) {
     } catch (_) {}
   };
 
+  const handleDelete = async () => {
+    if (!confirmDel) {
+      setConfirmDel(true);
+      setTimeout(() => setConfirmDel(false), 4000);  // ไม่ยืนยันใน 4 วิ → รีเซ็ต
+      return;
+    }
+    try {
+      await api.deleteServiceOrder(selSO.id);
+      setOrders(prev => prev.filter(o => o.id !== selSO.id));
+      setSelSO(null);
+    } catch (_) {}
+    setConfirmDel(false);
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
       <Header title={lang === 'th' ? 'ใบสั่งซ่อม' : 'Service Order'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')}
@@ -97,7 +114,7 @@ export default function ServiceOrderScreen({ navigation }) {
         {orders.map(o => {
           const st = STATUS_STYLE[o.status] || STATUS_STYLE.received;
           return (
-            <TouchableOpacity key={o.id} onPress={() => setSelSO(o)} style={s.card}>
+            <TouchableOpacity key={o.id} onPress={() => { setDVatOn(false); setDVatRate('7'); setConfirmDel(false); setSelSO(o); }} style={s.card}>
               <View style={{ flex: 1 }}>
                 <Text style={s.cardNo}>{o.service_no}</Text>
                 <Text style={s.cardTitle}>{o.product_name || '—'}</Text>
@@ -149,58 +166,70 @@ export default function ServiceOrderScreen({ navigation }) {
       {/* DETAIL MODAL */}
       <Modal visible={!!selSO} animationType="slide" presentationStyle="pageSheet">
         {selSO && (
-          <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 30 }}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>{selSO.service_no}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                <TouchableOpacity onPress={() => printServiceOrder(selSO)}>
-                  <MaterialCommunityIcons name="printer" size={22} color="#550a19" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setSelSO(null)}>
-                  <MaterialCommunityIcons name="close" size={22} color="#550a19" />
-                </TouchableOpacity>
-              </View>
-            </View>
-            <DocWrapper>
-              <DocHeader badge={lang === 'th' ? 'ใบสั่งซ่อม' : 'SERVICE ORDER'} docNo={selSO.service_no}
-                meta={[
-                  ['วันที่รับ', new Date(selSO.received_at || selSO.created_at).toLocaleDateString('th-TH')],
-                  ['นัดรับ', selSO.pickup_date ? new Date(selSO.pickup_date).toLocaleDateString('th-TH') : '—'],
-                  ['สถานะ', slabs[selSO.status] || selSO.status || '—'],
-                ]} />
-              <Parties
-                buyer={{ label: lang === 'th' ? 'ลูกค้า' : 'CUSTOMER', name: selSO.customer_name || 'ไม่ระบุ', sub: selSO.customer_phone || '—' }}
-              />
-              <Sec>
-                <InfoRow label={lang === 'th' ? 'สินค้าที่ซ่อม' : 'Item'} value={selSO.product_name} />
-                {!!selSO.issue_description && <InfoRow label={lang === 'th' ? 'อาการ / ปัญหา' : 'Issue'} value={selSO.issue_description} />}
-              </Sec>
-              <Sec>
-                <SL>{lang === 'th' ? 'รายการซ่อม / บริการ' : 'SERVICES'}</SL>
-                <ItemHead cols={['รายการ', '', 'ค่าบริการ']} />
-                {(selSO.services || []).map((sv, i) => (
-                  <ItemRow key={i} name={sv.name || `บริการที่ ${i + 1}`}
-                    price={sv.is_warranty ? 0 : sv.price}
-                    sub={sv.is_warranty ? (lang === 'th' ? 'ประกัน (ฟรี)' : 'Warranty') : null} />
-                ))}
-                {(selSO.services || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
-              </Sec>
-              <GrandTotal label={lang === 'th' ? 'ค่าซ่อมรวม' : 'Total'} value={fmtBaht(selSO.total_cost ?? selSO.estimated_cost)} />
-              <DocFooter>ใบสั่งซ่อม · Anakyn Gems Co., Ltd.</DocFooter>
-            </DocWrapper>
-
-            <Text style={[s.fieldLabel, { marginTop: 16 }]}>{lang === 'th' ? 'อัปเดตสถานะ' : 'Update status'}</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-              {['received','repairing','qc','notified','picked_up'].map(st => {
-                const stStyle = STATUS_STYLE[st];
-                return (
-                  <TouchableOpacity key={st} onPress={() => handleUpdateStatus(selSO.id, st)}
-                    style={[s.stBtn, { backgroundColor: selSO.status === st ? stStyle.col : stStyle.bg, borderColor: stStyle.col }]}>
-                    <Text style={[s.stBtnText, { color: selSO.status === st ? '#fff' : stStyle.col }]}>{slabs[st]}</Text>
+          <ScrollView style={s.modal} contentContainerStyle={{ paddingTop: 16, paddingBottom: 30 }}>
+            {(() => {
+              const base = Number(selSO.total_cost ?? selSO.estimated_cost) || 0;
+              const rate = parseFloat(dVatRate) || 0;
+              const vatAmt = dVatOn ? Math.round(base * rate / 100) : 0;
+              const grand = base + vatAmt;
+              const docObj = { ...selSO, base_cost: base, vat_amount: vatAmt, grand_total: grand, vat_applied: dVatOn, vat_rate: rate };
+              return (
+                <>
+                  <DocWrapper>
+                    <DocHeader badge={lang === 'th' ? 'ใบสั่งซ่อม' : 'SERVICE ORDER'} docNo={selSO.service_no}
+                      meta={[
+                        ['วันที่รับ', new Date(selSO.received_at || selSO.created_at).toLocaleDateString('th-TH')],
+                        ['นัดรับ', selSO.pickup_date ? new Date(selSO.pickup_date).toLocaleDateString('th-TH') : '—'],
+                        ['VAT', dVatOn ? `${rate}%` : 'ไม่มี'],
+                      ]} />
+                    <Parties
+                      buyer={{ label: lang === 'th' ? 'ลูกค้า' : 'CUSTOMER', name: selSO.customer_name || 'ไม่ระบุ', sub: selSO.customer_phone || '—' }}
+                    />
+                    <Sec>
+                      <InfoRow label={lang === 'th' ? 'สินค้าที่ซ่อม' : 'Item'} value={selSO.product_name} />
+                      {!!selSO.issue_description && <InfoRow label={lang === 'th' ? 'อาการ / ปัญหา' : 'Issue'} value={selSO.issue_description} />}
+                    </Sec>
+                    <Sec>
+                      <SL>{lang === 'th' ? 'รายการซ่อม / บริการ' : 'SERVICES'}</SL>
+                      <ItemHead cols={['รายการ', '', 'ค่าบริการ']} />
+                      {(selSO.services || []).map((sv, i) => (
+                        <ItemRow key={i} name={sv.name || `บริการที่ ${i + 1}`}
+                          price={sv.is_warranty ? 0 : sv.price}
+                          sub={sv.is_warranty ? (lang === 'th' ? 'ประกัน (ฟรี)' : 'Warranty') : null} />
+                      ))}
+                      {(selSO.services || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
+                    </Sec>
+                    <Sec>
+                      <TRow label={lang === 'th' ? 'ค่าซ่อม' : 'Service cost'} value={fmtBaht(base)} />
+                      <VatRow enabled={dVatOn} rate={dVatRate} amount={vatAmt} onToggle={setDVatOn} onRate={setDVatRate} lang={lang} />
+                    </Sec>
+                    <GrandTotal label={lang === 'th' ? 'ยอดรวมทั้งสิ้น' : 'Grand Total'} value={fmtBaht(grand)} />
+                    <DocFooter>ใบสั่งซ่อม · Anakyn Gems Co., Ltd.</DocFooter>
+                  </DocWrapper>
+                  <Text style={[s.fieldLabel, { marginTop: 16 }]}>{lang === 'th' ? 'อัปเดตสถานะ' : 'Update status'}</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                    {['received','repairing','qc','notified','picked_up'].map(st => {
+                      const stStyle = STATUS_STYLE[st];
+                      return (
+                        <TouchableOpacity key={st} onPress={() => handleUpdateStatus(selSO.id, st)}
+                          style={[s.stBtn, { backgroundColor: selSO.status === st ? stStyle.col : stStyle.bg, borderColor: stStyle.col }]}>
+                          <Text style={[s.stBtnText, { color: selSO.status === st ? '#fff' : stStyle.col }]}>{slabs[st]}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  <DocActions lang={lang} onPrint={() => printServiceOrder(docObj)} onSavePdf={() => saveServiceOrder(docObj)} onBack={() => setSelSO(null)} />
+                  <TouchableOpacity onPress={handleDelete} style={[s.delBtn, confirmDel && s.delBtnConfirm]} activeOpacity={0.85}>
+                    <MaterialCommunityIcons name="trash-can-outline" size={16} color={confirmDel ? '#fff' : '#a32d2d'} />
+                    <Text style={[s.delBtnText, confirmDel && { color: '#fff' }]}>
+                      {confirmDel
+                        ? (lang === 'th' ? 'แตะอีกครั้งเพื่อยืนยันลบ' : 'Tap again to confirm')
+                        : (lang === 'th' ? 'ลบใบสั่งซ่อม' : 'Delete')}
+                    </Text>
                   </TouchableOpacity>
-                );
-              })}
-            </View>
+                </>
+              );
+            })()}
           </ScrollView>
         )}
       </Modal>
@@ -230,4 +259,7 @@ const s = StyleSheet.create({
   createBtnText: { fontSize: 15, fontWeight: '500', color: '#fff5f7' },
   stBtn:      { borderWidth: 0.5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   stBtnText:  { fontSize: 12, fontWeight: '500' },
+  delBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e8c0c8', backgroundColor: '#fff' },
+  delBtnConfirm: { backgroundColor: '#a32d2d', borderColor: '#a32d2d' },
+  delBtnText: { fontSize: 13, fontWeight: '600', color: '#a32d2d' },
 });
