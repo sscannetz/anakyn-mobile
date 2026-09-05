@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════════════
 // StockScreen.jsx — React Native version of AnakynAddStock
 // ══════════════════════════════════════════════════════
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Image, Modal, FlatList, Alert,
@@ -141,6 +141,44 @@ export default function StockScreen({ navigation }) {
     setTagSel(prev => { const nx = { ...prev }; if (n <= 0) delete nx[id]; else nx[id] = Math.min(99, n); return nx; });
   // กด + ที่รายการสินค้า → เพิ่มเข้าคิวรอพิมพ์ทีละ 1 ดวง
   const addTag = (id) => setCopies(id, (tagSel[id] || 0) + 1);
+
+  // ── ปรับจำนวนคงเหลือในสต๊อก (+/−) ──
+  // อัปเดตหน้าจอทันที แล้วค่อยบันทึกขึ้นเซิร์ฟเวอร์หลังหยุดกด 0.6 วิ
+  // (กดรัว ๆ 5 ครั้ง จะยิง API แค่ครั้งเดียวด้วยค่าสุดท้าย)
+  const qtyRef    = useRef({});   // id → จำนวนล่าสุดที่ผู้ใช้กด
+  const qtyTimer  = useRef({});   // id → timer
+  const [qtySaving, setQtySaving] = useState({});
+  const [qtyErr, setQtyErr]       = useState('');
+
+  const bumpQty = (p, delta) => {
+    const cur  = qtyRef.current[p.id] ?? (parseInt(p.stock_qty, 10) || 0);
+    const next = Math.max(0, cur + delta);
+    if (next === cur) return;
+    qtyRef.current[p.id] = next;
+    setStockList(prev => prev.map(x => (x.id === p.id ? { ...x, stock_qty: next } : x)));
+    setQtyErr('');
+    setQtySaving(b => ({ ...b, [p.id]: true }));
+
+    clearTimeout(qtyTimer.current[p.id]);
+    qtyTimer.current[p.id] = setTimeout(async () => {
+      try {
+        const saved = await api.updateProduct(p.id, { stock_qty: qtyRef.current[p.id] });
+        setStockList(prev => prev.map(x => (x.id === p.id ? { ...x, ...saved } : x)));
+        delete qtyRef.current[p.id];
+      } catch (e) {
+        setQtyErr(e?.message || (lang === 'th' ? 'บันทึกจำนวนไม่สำเร็จ' : 'Failed to save quantity'));
+        // ดึงค่าจริงจากเซิร์ฟเวอร์กลับมา กันตัวเลขบนจอเพี้ยนจากของจริง
+        api.getProducts()
+          .then(data => { qtyRef.current = {}; setStockList(data); })
+          .catch(() => {});
+      } finally {
+        setQtySaving(b => { const n = { ...b }; delete n[p.id]; return n; });
+      }
+    }, 600);
+  };
+
+  // เคลียร์ timer ที่ค้างอยู่ตอนออกจากหน้า
+  useEffect(() => () => Object.values(qtyTimer.current).forEach(clearTimeout), []);
 
   const [goldPrice, setGoldPrice]   = useState('67300');
   const [silverPrice, setSilverPrice] = useState('33.50');
@@ -507,15 +545,42 @@ export default function StockScreen({ navigation }) {
             </View>
           )}
           {loadingList && <ActivityIndicator color="#550a19" />}
+          {!!qtyErr && (
+            <View style={s.qtyErrBox}>
+              <MaterialCommunityIcons name="alert-circle-outline" size={14} color="#a32d2d" />
+              <Text style={s.qtyErrText}>{qtyErr}</Text>
+            </View>
+          )}
           {stockList.slice(0, 8).map(p => {
-            const n = tagSel[p.id] || 0;
+            const n   = tagSel[p.id] || 0;
+            const qty = parseInt(p.stock_qty, 10) || 0;
             return (
               <View key={p.id} style={s.stockItem}>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={s.stockName} numberOfLines={1}>{p.name}</Text>
-                  <Text style={s.stockSku}>{p.sku} · คงเหลือ {p.stock_qty}</Text>
+                  <Text style={s.stockSku}>{p.sku}</Text>
                 </View>
-                <Text style={s.stockPrice}>฿{fmt(p.sale_price)}</Text>
+
+                <View style={{ alignItems: 'flex-end', gap: 5 }}>
+                  <Text style={s.stockPrice}>฿{fmt(p.sale_price)}</Text>
+                  {/* ปรับจำนวนคงเหลือ */}
+                  <View style={s.qtyRow}>
+                    <TouchableOpacity onPress={() => bumpQty(p, -1)} disabled={qty <= 0}
+                      style={[s.qtyBtn, qty <= 0 && { opacity: 0.35 }]}
+                      hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
+                      <MaterialCommunityIcons name="minus" size={13} color="#550a19" />
+                    </TouchableOpacity>
+                    <View style={s.qtyValWrap}>
+                      <Text style={[s.qtyVal, qty === 0 && { color: '#c62828' }]}>{qty}</Text>
+                      {qtySaving[p.id] && <View style={s.qtyDot} />}
+                    </View>
+                    <TouchableOpacity onPress={() => bumpQty(p, 1)} style={s.qtyBtn}
+                      hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
+                      <MaterialCommunityIcons name="plus" size={13} color="#550a19" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
                 <TouchableOpacity onPress={() => addTag(p.id)} activeOpacity={0.7}
                   style={[s.rowAddBtn, n > 0 && s.rowAddBtnOn]}
                   hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}>
@@ -748,10 +813,17 @@ const s = StyleSheet.create({
   profitVal:  { fontSize: 12, fontWeight: '500' },
   saveBtn: { backgroundColor: '#550a19', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 },
   saveBtnText: { fontSize: 15, fontWeight: '500', color: '#fff5f7' },
-  stockItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
+  stockItem: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
   stockName: { fontSize: 12, fontWeight: '500', color: '#2c1015' },
   stockSku:  { fontSize: 10, color: '#a07080' },
   stockPrice:{ fontSize: 13, fontWeight: '500', color: '#550a19' },
+  qtyRow:      { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9f4f5', borderRadius: 8, borderWidth: 0.5, borderColor: '#e8d5d9' },
+  qtyBtn:      { paddingHorizontal: 7, paddingVertical: 5 },
+  qtyValWrap:  { minWidth: 24, alignItems: 'center', justifyContent: 'center' },
+  qtyVal:      { fontSize: 12, fontWeight: '700', color: '#2c1015' },
+  qtyDot:      { position: 'absolute', top: -1, right: -1, width: 5, height: 5, borderRadius: 3, backgroundColor: '#e0a020' },
+  qtyErrBox:   { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 8 },
+  qtyErrText:  { flex: 1, fontSize: 11, color: '#a32d2d' },
   rowAddBtn:   { marginLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 7, paddingVertical: 5, borderRadius: 8, backgroundColor: '#f0eeff', borderWidth: 0.5, borderColor: '#d8d0f5', minWidth: 30, justifyContent: 'center' },
   rowAddBtnOn: { backgroundColor: '#534AB7', borderColor: '#534AB7' },
   rowAddCount: { fontSize: 11, fontWeight: '700', color: '#fff' },
