@@ -25,8 +25,34 @@ export function shortSku(sku) {
 // ทำให้เทียบ SKU ได้ไม่ว่าจะเป็นรูปเต็มหรือรูปย่อ / พิมพ์เล็กใหญ่
 export const normSku = (sku) => shortSku(sku).toLowerCase();
 
+// แยก SKU เป็น 2 บรรทัดสำหรับป้ายสินค้า
+//   "ANAKYN#0207" → { brand: 'ANAKYN', code: '#0207' }
+//   รูปแบบอื่น    → { brand: '',       code: <SKU เดิม> }
+export function splitSku(sku) {
+  const s = String(sku || '').trim();
+  if (!s.toUpperCase().startsWith(SKU_PREFIX)) return { brand: '', code: s };
+  return { brand: SKU_PREFIX.replace('#', ''), code: '#' + s.slice(SKU_PREFIX.length) };
+}
+
 // URL ที่ฝังลง QR ของสินค้า 1 ชิ้น
 export const tagSaleUrl = (sku) => `${WEB_URL}/?s=${encodeURIComponent(shortSku(sku))}`;
+
+// แปลงสิ่งที่สแกนได้ให้เป็น "รหัสสินค้า"
+//   รับได้ทั้ง URL จากป้าย (https://.../?s=0143) และรหัสดิบ (ANAKYN#0143 / 0143)
+export function parseScanned(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return '';
+  if (/^https?:\/\//i.test(s)) {
+    try {
+      const u = new URL(s);
+      return (u.searchParams.get('s') || u.searchParams.get('sku') || '').trim();
+    } catch (_) {
+      const m = s.match(/[?&]s(?:ku)?=([^&#]+)/i);
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+  }
+  return s;
+}
 
 // ── อ่านรหัสสินค้าจาก URL ครั้งเดียวตอนเปิดแอป (เว็บเท่านั้น) ──
 let pendingSku = null;

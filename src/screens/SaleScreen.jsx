@@ -4,13 +4,14 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, Modal, FlatList,
+  StyleSheet, ActivityIndicator, Modal, FlatList, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
+import QrScanner from '../components/QrScanner';
 import { api } from '../api';
-import { normSku } from '../scan';
+import { normSku, parseScanned } from '../scan';
 
 const T = {
   th: {
@@ -132,26 +133,69 @@ export default function SaleScreen({ navigation, route }) {
     setShowPicker(false); setPickerQuery('');
   };
 
-  // ── สแกน QR บนป้าย → หยิบสินค้าชิ้นนั้นใส่ตะกร้าอัตโนมัติ ──
-  const scanSku  = route?.params?.scanSku;
-  const scanned  = useRef(new Set());   // กันเพิ่มซ้ำถ้า effect ถูกเรียกหลายรอบ
-  const [scanNote, setScanNote] = useState(null);  // { ok, text }
+  // ══════════ สแกน QR บนป้ายสินค้า ══════════
+  // ใช้ร่วมกัน 3 ทาง: (1) ลิงก์จากป้าย (2) กล้องในหน้าเว็บ (3) เครื่องสแกนบาร์โค้ด USB
+  const [scanNote, setScanNote] = useState(null);   // { ok } | { reason }
+  const [scanOpen, setScanOpen] = useState(false);  // เปิดกล้องในหน้า
+  const stockRef = useRef(stockList);
+  stockRef.current = stockList;
 
-  useEffect(() => {
-    if (!scanSku || loadingStock) return;
-    if (scanned.current.has(scanSku)) return;
-    scanned.current.add(scanSku);
+  // เพิ่มสินค้าลงตะกร้าจากรหัสที่สแกนได้ (รับได้ทั้ง URL จากป้าย และรหัสดิบ)
+  const addBySku = async (raw) => {
+    const code = parseScanned(raw);
+    const key  = normSku(code);
+    if (!key) { setScanNote({ reason: 'notfound', text: String(raw).slice(0, 40) }); return; }
+    const use = (p) => { addToCart(p); setScanNote({ ok: true, text: `${p.name} · ${p.sku}` }); };
 
-    const key = normSku(scanSku);
-    const p = stockList.find(x => normSku(x.sku) === key);
-    if (p) {
-      addToCart(p);
-      setScanNote({ ok: true, text: `${p.name} · ${p.sku}` });
-    } else {
-      setScanNote({ ok: false, text: scanSku });
+    // 1) หาในรายการ "พร้อมขาย" ที่โหลดไว้แล้วก่อน
+    const local = stockRef.current.find(x => normSku(x.sku) === key);
+    if (local) { use(local); return; }
+
+    // 2) ไม่เจอ → ถามเซิร์ฟเวอร์ตรง ๆ (เผื่อสินค้าถูกปิดขาย / รายการยังไม่อัปเดต)
+    setScanNote({ reason: 'busy', text: code });
+    try {
+      const rows = await api.getProducts({ search: key });
+      const hit = (rows || []).find(x => normSku(x.sku) === key);
+      if (!hit) { setScanNote({ reason: 'notfound', text: code }); return; }
+      if (hit.is_available === false) { setScanNote({ reason: 'sold', text: `${hit.name} · ${hit.sku}` }); return; }
+      use(hit);
+    } catch (_) {
+      setScanNote({ reason: 'error', text: code });
     }
+  };
+
+  // (1) เปิดเว็บมาจากลิงก์บนป้าย — ทำครั้งเดียวหลังโหลดสต๊อกเสร็จ
+  const scanSku = route?.params?.scanSku;
+  const linkDone = useRef(new Set());
+  useEffect(() => {
+    if (!scanSku || loadingStock || linkDone.current.has(scanSku)) return;
+    linkDone.current.add(scanSku);
     navigation.setParams({ scanSku: undefined });
+    addBySku(scanSku);
   }, [scanSku, loadingStock, stockList]);
+
+  // (3) เครื่องสแกนบาร์โค้ด USB — ทำตัวเหมือนคีย์บอร์ด พิมพ์รวดเดียวแล้วกด Enter
+  //     ข้ามไปถ้ากำลังพิมพ์อยู่ในช่องกรอก (เช่น ชื่อลูกค้า) จะได้ไม่รบกวนกัน
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    let buf = '', last = 0;
+    const onKey = (e) => {
+      const el = document.activeElement;
+      const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+      const now = Date.now();
+      if (now - last > 120) buf = '';   // เว้นช่วงนาน = คนพิมพ์เอง ไม่ใช่เครื่องสแกน
+      last = now;
+      if (e.key === 'Enter') {
+        const code = buf.trim();
+        buf = '';
+        if (!typing && code.length >= 3) addBySku(code);
+        return;
+      }
+      if (e.key.length === 1) buf += e.key;
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   const filteredStock = stockList.filter(p =>
     !pickerQuery.trim() ||
@@ -214,21 +258,28 @@ export default function SaleScreen({ navigation, route }) {
         {saveSuccess && <View style={s.okBox}><Text style={s.okText}>{t.saveSuccess}</Text></View>}
 
         {/* แจ้งผลการสแกน QR จากป้ายสินค้า */}
-        {!!scanNote && (
-          <View style={[s.scanBox, !scanNote.ok && s.scanBoxErr]}>
-            <MaterialCommunityIcons
-              name={scanNote.ok ? 'qrcode-scan' : 'alert-circle-outline'}
-              size={16} color={scanNote.ok ? '#1a5c28' : '#a32d2d'} />
-            <Text style={[s.scanText, !scanNote.ok && { color: '#a32d2d' }]}>
-              {scanNote.ok
-                ? (lang === 'th' ? `เพิ่มจากการสแกน: ${scanNote.text}` : `Added from scan: ${scanNote.text}`)
-                : (lang === 'th' ? `ไม่พบสินค้า ${scanNote.text} ในสต๊อก (อาจขายไปแล้ว)` : `Product ${scanNote.text} not found in stock`)}
-            </Text>
-            <TouchableOpacity onPress={() => setScanNote(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <MaterialCommunityIcons name="close" size={14} color={scanNote.ok ? '#1a5c28' : '#a32d2d'} />
-            </TouchableOpacity>
-          </View>
-        )}
+        {!!scanNote && (() => {
+          const th = lang === 'th';
+          const M = {
+            busy:     { icon: 'magnify',              msg: th ? `กำลังค้นหา ${scanNote.text}...` : `Searching ${scanNote.text}...` },
+            notfound: { icon: 'alert-circle-outline', msg: th ? `ไม่พบรหัส ${scanNote.text} ในระบบ — ตรวจว่าป้ายนี้เป็นของสินค้าที่บันทึกไว้แล้วหรือยัง` : `Code ${scanNote.text} not found` },
+            sold:     { icon: 'cart-off',             msg: th ? `${scanNote.text} — สินค้านี้ถูกปิดการขายไว้ (อาจขายไปแล้ว)` : `${scanNote.text} — item is not available` },
+            error:    { icon: 'wifi-off',             msg: th ? `ค้นหาไม่สำเร็จ (${scanNote.text}) — เช็กอินเทอร์เน็ตแล้วสแกนใหม่` : `Lookup failed (${scanNote.text})` },
+          };
+          const info = scanNote.ok
+            ? { icon: 'qrcode-scan', msg: th ? `เพิ่มจากการสแกน: ${scanNote.text}` : `Added from scan: ${scanNote.text}` }
+            : M[scanNote.reason] || M.notfound;
+          const good = scanNote.ok || scanNote.reason === 'busy';
+          return (
+            <View style={[s.scanBox, !good && s.scanBoxErr]}>
+              <MaterialCommunityIcons name={info.icon} size={16} color={good ? '#1a5c28' : '#a32d2d'} />
+              <Text style={[s.scanText, !good && { color: '#a32d2d' }]}>{info.msg}</Text>
+              <TouchableOpacity onPress={() => setScanNote(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <MaterialCommunityIcons name="close" size={14} color={good ? '#1a5c28' : '#a32d2d'} />
+              </TouchableOpacity>
+            </View>
+          );
+        })()}
 
         {/* ADD ITEMS */}
         <Sec>
@@ -237,10 +288,16 @@ export default function SaleScreen({ navigation, route }) {
             <MaterialCommunityIcons name="magnify" size={15} color="#b08090" />
             <Text style={s.searchPh}>{t.searchItem}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowPicker(true)} style={s.fromStockBtn}>
-            <MaterialCommunityIcons name="view-list" size={16} color="#550a19" />
-            <Text style={s.fromStockText}>{t.fromStock} ({stockList.length})</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity onPress={() => setShowPicker(true)} style={[s.fromStockBtn, { flex: 1 }]}>
+              <MaterialCommunityIcons name="view-list" size={16} color="#550a19" />
+              <Text style={s.fromStockText}>{t.fromStock} ({stockList.length})</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setScanNote(null); setScanOpen(true); }} style={s.scanBtn}>
+              <MaterialCommunityIcons name="qrcode-scan" size={16} color="#fff5f7" />
+              <Text style={s.scanBtnText}>{lang === 'th' ? 'สแกน QR' : 'Scan QR'}</Text>
+            </TouchableOpacity>
+          </View>
 
           {cartItems.length === 0
             ? <Text style={s.emptyText}>{t.noItems}</Text>
@@ -527,6 +584,16 @@ export default function SaleScreen({ navigation, route }) {
           />
         </View>
       </Modal>
+
+      {/* กล้องสแกน QR — สแกนติดกันหลายชิ้นได้ ตะกร้าไม่หาย */}
+      <QrScanner
+        visible={scanOpen}
+        onClose={() => setScanOpen(false)}
+        onScan={addBySku}
+        note={scanNote}
+        count={cartItems.length}
+        lang={lang}
+      />
     </View>
   );
 }
@@ -553,6 +620,8 @@ const s = StyleSheet.create({
   custAddText:   { fontSize: 13, fontWeight: '600', color: '#550a19' },
   fromStockBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8c0c8', padding: 10, marginBottom: 10 },
   fromStockText: { fontSize: 12, fontWeight: '500', color: '#550a19' },
+  scanBtn:     { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 10 },
+  scanBtnText: { fontSize: 12, fontWeight: '600', color: '#fff5f7' },
   cartCard: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1.5, borderColor: '#550a19', padding: 12, marginBottom: 8 },
   cartName: { fontSize: 13, fontWeight: '500', color: '#2c1015' },
   cartSku: { fontSize: 10, color: '#a07080', marginTop: 2 },

@@ -10,7 +10,7 @@ import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 import { LOGO_URI } from './logoBase64';
 import { qrSvg } from './qr';
-import { tagSaleUrl } from './scan';
+import { tagSaleUrl, splitSku } from './scan';
 
 // ── helper ──
 const num = (n) => { const x = Number(n); return Number.isFinite(x) ? x : 0; };
@@ -435,10 +435,12 @@ const TAG_STYLE = `
   .pnl.a { display:flex; align-items:center; gap:0.8mm; }
   .qr    { width:11.2mm; height:11.2mm; flex:0 0 11.2mm; display:block; }
   .acol  { flex:1; min-width:0; }
-  .sku   { font-weight:600; line-height:1.25; letter-spacing:-0.01mm;
-           white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .pr    { font-weight:800; line-height:1.2; margin-top:0.5mm;
-           white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .brand { font-weight:600; line-height:1.1; letter-spacing:0.03mm;
+           white-space:nowrap; overflow:hidden; }
+  .sku   { font-weight:700; line-height:1.15; letter-spacing:-0.01mm;
+           white-space:nowrap; overflow:hidden; }
+  .pr    { font-weight:800; line-height:1.2; margin-top:0.6mm;
+           white-space:nowrap; overflow:hidden; }
 
   /* ── หน้ารายละเอียด ── */
   .pnl.b { display:flex; flex-direction:column; justify-content:center; }
@@ -450,6 +452,23 @@ const TAG_STYLE = `
 
   @media print { .tag { page-break-inside:avoid; break-inside:avoid; } }
 `;
+
+// ── คำนวณ font-size ให้ข้อความพอดีช่องเป๊ะ (ไม่โดนตัดท้าย) ──
+// ประมาณความกว้างตัวอักษรเป็นหน่วย em ของฟอนต์ Sarabun
+function textEm(s) {
+  let em = 0;
+  for (const ch of String(s)) {
+    if (ch >= '0' && ch <= '9') em += 0.55;          // ตัวเลข
+    else if (ch === ',' || ch === '.' || ch === ' ') em += 0.28;
+    else if (ch === '#' || ch === '฿') em += 0.62;
+    else if (ch >= 'A' && ch <= 'Z') em += 0.64;     // ตัวพิมพ์ใหญ่
+    else em += 0.56;                                  // ที่เหลือ (รวมไทย)
+  }
+  return em || 1;
+}
+// คืน font-size (มม.) ที่ทำให้ข้อความกว้างไม่เกิน maxW
+const fitFs = (s, maxW, maxFs, minFs) =>
+  Math.max(minFs, Math.min(maxFs, maxW / textEm(s)));
 
 // "18K · 3.25 g"
 function tagMetal(p) {
@@ -485,11 +504,15 @@ function buildTags(items = []) {
     // QR ชี้ไปหน้า "บันทึกการขาย" พร้อมสินค้าชิ้นนี้ — สแกนแล้วขายได้เลย
     const qr = qrSvg(p.qr || tagSaleUrl(p.sku), { margin: 1, cls: 'qr' });
 
-    // ช่องข้างQR แคบ (~10.6 มม.) — ย่อฟอนต์ตามความยาวข้อความ กันตัวหนังสือโดนตัด
-    const skuTxt = String(p.sku || '');
+    // ── ช่องข้าง QR กว้างแค่ ~10.6 มม. ──
+    // แยก SKU เป็น 2 บรรทัด  ANAKYN / #0207  แทนที่จะบีบให้อยู่บรรทัดเดียวจนอ่านไม่ออก
+    // ทุกบรรทัดคำนวณ font-size จากความกว้างจริงของข้อความ → เห็นครบทุกตัว ไม่โดนตัด
+    const { brand, code } = splitSku(p.sku);
     const prTxt  = baht(p.sale_price);
-    const skuFs  = skuTxt.length <= 11 ? 1.7 : skuTxt.length <= 14 ? 1.5 : 1.35;
-    const prFs   = prTxt.length  <= 8  ? 2.3 : prTxt.length  <= 10 ? 2.0 : 1.75;
+    const COL_W  = 10.6;                              // มม.
+    const brandFs = brand ? fitFs(brand, COL_W, 1.9, 1.2) : 0;
+    const codeFs  = fitFs(code,  COL_W, 2.9, 1.5);
+    const prFs    = fitFs(prTxt, COL_W, 2.9, 1.6);
     // หน้ารายละเอียด — โลหะ+น้ำหนัก และ เพชร (ข้ามบรรทัดที่ไม่มีข้อมูล)
     const details = [tagMetal(p), tagDiamond(p)]
       .filter(Boolean)
@@ -499,7 +522,8 @@ function buildTags(items = []) {
       <div class="pnl a">
         ${qr}
         <div class="acol">
-          <div class="sku" style="font-size:${skuFs}mm">${esc(skuTxt)}</div>
+          ${brand ? `<div class="brand" style="font-size:${brandFs}mm">${esc(brand)}</div>` : ''}
+          <div class="sku" style="font-size:${codeFs}mm">${esc(code)}</div>
           <div class="pr" style="font-size:${prFs}mm">${prTxt}</div>
         </div>
       </div>
