@@ -123,14 +123,26 @@ export default function SaleScreen({ navigation, route }) {
   const qrVal      = splitQr !== null ? (parseFloat(String(splitQr).replace(/,/g, '')) || 0) : Math.max(0, grandTotal - cashVal);
   const remaining  = grandTotal - cashVal - qrVal;
 
+  // ใช้เช็คจำนวนในตะกร้าได้ทันทีแม้อยู่ใน callback แบบ async (เช่นตอนสแกน)
+  const cartRef = useRef(cartItems);
+  cartRef.current = cartItems;
+  const inCart = (id) => cartRef.current.filter(it => it.product_id === id).length;
+
+  // เพิ่มลงตะกร้าได้หลายชิ้น แต่ไม่เกินจำนวนคงเหลือในสต๊อก
   const addToCart = (product) => {
+    const max  = parseInt(product.stock_qty, 10) || 0;
+    const have = inCart(product.id);
+    if (max > 0 && have >= max) {
+      setScanNote({ reason: 'max', text: `${product.name} · ${lang === 'th' ? `มีในสต๊อก ${max} ชิ้น` : `only ${max} in stock`}` });
+      return false;
+    }
     setCartItems(prev => [...prev, {
       product_id: product.id, name: product.name, sku: product.sku,
       metal_type: product.metal_type, has_certificate: product.has_certificate,
       certificate_no: product.certificate_no, diamonds: product.diamonds || [],
       price: Number(product.sale_price),
     }]);
-    setShowPicker(false); setPickerQuery('');
+    return true;
   };
 
   // ══════════ สแกน QR บนป้ายสินค้า ══════════
@@ -264,6 +276,7 @@ export default function SaleScreen({ navigation, route }) {
             busy:     { icon: 'magnify',              msg: th ? `กำลังค้นหา ${scanNote.text}...` : `Searching ${scanNote.text}...` },
             notfound: { icon: 'alert-circle-outline', msg: th ? `ไม่พบรหัส ${scanNote.text} ในระบบ — ตรวจว่าป้ายนี้เป็นของสินค้าที่บันทึกไว้แล้วหรือยัง` : `Code ${scanNote.text} not found` },
             sold:     { icon: 'cart-off',             msg: th ? `${scanNote.text} — สินค้านี้ถูกปิดการขายไว้ (อาจขายไปแล้ว)` : `${scanNote.text} — item is not available` },
+            max:      { icon: 'package-variant',      msg: th ? `เลือกครบจำนวนที่มีแล้ว: ${scanNote.text}` : `Already at stock limit: ${scanNote.text}` },
             error:    { icon: 'wifi-off',             msg: th ? `ค้นหาไม่สำเร็จ (${scanNote.text}) — เช็กอินเทอร์เน็ตแล้วสแกนใหม่` : `Lookup failed (${scanNote.text})` },
           };
           const info = scanNote.ok
@@ -539,18 +552,40 @@ export default function SaleScreen({ navigation, route }) {
                 data={filteredStock}
                 keyExtractor={item => String(item.id)}
                 ListEmptyComponent={<Text style={s.emptyText}>{t.noStock}</Text>}
-                renderItem={({ item }) => (
-                  <TouchableOpacity onPress={() => addToCart(item)} style={s.stockRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.stockName}>{item.name}</Text>
-                      <Text style={s.stockSku}>{item.sku} · {item.metal_type || '—'} · คงเหลือ {item.stock_qty}</Text>
-                    </View>
-                    <Text style={s.stockPrice}>฿{fmt(item.sale_price)}</Text>
-                  </TouchableOpacity>
-                )}
+                renderItem={({ item }) => {
+                  const max  = parseInt(item.stock_qty, 10) || 0;
+                  const have = cartItems.filter(it => it.product_id === item.id).length;
+                  const full = max > 0 && have >= max;
+                  return (
+                    <TouchableOpacity onPress={() => addToCart(item)} disabled={full}
+                      style={[s.stockRow, full && { opacity: 0.45 }]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.stockName}>{item.name}</Text>
+                        <Text style={s.stockSku}>
+                          {item.sku} · {item.metal_type || '—'} · คงเหลือ {max}
+                          {have > 0 ? `  •  เลือกแล้ว ${have}` : ''}
+                        </Text>
+                      </View>
+                      <Text style={s.stockPrice}>฿{fmt(item.sale_price)}</Text>
+                      <MaterialCommunityIcons
+                        name={full ? 'check-circle' : 'plus-circle-outline'}
+                        size={20} color={full ? '#2e7d32' : '#550a19'} style={{ marginLeft: 10 }} />
+                    </TouchableOpacity>
+                  );
+                }}
               />
             )
           }
+          {/* แถบล่าง — เลือกหลายชิ้นติดกันได้ แล้วค่อยกดเสร็จ */}
+          <View style={s.pickFoot}>
+            <Text style={s.pickFootText}>
+              {lang === 'th' ? `ในตะกร้า ${cartItems.length} ชิ้น` : `${cartItems.length} in cart`}
+            </Text>
+            <TouchableOpacity onPress={() => { setShowPicker(false); setPickerQuery(''); }} style={s.pickDoneBtn}>
+              <MaterialCommunityIcons name="check" size={16} color="#fff5f7" />
+              <Text style={s.pickDoneText}>{lang === 'th' ? 'เสร็จแล้ว' : 'Done'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
 
@@ -622,6 +657,10 @@ const s = StyleSheet.create({
   fromStockText: { fontSize: 12, fontWeight: '500', color: '#550a19' },
   scanBtn:     { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 10 },
   scanBtnText: { fontSize: 12, fontWeight: '600', color: '#fff5f7' },
+  pickFoot:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, borderTopWidth: 0.5, borderTopColor: '#e8d5d9', paddingTop: 12, paddingBottom: 4, marginTop: 4 },
+  pickFootText:{ fontSize: 12.5, fontWeight: '600', color: '#2c1015' },
+  pickDoneBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#550a19', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 11 },
+  pickDoneText:{ fontSize: 13.5, fontWeight: '700', color: '#fff5f7' },
   cartCard: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1.5, borderColor: '#550a19', padding: 12, marginBottom: 8 },
   cartName: { fontSize: 13, fontWeight: '500', color: '#2c1015' },
   cartSku: { fontSize: 10, color: '#a07080', marginTop: 2 },

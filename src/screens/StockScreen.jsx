@@ -162,7 +162,13 @@ export default function StockScreen({ navigation }) {
     clearTimeout(qtyTimer.current[p.id]);
     qtyTimer.current[p.id] = setTimeout(async () => {
       try {
-        const saved = await api.updateProduct(p.id, { stock_qty: qtyRef.current[p.id] });
+        const val  = qtyRef.current[p.id];
+        const body = { stock_qty: val };
+        // มีของแล้ว → ปลดล็อกให้กลับมาขายได้
+        // (ตอนขายหมด backend ตั้ง is_available=false ไว้ ถ้าไม่ปลดสินค้าจะไม่โผล่ในหน้าบันทึกขาย)
+        // ถ้าเหลือ 0 ปล่อยไว้เฉย ๆ ไม่ปิดการขายให้อัตโนมัติ
+        if (val > 0) body.is_available = true;
+        const saved = await api.updateProduct(p.id, body);
         setStockList(prev => prev.map(x => (x.id === p.id ? { ...x, ...saved } : x)));
         delete qtyRef.current[p.id];
       } catch (e) {
@@ -558,7 +564,12 @@ export default function StockScreen({ navigation }) {
               <View key={p.id} style={s.stockItem}>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={s.stockName} numberOfLines={1}>{p.name}</Text>
-                  <Text style={s.stockSku}>{p.sku}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Text style={s.stockSku}>{p.sku}</Text>
+                    {p.is_available === false && (
+                      <View style={s.offBadge}><Text style={s.offBadgeText}>ปิดขาย</Text></View>
+                    )}
+                  </View>
                 </View>
 
                 <View style={{ alignItems: 'flex-end', gap: 5 }}>
@@ -817,6 +828,8 @@ const s = StyleSheet.create({
   stockName: { fontSize: 12, fontWeight: '500', color: '#2c1015' },
   stockSku:  { fontSize: 10, color: '#a07080' },
   stockPrice:{ fontSize: 13, fontWeight: '500', color: '#550a19' },
+  offBadge:    { backgroundColor: '#f0e4e8', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1 },
+  offBadgeText:{ fontSize: 9, fontWeight: '600', color: '#9a6b78' },
   qtyRow:      { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9f4f5', borderRadius: 8, borderWidth: 0.5, borderColor: '#e8d5d9' },
   qtyBtn:      { paddingHorizontal: 7, paddingVertical: 5 },
   qtyValWrap:  { minWidth: 24, alignItems: 'center', justifyContent: 'center' },
