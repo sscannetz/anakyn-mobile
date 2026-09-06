@@ -252,7 +252,7 @@ export default function HomeScreen({ navigation, route }) {
         </View>
 
         {/* กำไรเดือนนี้ — แสดงทั้งก่อน VAT และรวม VAT */}
-        <View style={[styles.kpiCard, styles.profitCard]}>
+        <View style={styles.profitCard}>
           <View style={styles.kpiCardTop}>
             <Text style={styles.kpiCardLabel}>{t.profitLabel}</Text>
             <View style={[styles.kpiIcon, { backgroundColor: '#e8f5e9' }]}>
@@ -515,8 +515,9 @@ const styles = StyleSheet.create({
   kpiMainSub:   { fontSize: 11, color: '#c090a0', marginTop: 3 },
   kpiRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   kpiCard: { flex: 1, backgroundColor: '#fff', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 10 },
-  profitCard: { flexGrow: 0, marginBottom: 10 },
-  profitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  // การ์ดเดี่ยวเต็มความกว้าง — ห้ามใช้ flex:1 ของ kpiCard ไม่งั้นความสูงยุบเป็น 0
+  profitCard: { backgroundColor: '#fff', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 10, marginBottom: 10 },
+  profitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 2 },
   profitDivider: { width: 0.5, alignSelf: 'stretch', backgroundColor: '#e8d5d9' },
   kpiCardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   kpiCardLabel: { fontSize: 10, color: '#a07080', flex: 1 },
