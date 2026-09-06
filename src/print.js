@@ -463,10 +463,14 @@ const TAG_STYLE = `
      ค่า TAG_SHIFT_Y ยังหมายถึง "ลบ = เลื่อนขึ้น" เหมือนเดิมทั้งสองโหมด */
   .tag  { width:${TAG_W}mm; height:${TAG_BODY_H}mm; display:flex; overflow:hidden; flex:0 0 auto;
           ${TAG_FLIP
-            ? `margin-bottom:${(-TAG_SHIFT_Y).toFixed(2)}mm; transform:rotate(180deg);`
+            ? `margin-bottom:${(-TAG_SHIFT_Y).toFixed(2)}mm;
+               -webkit-transform:rotate(180deg); transform:rotate(180deg);
+               -webkit-transform-origin:center center; transform-origin:center center;`
             : `margin-top:${TAG_SHIFT_Y}mm;`} }
   .pnl  { width:${TAG_HALF}mm; height:${TAG_BODY_H}mm; padding:0.7mm 1.1mm; overflow:hidden; }
-  ${TAG_FOLD_LINE ? `.pnl.a { border-right:0.1mm dotted #000; }` : ''}
+  /* เส้นพับอยู่กลางป้ายเสมอ → เกาะกับแผงตัวแรกใน DOM ไม่ผูกกับ .pnl.a
+     (โหมดกลับหัวจะสลับลำดับแผง เส้นพับต้องย้ายตาม ไม่งั้นไปโผล่ขอบนอก) */
+  ${TAG_FOLD_LINE ? `.tag > .pnl:first-child { border-right:0.1mm dotted #000; }` : ''}
 
   /* ── หน้าหลัก: QR + ชื่อสินค้า + ราคา ──
      คอลัมน์ข้าง QR สูงเท่า QR เป๊ะ → ชื่อชิดขอบบน / ราคาชิดขอบล่าง ของ QR พอดี */
