@@ -424,9 +424,9 @@ const TAG_HALF = TAG_W / 2;       // เส้นพับอยู่กึ่�
 // ★ ความสูงที่พิมพ์ลงป้ายได้จริง — น้อยกว่า 15 มม. เพราะ 15 มม. รวมช่องว่างระหว่างป้ายด้วย
 //   ถ้าพิมพ์แล้วบรรทัดล่างยังโดนตัด → ลดเลขนี้ลงทีละ 0.5
 //   ถ้าเหลือที่ว่างด้านล่างเยอะ → เพิ่มขึ้นทีละ 0.5 (สูงสุดไม่เกิน 15)
-const TAG_BODY_H = 12.4;
+const TAG_BODY_H = 13.4;
 
-const TAG_QR = 10.4;              // ขนาด QR (มม.) — ต้องไม่เกิน TAG_BODY_H ลบ padding
+const TAG_QR = 11.2;              // ขนาด QR (มม.) — ต้องไม่เกิน TAG_BODY_H ลบ padding
 const TAG_COL = 10.6;             // ความกว้างคอลัมน์ข้าง QR
 const TAG_RCOL = 22.8;            // ความกว้างแผงขวา
 const TAG_RH = TAG_BODY_H - 1.4;  // ความสูงใช้งานของแผง (หัก padding บน-ล่าง)
@@ -451,8 +451,8 @@ const TAG_STYLE = `
 
   /* ── หน้าหลัก: QR + ชื่อสินค้า + ราคา ──
      คอลัมน์ข้าง QR สูงเท่า QR เป๊ะ → ชื่อชิดขอบบน / ราคาชิดขอบล่าง ของ QR พอดี */
-  .pnl.a { display:flex; align-items:center; gap:0.8mm; }
-  .qr    { width:${TAG_QR}mm; height:${TAG_QR}mm; flex:0 0 ${TAG_QR}mm; display:block; align-self:center; }
+  .pnl.a { display:flex; align-items:flex-start; gap:0.8mm; }
+  .qr    { width:${TAG_QR}mm; height:${TAG_QR}mm; flex:0 0 ${TAG_QR}mm; display:block; }
   .acol  { flex:1; min-width:0; height:${TAG_QR}mm;
            display:flex; flex-direction:column; justify-content:space-between; }
   .nm    { font-weight:700; line-height:1.18; overflow:hidden; word-break:break-word;
