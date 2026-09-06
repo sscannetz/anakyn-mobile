@@ -409,7 +409,7 @@ function buildSummary(d = {}, periodLabel = '') {
 // ═══════════════════════════════════════════════════════════════
 // ป้ายติดสินค้า (Product Tag) — 50 × 15 มม. "พับครึ่ง" ได้ 2 หน้า (หน้าละ 25 × 15 มม.)
 //   ซ้าย  = หน้าหลัก : QR + ANAKYN#xxxx + ราคา
-//   ขวา   = หน้ารายละเอียด : ชื่อสินค้า / โลหะ+น้ำหนัก / เพชร / ใบเซอร์
+//   ขวา   = หน้าสเปก  : NAME / WG: 18K X.XXg / D: {จำนวน}/{กะรัตรวม}ct ({รูปทรง})
 //   ใช้กับเครื่องพิมพ์ฉลาก เช่น TSC TTP-345 (300 dpi) — ตั้ง paper size = 50×15 มม.
 //   1 ป้าย = 1 หน้ากระดาษ (page-break) · สีดำล้วนล้วนเพื่อความคมบนหัวพิมพ์ความร้อน
 // ═══════════════════════════════════════════════════════════════
@@ -442,54 +442,73 @@ const TAG_STYLE = `
   .pr    { font-weight:800; line-height:1.2; margin-top:0.6mm;
            white-space:nowrap; overflow:hidden; }
 
-  /* ── หน้ารายละเอียด ── */
-  .pnl.b { display:flex; flex-direction:column; justify-content:center; }
-  .nm    { font-size:2.1mm; font-weight:700; line-height:1.2; margin-bottom:0.6mm;
-           display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
-           overflow:hidden; }
-  .dt    { font-size:1.85mm; line-height:1.35;
+  /* ── หน้าสเปก: NAME / WG / D: ... (ขนาดฟอนต์คำนวณต่อใบใน buildTags) ── */
+  .pnl.b { display:flex; flex-direction:column; justify-content:center; padding:0.8mm 1.1mm; }
+  .nm    { font-weight:700; line-height:1.2; margin-bottom:0.3mm;
            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sp    { line-height:1.32; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+           font-variant-numeric:tabular-nums; }
 
   @media print { .tag { page-break-inside:avoid; break-inside:avoid; } }
 `;
 
 // ── คำนวณ font-size ให้ข้อความพอดีช่องเป๊ะ (ไม่โดนตัดท้าย) ──
-// ประมาณความกว้างตัวอักษรเป็นหน่วย em ของฟอนต์ Sarabun
+// ประมาณความกว้างตัวอักษรเป็นหน่วย em — เผื่อไว้กว้างกว่าจริง เพราะเครื่องผู้ใช้
+// อาจไม่มีฟอนต์ Sarabun แล้วตกไปใช้ Arial ซึ่งกว้างกว่า (เคยทำให้ราคาโดนตัดท้าย)
 function textEm(s) {
   let em = 0;
   for (const ch of String(s)) {
-    if (ch >= '0' && ch <= '9') em += 0.55;          // ตัวเลข
-    else if (ch === ',' || ch === '.' || ch === ' ') em += 0.28;
-    else if (ch === '#' || ch === '฿') em += 0.62;
-    else if (ch >= 'A' && ch <= 'Z') em += 0.64;     // ตัวพิมพ์ใหญ่
-    else em += 0.56;                                  // ที่เหลือ (รวมไทย)
+    if (ch >= '0' && ch <= '9') em += 0.62;          // ตัวเลข
+    else if (ch === ',' || ch === '.') em += 0.32;
+    else if (ch === ' ') em += 0.30;
+    else if (ch === '฿') em += 0.72;
+    else if (ch === '#') em += 0.68;
+    else if (ch >= 'A' && ch <= 'Z') em += 0.70;     // ตัวพิมพ์ใหญ่
+    else em += 0.60;                                  // ที่เหลือ (รวมไทย)
   }
   return em || 1;
 }
-// คืน font-size (มม.) ที่ทำให้ข้อความกว้างไม่เกิน maxW
+// คืน font-size (มม.) ที่ทำให้ข้อความกว้างไม่เกิน maxW (เผื่อขอบ 8%)
 const fitFs = (s, maxW, maxFs, minFs) =>
-  Math.max(minFs, Math.min(maxFs, maxW / textEm(s)));
+  Math.max(minFs, Math.min(maxFs, (maxW * 0.92) / textEm(s)));
 
-// "18K · 3.25 g"
-function tagMetal(p) {
-  const w = p.metal_weight_g ?? p.weight ?? p.metal_weight_adj_g;
-  const g = num(w) ? `${num(w).toFixed(2)} g` : '';
-  return [p.metal_type || '', g].filter(Boolean).join(' · ');
+// ── ตัวย่อรูปทรงเพชรแบบสากล (ตรงกับรายการ SHAPES ในหน้าเพิ่มสินค้า) ──
+const SHAPE_CODE = {
+  'round brilliant': 'RD', 'princess cut': 'PR', 'cushion cut': 'CU', 'emerald cut': 'EM',
+  'asscher cut': 'AS', 'radiant cut': 'RA', 'oval cut': 'OV', 'pear cut': 'PS',
+  'marquise cut': 'MQ', 'heart cut': 'HS', 'elongated cushion cut': 'ECU',
+  'baguette cut': 'BG', 'old mine cut': 'OMC', 'old european cut': 'OEC',
+  'rose cut': 'RS', 'trillion cut': 'TR', 'kite cut': 'KT', 'shield cut': 'SH',
+  'hexagon cut': 'HX',
+};
+function shapeCode(s) {
+  const k = String(s || '').trim().toLowerCase();
+  if (SHAPE_CODE[k]) return SHAPE_CODE[k];
+  if (!k) return '';
+  // รูปทรงที่ไม่มีในตาราง → ย่อจากอักษรตัวแรกของแต่ละคำ
+  return k.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
 }
 
-// "เพชร 5 เม็ด · 0.85 ct"
-function tagDiamond(p) {
+// "WG: 18K 4.20g"
+function tagWgLine(p) {
+  const w = num(p.metal_weight_g ?? p.weight ?? p.metal_weight_adj_g);
+  return 'WG: ' + [p.metal_type || '', w ? `${w.toFixed(2)}g` : ''].filter(Boolean).join(' ');
+}
+
+// ["D: 1/1.00ct (RD)", "D: 10/0.20ct (RD)", ...] — 1 บรรทัดต่อเพชร 1 กลุ่ม
+// จำนวน / น้ำหนักรวมของกลุ่มนั้น (weight ในฐานข้อมูลเป็นน้ำหนักต่อเม็ด จึงคูณด้วยจำนวน)
+function tagDiamondLines(p) {
   let ds = p.diamonds;
   if (typeof ds === 'string') { try { ds = JSON.parse(ds); } catch (_) { ds = []; } }
-  if (!Array.isArray(ds) || !ds.length) return '';
-  let qty = 0, ct = 0;
-  for (const d of ds) {
-    const q = num(d.qty) || 1;
-    qty += q;
-    ct += num(d.weight) * q;
-  }
-  if (!qty) return '';
-  return `เพชร ${qty} เม็ด` + (ct ? ` · ${ct.toFixed(2)} ct` : '');
+  if (!Array.isArray(ds)) return [];
+  return ds
+    .filter(d => d && (num(d.qty) || num(d.weight)))
+    .map(d => {
+      const q = num(d.qty) || 1;
+      const ct = num(d.weight) * q;
+      const sc = shapeCode(d.shape);
+      return `D: ${q}/${ct.toFixed(2)}ct${sc ? ` (${sc})` : ''}`;
+    });
 }
 
 function buildTags(items = []) {
@@ -511,12 +530,21 @@ function buildTags(items = []) {
     const prTxt  = baht(p.sale_price);
     const COL_W  = 10.6;                              // มม.
     const brandFs = brand ? fitFs(brand, COL_W, 1.9, 1.2) : 0;
-    const codeFs  = fitFs(code,  COL_W, 2.9, 1.5);
-    const prFs    = fitFs(prTxt, COL_W, 2.9, 1.6);
-    // หน้ารายละเอียด — โลหะ+น้ำหนัก และ เพชร (ข้ามบรรทัดที่ไม่มีข้อมูล)
-    const details = [tagMetal(p), tagDiamond(p)]
-      .filter(Boolean)
-      .map(d => `<div class="dt">${esc(d)}</div>`).join('');
+    const codeFs  = fitFs(code,  COL_W, 2.7, 1.4);
+    const prFs    = fitFs(prTxt, COL_W, 2.4, 1.4);
+
+    // ── หน้าสเปก: NAME / WG: ... / D: ... ──
+    // ย่อฟอนต์ลงเรื่อย ๆ จนทุกบรรทัดใส่ในความสูงที่มี (13.4 มม.) แล้วค่อยหยุด
+    const specs = [tagWgLine(p), ...tagDiamondLines(p)];
+    const RH = 13.4;
+    let spFs = 1.7, nmFs = 2.0;
+    for (; spFs >= 1.05; spFs -= 0.05) {
+      nmFs = Math.min(2.0, spFs + 0.3);
+      if (nmFs * 1.2 + 0.3 + specs.length * spFs * 1.32 <= RH) break;
+    }
+    // ถ้าเพชรเยอะจนใส่ไม่หมดจริง ๆ ตัดเฉพาะเท่าที่พอดี (กันล้นกรอบ)
+    const maxLines = Math.max(1, Math.floor((RH - nmFs * 1.2 - 0.3) / (spFs * 1.32)));
+    const shown = specs.slice(0, maxLines);
 
     return `<div class="tag">
       <div class="pnl a">
@@ -528,8 +556,8 @@ function buildTags(items = []) {
         </div>
       </div>
       <div class="pnl b">
-        <div class="nm">${esc(p.name || '-')}</div>
-        ${details}
+        <div class="nm" style="font-size:${nmFs.toFixed(2)}mm">${esc(p.name || '-')}</div>
+        ${shown.map(s => `<div class="sp" style="font-size:${spFs.toFixed(2)}mm">${esc(s)}</div>`).join('')}
       </div>
     </div>`;
   }).join('');
