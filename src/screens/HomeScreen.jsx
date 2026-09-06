@@ -103,6 +103,32 @@ export default function HomeScreen({ navigation, route }) {
   const [refreshing, setRefreshing]     = useState(false);
   const [saleDetail, setSaleDetail]     = useState(null);  // รายละเอียดบิลที่กดดู
 
+  const [rcBusy, setRcBusy] = useState(false);
+
+  // เปิดใบเสร็จ "ของบิลนี้" โดยตรง — ถ้ายังไม่เคยออก จะออกให้ก่อนแล้วค่อยเปิด
+  const openReceiptForSale = async () => {
+    const sale = saleDetail;
+    if (!sale?.id || rcBusy) return;
+    setRcBusy(true);
+    try {
+      const list = await api.getReceipts();
+      let rc = (list || []).find(r => String(r.sale_id) === String(sale.id));
+      if (!rc) {
+        const payMap = { cash: 'cash', qr: 'transfer', transfer: 'transfer', card: 'card' };
+        let pms = sale.payment_methods;
+        if (typeof pms === 'string') { try { pms = JSON.parse(pms); } catch (_) { pms = []; } }
+        const first = Array.isArray(pms) && pms[0]?.method;
+        rc = await api.createReceipt({ sale_id: sale.id, payment_method: payMap[first] || 'other' });
+      }
+      setSaleDetail(null);
+      navigation.navigate('Receipt', rc?.id ? { openReceiptId: rc.id } : undefined);
+    } catch (e) {
+      setSaleDetail(d => (d ? { ...d, error: e?.message || 'เปิดใบเสร็จไม่สำเร็จ' } : d));
+    } finally {
+      setRcBusy(false);
+    }
+  };
+
   // กดบิลในรายการ "ขายล่าสุด" → ดึงรายการสินค้าของบิลนั้นมาแสดง
   const openSale = async (row) => {
     setSaleDetail({ ...row, loading: true });
@@ -412,10 +438,14 @@ export default function HomeScreen({ navigation, route }) {
                 </View>
               </View>
 
-              <TouchableOpacity onPress={() => { setSaleDetail(null); navigation.navigate('Receipt'); }}
-                style={styles.sdReceiptBtn}>
-                <MaterialCommunityIcons name="receipt" size={17} color="#fff5f7" />
-                <Text style={styles.sdReceiptText}>ไปหน้าใบเสร็จ</Text>
+              <TouchableOpacity onPress={openReceiptForSale} disabled={rcBusy}
+                style={[styles.sdReceiptBtn, rcBusy && { opacity: 0.7 }]}>
+                {rcBusy
+                  ? <ActivityIndicator color="#fff5f7" size="small" />
+                  : <MaterialCommunityIcons name="receipt" size={17} color="#fff5f7" />}
+                <Text style={styles.sdReceiptText}>
+                  {rcBusy ? 'กำลังเปิดใบเสร็จ...' : 'ใบเสร็จของบิลนี้'}
+                </Text>
               </TouchableOpacity>
               <View style={{ height: 24 }} />
             </ScrollView>
