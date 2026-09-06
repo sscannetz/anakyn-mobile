@@ -424,9 +424,14 @@ const TAG_HALF = TAG_W / 2;       // เส้นพับอยู่กึ่�
 // ★ ความสูงที่พิมพ์ลงป้ายได้จริง — น้อยกว่า 15 มม. เพราะ 15 มม. รวมช่องว่างระหว่างป้ายด้วย
 //   ถ้าพิมพ์แล้วบรรทัดล่างยังโดนตัด → ลดเลขนี้ลงทีละ 0.5
 //   ถ้าเหลือที่ว่างด้านล่างเยอะ → เพิ่มขึ้นทีละ 0.5 (สูงสุดไม่เกิน 15)
-const TAG_BODY_H = 13.4;
+const TAG_BODY_H = 12.6;
 
-const TAG_QR = 11.2;              // ขนาด QR (มม.) — ต้องไม่เกิน TAG_BODY_H ลบ padding
+// ★ เลื่อนเนื้อหาขึ้น-ลง (มม.) — ชดเชยกรณีเครื่องพิมพ์วางภาพเยื้องจากตำแหน่งจริง
+//   ค่าลบ = เลื่อนขึ้น · ค่าบวก = เลื่อนลง · 0 = ไม่ชดเชย
+//   ถ้าบรรทัดล่าง (ราคา) ยังโดนตัด → ลดลงทีละ 0.3 เช่น -0.6 → -0.9 → -1.2
+const TAG_SHIFT_Y = -0.6;
+
+const TAG_QR = 10.6;              // ขนาด QR (มม.) — ต้องไม่เกิน TAG_BODY_H ลบ padding
 const TAG_COL = 10.6;             // ความกว้างคอลัมน์ข้าง QR
 const TAG_RCOL = 22.8;            // ความกว้างแผงขวา
 const TAG_RH = TAG_BODY_H - 1.4;  // ความสูงใช้งานของแผง (หัก padding บน-ล่าง)
@@ -445,7 +450,8 @@ const TAG_STYLE = `
           overflow:hidden; page-break-after:always; break-after:page; }
   .page:last-child { page-break-after:auto; break-after:auto; }
   .tail { width:${TAG_PAGE_W - TAG_W}mm; height:${TAG_BODY_H}mm; flex:0 0 auto; }
-  .tag  { width:${TAG_W}mm; height:${TAG_BODY_H}mm; display:flex; overflow:hidden; flex:0 0 auto; }
+  .tag  { width:${TAG_W}mm; height:${TAG_BODY_H}mm; display:flex; overflow:hidden; flex:0 0 auto;
+          margin-top:${TAG_SHIFT_Y}mm; }
   .pnl  { width:${TAG_HALF}mm; height:${TAG_BODY_H}mm; padding:0.7mm 1.1mm; overflow:hidden; }
   ${TAG_FOLD_LINE ? `.pnl.a { border-right:0.1mm dotted #000; }` : ''}
 
