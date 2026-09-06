@@ -419,7 +419,14 @@ function buildSummary(d = {}, periodLabel = '') {
 const TAG_PAGE_W = 100;           // ความกว้างหน้ากระดาษ = ความยาวป้ายทั้งใบ (มม.)
 const TAG_W = 50, TAG_H = 15;     // หัวป้าย 50 มม. · ระยะ feed ต่อ 1 ป้าย 15 มม.
 const TAG_HEAD_SIDE = 'right';    // หัวป้ายอยู่ครึ่งไหนของแผ่น: 'right' | 'left'
-const TAG_HALF = TAG_W / 2;       // เส้นพับอยู่กึ่งกลางหัวป้าย
+
+// ★ ตำแหน่งเส้นพับ วัดจากขอบ "ต้นทาง" ของหัวป้าย (มม.) — ค่ากลางคือ 25
+//   ใช้เมื่อรอยพับจริงบนป้ายไม่ได้อยู่กึ่งกลางเป๊ะ หรือพื้นที่พิมพ์เยื้องไปข้างใดข้างหนึ่ง
+//   ลดเลข = เส้นเลื่อนไปทางแผง QR · เพิ่มเลข = เส้นเลื่อนไปทางแผงสเปก
+//   ปรับทีละ 0.5–1 มม. แล้วพิมพ์เทียบกับรอยพับจริง
+const TAG_FOLD_X = 25;
+const TAG_PNL_A = TAG_FOLD_X;         // ความกว้างแผง QR + ชื่อ + ราคา
+const TAG_PNL_B = TAG_W - TAG_FOLD_X; // ความกว้างแผงสเปก
 
 // ★ ความสูงที่พิมพ์ติดจริง — วัดด้วย tag-window-test.html แล้ว = 12 มม.
 //   (กรอบ 13 ขอบล่างขาด · กรอบ 12 ครบทั้งบน-ล่าง)
@@ -438,9 +445,11 @@ const TAG_SHIFT_Y = 0;
 //   ตั้ง false = กลับไปแบบเดิม (ตั้งตรง ชิดขอบบน)
 const TAG_FLIP = true;
 
+const TAG_PAD_X = 1.1;            // padding ซ้าย-ขวาของแต่ละแผง
 const TAG_QR = 10.6;              // ขนาด QR (มม.) — ต้องไม่เกิน TAG_BODY_H ลบ padding
-const TAG_COL = 10.6;             // ความกว้างคอลัมน์ข้าง QR
-const TAG_RCOL = 22.8;            // ความกว้างแผงขวา
+// คำนวณจาก TAG_FOLD_X ให้อัตโนมัติ — ขยับเส้นพับแล้วคอลัมน์ข้อความปรับตามเอง
+const TAG_COL  = +(TAG_PNL_A - TAG_PAD_X * 2 - TAG_QR - 0.8).toFixed(2); // คอลัมน์ชื่อ+ราคา ข้าง QR
+const TAG_RCOL = +(TAG_PNL_B - TAG_PAD_X * 2).toFixed(2);                // ความกว้างแผงสเปก
 const TAG_RH = TAG_BODY_H - 1.4;  // ความสูงใช้งานของแผง (หัก padding บน-ล่าง)
 const TAG_FOLD_LINE = true;       // แสดงเส้นประช่วยพับ (ตั้ง false ถ้าใช้ป้ายที่ปรุรอยพับมาแล้ว)
 
@@ -468,7 +477,9 @@ const TAG_STYLE = `
             ? `-webkit-transform:rotate(180deg); transform:rotate(180deg);
                -webkit-transform-origin:center center; transform-origin:center center;`
             : ''} }
-  .pnl  { width:${TAG_HALF}mm; height:${TAG_BODY_H}mm; padding:0.7mm 1.1mm; overflow:hidden; }
+  .pnl   { height:${TAG_BODY_H}mm; padding:0.7mm ${TAG_PAD_X}mm; overflow:hidden; flex:0 0 auto; }
+  .pnl.a { width:${TAG_PNL_A}mm; }
+  .pnl.b { width:${TAG_PNL_B}mm; }
   /* เส้นพับอยู่กลางป้ายเสมอ → เกาะกับแผงตัวแรกใน DOM ไม่ผูกกับ .pnl.a
      (โหมดกลับหัวจะสลับลำดับแผง เส้นพับต้องย้ายตาม ไม่งั้นไปโผล่ขอบนอก) */
   ${TAG_FOLD_LINE ? `.tag > .pnl:first-child { border-right:0.1mm dotted #000; }` : ''}
