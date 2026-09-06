@@ -451,7 +451,7 @@ const TAG_QR = 10.6;              // ขนาด QR (มม.) — ต้อง�
 const TAG_COL  = +(TAG_PNL_A - TAG_PAD_X * 2 - TAG_QR - 0.8).toFixed(2); // คอลัมน์ชื่อ+ราคา ข้าง QR
 const TAG_RCOL = +(TAG_PNL_B - TAG_PAD_X * 2).toFixed(2);                // ความกว้างแผงสเปก
 const TAG_RH = TAG_BODY_H - 1.4;  // ความสูงใช้งานของแผง (หัก padding บน-ล่าง)
-const TAG_FOLD_LINE = true;       // แสดงเส้นประช่วยพับ (ตั้ง false ถ้าใช้ป้ายที่ปรุรอยพับมาแล้ว)
+const TAG_FOLD_LINE = false;      // เส้นประช่วยพับ — ปิดไว้ (ตั้ง true ถ้าอยากให้แสดงอีกครั้ง)
 
 const TAG_STYLE = `
   @page { size: ${TAG_PAGE_W}mm ${TAG_H}mm; margin: 0; }
