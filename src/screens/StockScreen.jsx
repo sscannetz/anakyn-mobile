@@ -150,9 +150,15 @@ export default function StockScreen({ navigation }) {
   const [qtySaving, setQtySaving] = useState({});
   const [qtyErr, setQtyErr]       = useState('');
 
-  const bumpQty = (p, delta) => {
-    const cur  = qtyRef.current[p.id] ?? (parseInt(p.stock_qty, 10) || 0);
-    const next = Math.max(0, cur + delta);
+  const [qtyEdit, setQtyEdit] = useState({});   // id → ข้อความที่กำลังพิมพ์ในช่อง
+
+  const curQty  = (p) => qtyRef.current[p.id] ?? (parseInt(p.stock_qty, 10) || 0);
+  const bumpQty = (p, delta) => setQtyAbs(p, curQty(p) + delta);
+
+  // ตั้งจำนวนเป็นค่าที่ระบุ (ใช้ทั้งปุ่ม +/− และการพิมพ์เลขเอง)
+  const setQtyAbs = (p, value) => {
+    const cur  = curQty(p);
+    const next = Math.max(0, Math.min(9999, parseInt(value, 10) || 0));
     if (next === cur) return;
     qtyRef.current[p.id] = next;
     setStockList(prev => prev.map(x => (x.id === p.id ? { ...x, stock_qty: next } : x)));
@@ -582,7 +588,19 @@ export default function StockScreen({ navigation }) {
                       <MaterialCommunityIcons name="minus" size={13} color="#550a19" />
                     </TouchableOpacity>
                     <View style={s.qtyValWrap}>
-                      <Text style={[s.qtyVal, qty === 0 && { color: '#c62828' }]}>{qty}</Text>
+                      <TextInput
+                        style={[s.qtyVal, qty === 0 && { color: '#c62828' }]}
+                        value={qtyEdit[p.id] ?? String(qty)}
+                        onChangeText={(v) => {
+                          const clean = v.replace(/[^0-9]/g, '').slice(0, 4);
+                          setQtyEdit(e => ({ ...e, [p.id]: clean }));
+                          if (clean !== '') setQtyAbs(p, clean);
+                        }}
+                        onBlur={() => setQtyEdit(e => { const n = { ...e }; delete n[p.id]; return n; })}
+                        keyboardType="number-pad"
+                        selectTextOnFocus
+                        textAlign="center"
+                      />
                       {qtySaving[p.id] && <View style={s.qtyDot} />}
                     </View>
                     <TouchableOpacity onPress={() => bumpQty(p, 1)} style={s.qtyBtn}
@@ -665,7 +683,14 @@ export default function StockScreen({ navigation }) {
                     <TouchableOpacity onPress={() => setCopies(p.id, n - 1)} style={s.stepBtn}>
                       <MaterialCommunityIcons name="minus" size={14} color="#534AB7" />
                     </TouchableOpacity>
-                    <Text style={s.stepVal}>{n}</Text>
+                    <TextInput
+                      style={s.stepVal}
+                      value={String(n)}
+                      onChangeText={(v) => setCopies(p.id, parseInt(v.replace(/[^0-9]/g, '').slice(0, 2), 10) || 0)}
+                      keyboardType="number-pad"
+                      selectTextOnFocus
+                      textAlign="center"
+                    />
                     <TouchableOpacity onPress={() => setCopies(p.id, n + 1)} style={s.stepBtn}>
                       <MaterialCommunityIcons name="plus" size={14} color="#534AB7" />
                     </TouchableOpacity>
@@ -832,8 +857,8 @@ const s = StyleSheet.create({
   offBadgeText:{ fontSize: 9, fontWeight: '600', color: '#9a6b78' },
   qtyRow:      { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9f4f5', borderRadius: 8, borderWidth: 0.5, borderColor: '#e8d5d9' },
   qtyBtn:      { paddingHorizontal: 7, paddingVertical: 5 },
-  qtyValWrap:  { minWidth: 24, alignItems: 'center', justifyContent: 'center' },
-  qtyVal:      { fontSize: 12, fontWeight: '700', color: '#2c1015' },
+  qtyValWrap:  { alignItems: 'center', justifyContent: 'center' },
+  qtyVal:      { minWidth: 34, paddingVertical: 4, fontSize: 12.5, fontWeight: '700', color: '#2c1015', textAlign: 'center' },
   qtyDot:      { position: 'absolute', top: -1, right: -1, width: 5, height: 5, borderRadius: 3, backgroundColor: '#e0a020' },
   qtyErrBox:   { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 8 },
   qtyErrText:  { flex: 1, fontSize: 11, color: '#a32d2d' },
@@ -857,7 +882,7 @@ const s = StyleSheet.create({
   tagCheck:  { padding: 2 },
   stepper:   { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f6f5ff', borderRadius: 8, borderWidth: 0.5, borderColor: '#ddd8f5' },
   stepBtn:   { paddingHorizontal: 8, paddingVertical: 6 },
-  stepVal:   { minWidth: 20, textAlign: 'center', fontSize: 12, fontWeight: '600', color: '#2c1015' },
+  stepVal:   { minWidth: 32, paddingVertical: 4, textAlign: 'center', fontSize: 12.5, fontWeight: '600', color: '#2c1015' },
   tagFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, borderTopWidth: 0.5, borderTopColor: '#e8d5d9', paddingTop: 12, paddingBottom: 4 },
   tagTotal:  { fontSize: 12, fontWeight: '600', color: '#2c1015' },
   tagActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 },
