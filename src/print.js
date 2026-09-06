@@ -413,8 +413,13 @@ function buildSummary(d = {}, periodLabel = '') {
 //   ใช้กับเครื่องพิมพ์ฉลาก เช่น TSC TTP-345 (300 dpi) — ตั้ง paper size = 50×15 มม.
 //   1 ป้าย = 1 หน้ากระดาษ (page-break) · สีดำล้วนล้วนเพื่อความคมบนหัวพิมพ์ความร้อน
 // ═══════════════════════════════════════════════════════════════
-const TAG_W = 50, TAG_H = 15;     // ขนาดป้ายทั้งใบ (มม.)
-const TAG_HALF = TAG_W / 2;       // เส้นพับอยู่กึ่งกลาง
+// ── ขนาดป้ายจริง ──
+// ป้าย 1 ใบยาว 100 มม. = หัวที่พิมพ์ได้ 50×15 มม. + หางบางสำหรับพันรอบสินค้า 50×2 มม.
+// หน้ากระดาษต้องกว้าง 100 มม. (เท่าป้ายทั้งใบ) ไม่งั้นระบบจะพิมพ์คร่อมป้าย เนื้อหาไปตกบนหาง
+const TAG_PAGE_W = 100;           // ความกว้างหน้ากระดาษ = ความยาวป้ายทั้งใบ (มม.)
+const TAG_W = 50, TAG_H = 15;     // ขนาด "หัวป้าย" ที่พิมพ์ได้จริง (มม.)
+const TAG_HEAD_SIDE = 'right';    // หัวป้ายอยู่ครึ่งไหนของแผ่น: 'right' | 'left'
+const TAG_HALF = TAG_W / 2;       // เส้นพับอยู่กึ่งกลางหัวป้าย
 const TAG_QR = 11.2;              // ขนาด QR (มม.) — ใหญ่กว่านี้ไม่ได้ ป้ายสูงแค่ 15 มม.
 const TAG_COL = 10.6;             // ความกว้างคอลัมน์ข้าง QR
 const TAG_RCOL = 22.8;            // ความกว้างแผงขวา
@@ -422,15 +427,18 @@ const TAG_RH = 13.4;              // ความสูงใช้งานข�
 const TAG_FOLD_LINE = true;       // แสดงเส้นประช่วยพับ (ตั้ง false ถ้าใช้ป้ายที่ปรุรอยพับมาแล้ว)
 
 const TAG_STYLE = `
-  @page { size: ${TAG_W}mm ${TAG_H}mm; margin: 0; }
+  @page { size: ${TAG_PAGE_W}mm ${TAG_H}mm; margin: 0; }
   * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { width:${TAG_W}mm; }
+  html, body { width:${TAG_PAGE_W}mm; }
   body { font-family:'Sarabun', -apple-system, 'Helvetica Neue', Arial, sans-serif;
          color:#000; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 
-  .tag  { width:${TAG_W}mm; height:${TAG_H}mm; display:flex; overflow:hidden;
+  /* 1 หน้า = ป้าย 1 ใบ (100 มม.) — เว้นครึ่งที่เป็นหางไว้ว่าง พิมพ์เฉพาะบนหัว */
+  .page { width:${TAG_PAGE_W}mm; height:${TAG_H}mm; display:flex; overflow:hidden;
           page-break-after:always; break-after:page; }
-  .tag:last-child { page-break-after:auto; break-after:auto; }
+  .page:last-child { page-break-after:auto; break-after:auto; }
+  .tail { width:${TAG_PAGE_W - TAG_W}mm; height:${TAG_H}mm; flex:0 0 auto; }
+  .tag  { width:${TAG_W}mm; height:${TAG_H}mm; display:flex; overflow:hidden; flex:0 0 auto; }
   .pnl  { width:${TAG_HALF}mm; height:${TAG_H}mm; padding:1mm 1.1mm; overflow:hidden; }
   ${TAG_FOLD_LINE ? `.pnl.a { border-right:0.1mm dotted #000; }` : ''}
 
@@ -579,7 +587,7 @@ function buildTags(items = []) {
     const maxLines = Math.max(1, Math.floor((TAG_RH - cdFs * 1.2 - 0.3) / (spFs * 1.32)));
     const shown = specs.slice(0, maxLines);
 
-    return `<div class="tag">
+    const head = `<div class="tag">
       <div class="pnl a">
         ${qr}
         <div class="acol">
@@ -592,6 +600,8 @@ function buildTags(items = []) {
         ${shown.map(s => `<div class="sp" style="font-size:${spFs.toFixed(2)}mm">${esc(s)}</div>`).join('')}
       </div>
     </div>`;
+    const tail = '<div class="tail"></div>';
+    return `<div class="page">${TAG_HEAD_SIDE === 'left' ? head + tail : tail + head}</div>`;
   }).join('');
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
