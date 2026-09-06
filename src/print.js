@@ -475,13 +475,38 @@ function textEm(s) {
 const fitFs = (s, maxW, maxFs, minFs) =>
   Math.max(minFs, Math.min(maxFs, (maxW * 0.92) / textEm(s)));
 
-// ข้อความที่ตัดหลายบรรทัดได้ — หาฟอนต์ที่ใหญ่สุดซึ่งยังใส่ครบในกรอบ (กว้าง colW × สูง availH)
-function fitWrapped(s, colW, availH, maxFs, minFs) {
-  for (let f = maxFs; f >= minFs; f -= 0.05) {
-    const lines = Math.ceil(textEm(s) * f / (colW * 0.94));
-    if (lines * f * 1.18 <= availH) return { fs: +f.toFixed(2), lines };
+// จำลองการตัดบรรทัดจริงของเบราว์เซอร์ (ตัดที่ช่องว่างก่อน ถ้าคำเดียวยาวเกินค่อยตัดกลางคำ)
+// ห้ามคิดแค่ "ความกว้างรวม ÷ ความกว้างช่อง" เพราะจะได้จำนวนบรรทัดน้อยกว่าจริง แล้วชื่อโดนตัดท้าย
+function wrapLines(s, colW, fs) {
+  const max = colW * 0.94;                     // มม. ต่อบรรทัด
+  const w = (t) => textEm(t) * fs;
+  const words = String(s).trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return 1;
+  const spaceW = w(' ');
+  let lines = 1, cur = 0;
+  for (const word of words) {
+    const ww = w(word);
+    if (ww > max) {                            // คำเดียวยาวเกินบรรทัด (เช่นภาษาไทยที่ไม่มีช่องว่าง)
+      if (cur > 0) { lines++; cur = 0; }
+      const need = Math.ceil(ww / max);
+      lines += need - 1;
+      cur = ww - (need - 1) * max;
+      continue;
+    }
+    const next = cur === 0 ? ww : cur + spaceW + ww;
+    if (next <= max) cur = next;
+    else { lines++; cur = ww; }
   }
-  return { fs: minFs, lines: Math.max(1, Math.floor(availH / (minFs * 1.18))) };
+  return lines;
+}
+
+// ข้อความที่ตัดหลายบรรทัดได้ — ใช้ได้ถึง maxLines บรรทัด ถ้ายังเกินค่อยลดขนาดฟอนต์ลง
+function fitWrapped(s, colW, availH, maxFs, minFs, maxLines = 4) {
+  for (let f = maxFs; f >= minFs; f -= 0.05) {
+    const lines = wrapLines(s, colW, f);
+    if (lines <= maxLines && lines * f * 1.18 <= availH) return { fs: +f.toFixed(2), lines };
+  }
+  return { fs: minFs, lines: Math.min(maxLines, Math.max(1, Math.floor(availH / (minFs * 1.18)))) };
 }
 
 // ── ตัวย่อรูปทรงเพชรแบบสากล (ตรงกับรายการ SHAPES ในหน้าเพิ่มสินค้า) ──
@@ -538,7 +563,8 @@ function buildTags(items = []) {
     // ── ฝั่งซ้าย: ชื่อสินค้า (ชิดบน) + ราคา (ชิดล่าง) ในคอลัมน์สูงเท่า QR ──
     const prTxt = baht(p.sale_price);
     const prFs  = fitFs(prTxt, TAG_COL, 2.3, 1.35);
-    const nm    = fitWrapped(p.name || '-', TAG_COL, TAG_QR - (prFs * 1.2 + 0.4), 1.75, 1.15);
+    // ยาวได้ถึง 4 บรรทัด — เกินกว่านั้นค่อยย่อฟอนต์ลง (ไม่ตัดท้ายด้วย …)
+    const nm    = fitWrapped(p.name || '-', TAG_COL, TAG_QR - (prFs * 1.2 + 0.4), 1.75, 1.05, 4);
 
     // ── ฝั่งขวา: ANAKYN#xxxx / WG: ... / D: ... ──
     // ย่อฟอนต์ลงเรื่อย ๆ จนทุกบรรทัดใส่ในความสูงที่มี แล้วค่อยหยุด
