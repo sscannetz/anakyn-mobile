@@ -10,7 +10,7 @@ import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 import { LOGO_URI } from './logoBase64';
 import { qrSvg } from './qr';
-import { tagSaleUrl, splitSku } from './scan';
+import { tagSaleUrl } from './scan';
 
 // ── helper ──
 const num = (n) => { const x = Number(n); return Number.isFinite(x) ? x : 0; };
@@ -408,13 +408,17 @@ function buildSummary(d = {}, periodLabel = '') {
 
 // ═══════════════════════════════════════════════════════════════
 // ป้ายติดสินค้า (Product Tag) — 50 × 15 มม. "พับครึ่ง" ได้ 2 หน้า (หน้าละ 25 × 15 มม.)
-//   ซ้าย  = หน้าหลัก : QR + ANAKYN#xxxx + ราคา
-//   ขวา   = หน้าสเปก  : NAME / WG: 18K X.XXg / D: {จำนวน}/{กะรัตรวม}ct ({รูปทรง})
+//   ซ้าย  = หน้าหลัก : QR + ชื่อสินค้า (ชิดบน) + ราคา (ชิดล่าง) — ทั้งหมดอยู่ในแนวขอบ QR
+//   ขวา   = หน้าสเปก  : ANAKYN#xxxx / WG: 18K X.XXg / D: {จำนวน}/{กะรัตรวม}ct ({รูปทรง})
 //   ใช้กับเครื่องพิมพ์ฉลาก เช่น TSC TTP-345 (300 dpi) — ตั้ง paper size = 50×15 มม.
 //   1 ป้าย = 1 หน้ากระดาษ (page-break) · สีดำล้วนล้วนเพื่อความคมบนหัวพิมพ์ความร้อน
 // ═══════════════════════════════════════════════════════════════
 const TAG_W = 50, TAG_H = 15;     // ขนาดป้ายทั้งใบ (มม.)
 const TAG_HALF = TAG_W / 2;       // เส้นพับอยู่กึ่งกลาง
+const TAG_QR = 11.2;              // ขนาด QR (มม.) — ใหญ่กว่านี้ไม่ได้ ป้ายสูงแค่ 15 มม.
+const TAG_COL = 10.6;             // ความกว้างคอลัมน์ข้าง QR
+const TAG_RCOL = 22.8;            // ความกว้างแผงขวา
+const TAG_RH = 13.4;              // ความสูงใช้งานของแผง (หัก padding แล้ว)
 const TAG_FOLD_LINE = true;       // แสดงเส้นประช่วยพับ (ตั้ง false ถ้าใช้ป้ายที่ปรุรอยพับมาแล้ว)
 
 const TAG_STYLE = `
@@ -430,22 +434,21 @@ const TAG_STYLE = `
   .pnl  { width:${TAG_HALF}mm; height:${TAG_H}mm; padding:1mm 1.1mm; overflow:hidden; }
   ${TAG_FOLD_LINE ? `.pnl.a { border-right:0.1mm dotted #000; }` : ''}
 
-  /* ── หน้าหลัก: QR + รหัส + ราคา ──
-     QR 11.2 มม. → v3 (29×29) ได้โมดูลละ ~0.36 มม. สแกนติดง่ายบนป้ายเล็ก */
-  .pnl.a { display:flex; align-items:center; gap:0.8mm; }
-  .qr    { width:11.2mm; height:11.2mm; flex:0 0 11.2mm; display:block; }
-  .acol  { flex:1; min-width:0; }
-  .brand { font-weight:600; line-height:1.1; letter-spacing:0.03mm;
-           white-space:nowrap; overflow:hidden; }
-  .sku   { font-weight:700; line-height:1.15; letter-spacing:-0.01mm;
-           white-space:nowrap; overflow:hidden; }
-  .pr    { font-weight:800; line-height:1.2; margin-top:0.6mm;
-           white-space:nowrap; overflow:hidden; }
+  /* ── หน้าหลัก: QR + ชื่อสินค้า + ราคา ──
+     QR 11.2 มม. → v3 (29×29) ได้โมดูลละ ~0.36 มม. สแกนติดง่ายบนป้ายเล็ก
+     คอลัมน์ข้าง QR สูงเท่า QR เป๊ะ → ชื่อชิดขอบบน / ราคาชิดขอบล่าง ของ QR พอดี */
+  .pnl.a { display:flex; align-items:center; gap:0.8mm; padding:0.8mm 1.1mm; }
+  .qr    { width:${TAG_QR}mm; height:${TAG_QR}mm; flex:0 0 ${TAG_QR}mm; display:block; align-self:center; }
+  .acol  { flex:1; min-width:0; height:${TAG_QR}mm;
+           display:flex; flex-direction:column; justify-content:space-between; }
+  .nm    { font-weight:700; line-height:1.18; overflow:hidden; word-break:break-word;
+           display:-webkit-box; -webkit-box-orient:vertical; }
+  .pr    { font-weight:800; line-height:1.2; white-space:nowrap; overflow:hidden; }
 
-  /* ── หน้าสเปก: NAME / WG / D: ... (ขนาดฟอนต์คำนวณต่อใบใน buildTags) ── */
-  .pnl.b { display:flex; flex-direction:column; justify-content:center; padding:0.8mm 1.1mm; }
-  .nm    { font-weight:700; line-height:1.2; margin-bottom:0.3mm;
-           white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* ── หน้าสเปก: ANAKYN#xxxx / WG / D: ... (ขนาดฟอนต์คำนวณต่อใบใน buildTags) ── */
+  .pnl.b { display:flex; flex-direction:column; justify-content:flex-start; padding:0.8mm 1.1mm; }
+  .cd    { font-weight:700; line-height:1.2; margin-bottom:0.3mm;
+           white-space:nowrap; overflow:hidden; }
   .sp    { line-height:1.32; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
            font-variant-numeric:tabular-nums; }
 
@@ -471,6 +474,15 @@ function textEm(s) {
 // คืน font-size (มม.) ที่ทำให้ข้อความกว้างไม่เกิน maxW (เผื่อขอบ 8%)
 const fitFs = (s, maxW, maxFs, minFs) =>
   Math.max(minFs, Math.min(maxFs, (maxW * 0.92) / textEm(s)));
+
+// ข้อความที่ตัดหลายบรรทัดได้ — หาฟอนต์ที่ใหญ่สุดซึ่งยังใส่ครบในกรอบ (กว้าง colW × สูง availH)
+function fitWrapped(s, colW, availH, maxFs, minFs) {
+  for (let f = maxFs; f >= minFs; f -= 0.05) {
+    const lines = Math.ceil(textEm(s) * f / (colW * 0.94));
+    if (lines * f * 1.18 <= availH) return { fs: +f.toFixed(2), lines };
+  }
+  return { fs: minFs, lines: Math.max(1, Math.floor(availH / (minFs * 1.18))) };
+}
 
 // ── ตัวย่อรูปทรงเพชรแบบสากล (ตรงกับรายการ SHAPES ในหน้าเพิ่มสินค้า) ──
 const SHAPE_CODE = {
@@ -523,40 +535,34 @@ function buildTags(items = []) {
     // QR ชี้ไปหน้า "บันทึกการขาย" พร้อมสินค้าชิ้นนี้ — สแกนแล้วขายได้เลย
     const qr = qrSvg(p.qr || tagSaleUrl(p.sku), { margin: 1, cls: 'qr' });
 
-    // ── ช่องข้าง QR กว้างแค่ ~10.6 มม. ──
-    // แยก SKU เป็น 2 บรรทัด  ANAKYN / #0207  แทนที่จะบีบให้อยู่บรรทัดเดียวจนอ่านไม่ออก
-    // ทุกบรรทัดคำนวณ font-size จากความกว้างจริงของข้อความ → เห็นครบทุกตัว ไม่โดนตัด
-    const { brand, code } = splitSku(p.sku);
-    const prTxt  = baht(p.sale_price);
-    const COL_W  = 10.6;                              // มม.
-    const brandFs = brand ? fitFs(brand, COL_W, 1.9, 1.2) : 0;
-    const codeFs  = fitFs(code,  COL_W, 2.7, 1.4);
-    const prFs    = fitFs(prTxt, COL_W, 2.4, 1.4);
+    // ── ฝั่งซ้าย: ชื่อสินค้า (ชิดบน) + ราคา (ชิดล่าง) ในคอลัมน์สูงเท่า QR ──
+    const prTxt = baht(p.sale_price);
+    const prFs  = fitFs(prTxt, TAG_COL, 2.3, 1.35);
+    const nm    = fitWrapped(p.name || '-', TAG_COL, TAG_QR - (prFs * 1.2 + 0.4), 1.75, 1.15);
 
-    // ── หน้าสเปก: NAME / WG: ... / D: ... ──
-    // ย่อฟอนต์ลงเรื่อย ๆ จนทุกบรรทัดใส่ในความสูงที่มี (13.4 มม.) แล้วค่อยหยุด
+    // ── ฝั่งขวา: ANAKYN#xxxx / WG: ... / D: ... ──
+    // ย่อฟอนต์ลงเรื่อย ๆ จนทุกบรรทัดใส่ในความสูงที่มี แล้วค่อยหยุด
     const specs = [tagWgLine(p), ...tagDiamondLines(p)];
-    const RH = 13.4;
-    let spFs = 1.7, nmFs = 2.0;
-    for (; spFs >= 1.05; spFs -= 0.05) {
-      nmFs = Math.min(2.0, spFs + 0.3);
-      if (nmFs * 1.2 + 0.3 + specs.length * spFs * 1.32 <= RH) break;
+    let spFs = 1.7, cdFs = 2.2;
+    for (; spFs >= 1.0; spFs -= 0.05) {
+      cdFs = Math.min(2.4, spFs + 0.55);
+      if (cdFs * 1.2 + 0.3 + specs.length * spFs * 1.32 <= TAG_RH) break;
     }
+    cdFs = Math.min(cdFs, fitFs(p.sku || '', TAG_RCOL, cdFs, 1.4));
     // ถ้าเพชรเยอะจนใส่ไม่หมดจริง ๆ ตัดเฉพาะเท่าที่พอดี (กันล้นกรอบ)
-    const maxLines = Math.max(1, Math.floor((RH - nmFs * 1.2 - 0.3) / (spFs * 1.32)));
+    const maxLines = Math.max(1, Math.floor((TAG_RH - cdFs * 1.2 - 0.3) / (spFs * 1.32)));
     const shown = specs.slice(0, maxLines);
 
     return `<div class="tag">
       <div class="pnl a">
         ${qr}
         <div class="acol">
-          ${brand ? `<div class="brand" style="font-size:${brandFs}mm">${esc(brand)}</div>` : ''}
-          <div class="sku" style="font-size:${codeFs}mm">${esc(code)}</div>
-          <div class="pr" style="font-size:${prFs}mm">${prTxt}</div>
+          <div class="nm" style="font-size:${nm.fs}mm; -webkit-line-clamp:${nm.lines}">${esc(p.name || '-')}</div>
+          <div class="pr" style="font-size:${prFs.toFixed(2)}mm">${prTxt}</div>
         </div>
       </div>
       <div class="pnl b">
-        <div class="nm" style="font-size:${nmFs.toFixed(2)}mm">${esc(p.name || '-')}</div>
+        <div class="cd" style="font-size:${cdFs.toFixed(2)}mm">${esc(p.sku || '')}</div>
         ${shown.map(s => `<div class="sp" style="font-size:${spFs.toFixed(2)}mm">${esc(s)}</div>`).join('')}
       </div>
     </div>`;
