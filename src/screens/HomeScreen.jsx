@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, ActivityIndicator,
+  RefreshControl, ActivityIndicator, Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -65,6 +65,15 @@ const T = {
 const fmt   = (n) => { const x = Number(n); return Math.round(Number.isFinite(x) ? x : 0).toLocaleString('th-TH'); };
 const fmtCp = (n) => { n = Number(n); return n >= 1000 ? `฿${(n/1000).toFixed(0)}k` : `฿${fmt(n)}`; };
 
+// payment_methods เก็บเป็น JSONB: [{ method, amount }]
+const PAY_TH = { cash: 'เงินสด', qr: 'โอน/QR', transfer: 'โอน', card: 'บัตรเครดิต', other: 'อื่นๆ' };
+function payLabel(pm) {
+  let list = pm;
+  if (typeof list === 'string') { try { list = JSON.parse(list); } catch (_) { list = []; } }
+  if (!Array.isArray(list) || !list.length) return '—';
+  return list.map(p => PAY_TH[p?.method] || p?.method || '—').join(' + ');
+}
+
 const POSTATUS_LABEL = { pending: 'รอส่ง', sent: 'ส่งแล้ว', received: 'รับแล้ว', cancelled: 'ยกเลิก' };
 const POSTATUS_COL   = { pending: ['#fff8e1','#854F0B'], sent: ['#e0f0ff','#1a3a60'], received: ['#e8f5e9','#1a5c28'], cancelled: ['#f5f5f5','#666'] };
 const SRVSTATUS_LABEL = { received: 'รับเรื่อง', repairing: 'กำลังซ่อม', qc: 'ตรวจสอบ', notified: 'แจ้งลูกค้า', picked_up: 'รับคืนแล้ว' };
@@ -92,6 +101,19 @@ export default function HomeScreen({ navigation, route }) {
   const [pendingSrvs, setPendingSrvs]   = useState([]);
   const [loading, setLoading]           = useState(true);
   const [refreshing, setRefreshing]     = useState(false);
+  const [saleDetail, setSaleDetail]     = useState(null);  // รายละเอียดบิลที่กดดู
+
+  // กดบิลในรายการ "ขายล่าสุด" → ดึงรายการสินค้าของบิลนั้นมาแสดง
+  const openSale = async (row) => {
+    setSaleDetail({ ...row, loading: true });
+    try {
+      const full = await api.getSale(row.id);
+      // ใช้ค่าจาก row เป็นหลัก (มีชื่อลูกค้า/พนักงานที่ join มาแล้ว) แล้วเติม items จาก API
+      setSaleDetail({ ...full, ...row, items: full.items || [], loading: false });
+    } catch (e) {
+      setSaleDetail({ ...row, loading: false, error: e?.message || 'โหลดรายละเอียดไม่สำเร็จ' });
+    }
+  };
 
   useEffect(() => {
     AsyncStorage.getItem(STORE_KEY).then(val => {
@@ -230,7 +252,7 @@ export default function HomeScreen({ navigation, route }) {
           <Text style={styles.emptyText}>{t.noSales}</Text>
         )}
         {recentSales.map(s => (
-          <TouchableOpacity key={s.id} onPress={() => navigation.navigate('Sale')} style={styles.listCard}>
+          <TouchableOpacity key={s.id} onPress={() => openSale(s)} style={styles.listCard}>
             <View style={{ flex: 1 }}>
               <Text style={styles.listCardTitle}>{s.sale_no}</Text>
               <Text style={styles.listCardSub}>
@@ -304,6 +326,102 @@ export default function HomeScreen({ navigation, route }) {
 
         <View style={{ height: 20 }} />
       </ScrollView>
+
+      {/* รายละเอียดบิลขาย */}
+      <Modal visible={!!saleDetail} animationType="slide" presentationStyle="pageSheet"
+        onRequestClose={() => setSaleDetail(null)}>
+        <View style={styles.sdWrap}>
+          <View style={styles.sdHead}>
+            <View>
+              <Text style={styles.sdNo}>{saleDetail?.sale_no || '—'}</Text>
+              <Text style={styles.sdDate}>
+                {saleDetail?.sold_at ? new Date(saleDetail.sold_at).toLocaleString('th-TH') : ''}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => setSaleDetail(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+            </TouchableOpacity>
+          </View>
+
+          {saleDetail?.loading ? (
+            <ActivityIndicator color="#550a19" style={{ marginTop: 24 }} />
+          ) : (
+            <ScrollView>
+              {!!saleDetail?.error && (
+                <View style={styles.sdErr}><Text style={styles.sdErrText}>{saleDetail.error}</Text></View>
+              )}
+
+              {/* ลูกค้า / พนักงาน */}
+              <View style={styles.sdBox}>
+                <View style={styles.sdRow}>
+                  <Text style={styles.sdLabel}>ลูกค้า</Text>
+                  <Text style={styles.sdValue}>{saleDetail?.customer_name || 'ไม่ระบุ'}</Text>
+                </View>
+                <View style={styles.sdRow}>
+                  <Text style={styles.sdLabel}>พนักงานขาย</Text>
+                  <Text style={styles.sdValue}>{saleDetail?.staff_name || '—'}</Text>
+                </View>
+                <View style={[styles.sdRow, { borderBottomWidth: 0 }]}>
+                  <Text style={styles.sdLabel}>ชำระโดย</Text>
+                  <Text style={styles.sdValue}>{payLabel(saleDetail?.payment_methods)}</Text>
+                </View>
+              </View>
+
+              {/* รายการสินค้า */}
+              <Text style={styles.sdSecTitle}>รายการสินค้า ({saleDetail?.items?.length || 0})</Text>
+              {(saleDetail?.items || []).map((it, i) => (
+                <View key={it.id || i} style={styles.sdItem}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.sdItemName} numberOfLines={2}>{it.name || 'รายการ'}</Text>
+                    <Text style={styles.sdItemSku}>{it.sku || ''}{it.qty > 1 ? ` × ${it.qty}` : ''}</Text>
+                  </View>
+                  <Text style={styles.sdItemAmt}>฿{fmt(it.line_total ?? it.unit_price)}</Text>
+                </View>
+              ))}
+              {!saleDetail?.loading && !(saleDetail?.items || []).length && (
+                <Text style={styles.sdEmpty}>ไม่พบรายการสินค้าในบิลนี้</Text>
+              )}
+
+              {/* ยอดรวม */}
+              <View style={[styles.sdBox, { marginTop: 12 }]}>
+                <View style={styles.sdRow}>
+                  <Text style={styles.sdLabel}>ยอดรวมสินค้า</Text>
+                  <Text style={styles.sdValue}>฿{fmt(saleDetail?.subtotal)}</Text>
+                </View>
+                {Number(saleDetail?.vip_discount) > 0 && (
+                  <View style={styles.sdRow}>
+                    <Text style={styles.sdLabel}>ส่วนลด VIP</Text>
+                    <Text style={styles.sdValue}>−฿{fmt(saleDetail.vip_discount)}</Text>
+                  </View>
+                )}
+                {Number(saleDetail?.extra_discount) > 0 && (
+                  <View style={styles.sdRow}>
+                    <Text style={styles.sdLabel}>ส่วนลดเพิ่ม</Text>
+                    <Text style={styles.sdValue}>−฿{fmt(saleDetail.extra_discount)}</Text>
+                  </View>
+                )}
+                <View style={styles.sdRow}>
+                  <Text style={styles.sdLabel}>VAT</Text>
+                  <Text style={styles.sdValue}>
+                    {saleDetail?.vat_enabled === false ? 'ไม่มี' : `฿${fmt(saleDetail?.vat_amount)}`}
+                  </Text>
+                </View>
+                <View style={[styles.sdRow, styles.sdTotalRow]}>
+                  <Text style={styles.sdTotalLabel}>ยอดสุทธิ</Text>
+                  <Text style={styles.sdTotalValue}>฿{fmt(saleDetail?.total)}</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity onPress={() => { setSaleDetail(null); navigation.navigate('Receipt'); }}
+                style={styles.sdReceiptBtn}>
+                <MaterialCommunityIcons name="receipt" size={17} color="#fff5f7" />
+                <Text style={styles.sdReceiptText}>ไปหน้าใบเสร็จ</Text>
+              </TouchableOpacity>
+              <View style={{ height: 24 }} />
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -373,4 +491,27 @@ const styles = StyleSheet.create({
   pendingCount: { fontSize: 20, fontWeight: '500' },
   badge: { borderRadius: 20, paddingHorizontal: 7, paddingVertical: 2 },
   badgeText: { fontSize: 9, fontWeight: '500' },
+
+  // ── รายละเอียดบิลขาย ──
+  sdWrap:      { flex: 1, backgroundColor: '#fff', padding: 16 },
+  sdHead:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
+  sdNo:        { fontSize: 16, fontWeight: '700', color: '#550a19' },
+  sdDate:      { fontSize: 11, color: '#a07080', marginTop: 2 },
+  sdErr:       { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 10 },
+  sdErrText:   { fontSize: 12, color: '#a32d2d' },
+  sdBox:       { borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10, overflow: 'hidden' },
+  sdRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 9, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
+  sdLabel:     { fontSize: 12, color: '#a07080' },
+  sdValue:     { fontSize: 12.5, fontWeight: '600', color: '#2c1015', flexShrink: 1, textAlign: 'right' },
+  sdTotalRow:  { borderBottomWidth: 0, backgroundColor: '#fdf0f2' },
+  sdTotalLabel:{ fontSize: 13, fontWeight: '700', color: '#550a19' },
+  sdTotalValue:{ fontSize: 16, fontWeight: '800', color: '#550a19' },
+  sdSecTitle:  { fontSize: 11, fontWeight: '700', color: '#550a19', marginTop: 14, marginBottom: 6 },
+  sdItem:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
+  sdItemName:  { fontSize: 12.5, fontWeight: '600', color: '#2c1015' },
+  sdItemSku:   { fontSize: 10.5, color: '#a07080', marginTop: 1 },
+  sdItemAmt:   { fontSize: 13, fontWeight: '700', color: '#550a19' },
+  sdEmpty:     { fontSize: 11.5, color: '#a07080', textAlign: 'center', paddingVertical: 14 },
+  sdReceiptBtn:{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#550a19', borderRadius: 14, paddingVertical: 13, marginTop: 16 },
+  sdReceiptText:{ fontSize: 14, fontWeight: '700', color: '#fff5f7' },
 });

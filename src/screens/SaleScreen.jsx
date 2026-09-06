@@ -224,9 +224,12 @@ export default function SaleScreen({ navigation, route }) {
     if (cartItems.length === 0) { setSaveError(lang === 'th' ? 'กรุณาเพิ่มสินค้าก่อน' : 'Please add items first'); return; }
     setSaving(true); setSaveError(''); setSaveSuccess(false);
     try {
+      // ชื่อลูกค้า: ใช้ที่กด "ใช้ชื่อ ..." ก่อน ถ้าไม่มีก็เอาที่พิมพ์ค้างไว้ในช่องค้นหา
+      // (เดิมถ้าพิมพ์ชื่อแล้วกดยืนยันเลย โดยไม่กดปุ่ม "ใช้ชื่อ" ชื่อจะหายกลายเป็น "ไม่ระบุ")
+      const custName = (manualCust.trim() || custQuery.trim());
       const sale = await api.createSale({
         customer_id: selCustId,
-        customer_name: !selCustId && manualCust.trim() ? manualCust.trim() : undefined,
+        customer_name: !selCustId && custName ? custName : undefined,
         items: cartItems.map(it => ({ product_id: it.product_id, qty: 1, unit_price: it.price })),
         vip_discount: vipAmt,
         extra_discount: parseFloat(extraDisc) || 0,
