@@ -11,7 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../api';
-import { clearSession } from '../storage';
+import { clearSession, getRole } from '../storage';
 
 const STORE_KEY = 'anakyn_store_open';
 
@@ -72,8 +72,16 @@ const SRVSTATUS_COL   = { received: ['#fff8e1','#854F0B'], repairing: ['#e0f0ff'
 
 export default function HomeScreen({ navigation, route }) {
   const insets     = useSafeAreaInsets();
-  const userRole   = route.params?.userRole || 'staff';
-  const isAdmin    = userRole === 'admin';
+  // role มาจาก 2 ทาง: params (ตอนเพิ่งล็อกอิน) และ storage (ตอนรีเฟรชหน้า/เปิดแอปใหม่)
+  // ถ้าอ่านจาก params อย่างเดียว พอกดรีเฟรชจะกลายเป็น staff แล้วเมนูของ admin หายไป
+  const [userRole, setUserRole] = useState(route.params?.userRole || '');
+  const isAdmin = userRole === 'admin';
+
+  useEffect(() => {
+    if (route.params?.userRole) { setUserRole(route.params.userRole); return; }
+    getRole().then(r => setUserRole(r || 'staff')).catch(() => setUserRole('staff'));
+  }, [route.params?.userRole]);
+
   const [lang, setLang] = useState('th');
   const t = T[lang];
 
