@@ -460,14 +460,19 @@ const TAG_STYLE = `
   ${TAG_FOLD_LINE ? `.pnl.a { border-right:0.1mm dotted #000; }` : ''}
 
   /* ── หน้าหลัก: QR + ชื่อสินค้า + ราคา ──
-     คอลัมน์ข้าง QR สูงเท่า QR เป๊ะ → ชื่อชิดขอบบน / ราคาชิดขอบล่าง ของ QR พอดี */
+     คอลัมน์ข้าง QR สูงเท่า QR เป๊ะ → ชื่อชิดขอบบน / ราคาชิดขอบล่าง ของ QR พอดี
+     ★ กันราคาโดนดันตกขอบ: .pr ห้ามหด (flex:0 0 auto) · .nm ยอมให้หดได้และตัดส่วนเกินทิ้ง
+       ถ้าชื่อสูงเกินที่คำนวณไว้ (ภาษาไทยมีสระบน-ล่าง บรรทัดสูงกว่าตัวอักษรลาติน)
+       ระบบจะย่อ/ตัดชื่อแทน ไม่ใช่ดันราคาหลุดกรอบเหมือนเดิม */
   .pnl.a { display:flex; align-items:flex-start; gap:0.8mm; }
   .qr    { width:${TAG_QR}mm; height:${TAG_QR}mm; flex:0 0 ${TAG_QR}mm; display:block; }
-  .acol  { flex:1; min-width:0; height:${TAG_QR}mm;
+  .acol  { flex:1; min-width:0; height:${TAG_QR}mm; overflow:hidden;
            display:flex; flex-direction:column; justify-content:space-between; }
-  .nm    { font-weight:700; line-height:1.18; overflow:hidden; word-break:break-word;
+  .nm    { flex:0 1 auto; min-height:0;
+           font-weight:700; overflow:hidden; word-break:break-word;
            display:-webkit-box; -webkit-box-orient:vertical; }
-  .pr    { font-weight:800; line-height:1.2; white-space:nowrap; overflow:hidden; }
+  .pr    { flex:0 0 auto; margin-top:auto;
+           font-weight:800; line-height:1.2; white-space:nowrap; overflow:hidden; }
 
   /* ── หน้าสเปก: ANAKYN#xxxx / WG / D: ... (ขนาดฟอนต์คำนวณต่อใบใน buildTags) ── */
   .pnl.b { display:flex; flex-direction:column; justify-content:flex-start; }
@@ -524,13 +529,20 @@ function wrapLines(s, colW, fs) {
   return lines;
 }
 
+// ความสูงบรรทัดตามภาษา — ไทยมีสระบน (ิ ี ึ ื ั) และสระล่าง (ุ ู) + วรรณยุกต์
+// กล่องบรรทัดจึงสูงกว่าตัวอักษรลาตินมาก ถ้าใช้ 1.18 เท่ากันจะคำนวณต่ำกว่าจริง
+// แล้วชื่อสินค้าไทยจะล้นลงไปดันราคาตกขอบป้าย
+const hasThai = (s) => /[฀-๿]/.test(String(s));
+const lineFactor = (s) => (hasThai(s) ? 1.42 : 1.18);
+
 // ข้อความที่ตัดหลายบรรทัดได้ — ใช้ได้ถึง maxLines บรรทัด ถ้ายังเกินค่อยลดขนาดฟอนต์ลง
 function fitWrapped(s, colW, availH, maxFs, minFs, maxLines = 4) {
+  const lh = lineFactor(s);
   for (let f = maxFs; f >= minFs; f -= 0.05) {
     const lines = wrapLines(s, colW, f);
-    if (lines <= maxLines && lines * f * 1.18 <= availH) return { fs: +f.toFixed(2), lines };
+    if (lines <= maxLines && lines * f * lh <= availH) return { fs: +f.toFixed(2), lines, lh };
   }
-  return { fs: minFs, lines: Math.min(maxLines, Math.max(1, Math.floor(availH / (minFs * 1.18)))) };
+  return { fs: minFs, lh, lines: Math.min(maxLines, Math.max(1, Math.floor(availH / (minFs * lh)))) };
 }
 
 // ── ตัวย่อรูปทรงเพชรแบบสากล (ตรงกับรายการ SHAPES ในหน้าเพิ่มสินค้า) ──
@@ -587,8 +599,11 @@ function buildTags(items = []) {
     // ── ฝั่งซ้าย: ชื่อสินค้า (ชิดบน) + ราคา (ชิดล่าง) ในคอลัมน์สูงเท่า QR ──
     const prTxt = baht(p.sale_price);
     const prFs  = fitFs(prTxt, TAG_COL, 2.3, 1.35);
+    const prH   = prFs * 1.2;                 // ความสูงกล่องราคา — กันไว้ก่อนเสมอ
     // ยาวได้ถึง 4 บรรทัด — เกินกว่านั้นค่อยย่อฟอนต์ลง (ไม่ตัดท้ายด้วย …)
-    const nm    = fitWrapped(p.name || '-', TAG_COL, TAG_QR - (prFs * 1.2 + 0.4), 1.75, 1.05, 4);
+    // เผื่อ 0.6 มม. เป็นช่องว่างระหว่างชื่อกับราคา ไม่ให้ตัวอักษรชนกัน
+    const nmH   = TAG_QR - prH - 0.6;
+    const nm    = fitWrapped(p.name || '-', TAG_COL, nmH, 1.75, 1.05, 4);
 
     // ── ฝั่งขวา: ANAKYN#xxxx / WG: ... / D: ... ──
     // ย่อฟอนต์ลงเรื่อย ๆ จนทุกบรรทัดใส่ในความสูงที่มี แล้วค่อยหยุด
@@ -607,7 +622,7 @@ function buildTags(items = []) {
       <div class="pnl a">
         ${qr}
         <div class="acol">
-          <div class="nm" style="font-size:${nm.fs}mm; -webkit-line-clamp:${nm.lines}">${esc(p.name || '-')}</div>
+          <div class="nm" style="font-size:${nm.fs}mm; line-height:${nm.lh}; max-height:${nmH.toFixed(2)}mm; -webkit-line-clamp:${nm.lines}">${esc(p.name || '-')}</div>
           <div class="pr" style="font-size:${prFs.toFixed(2)}mm">${prTxt}</div>
         </div>
       </div>
