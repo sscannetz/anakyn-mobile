@@ -417,13 +417,19 @@ function buildSummary(d = {}, periodLabel = '') {
 // ป้าย 1 ใบยาว 100 มม. = หัวที่พิมพ์ได้ 50×15 มม. + หางบางสำหรับพันรอบสินค้า 50×2 มม.
 // หน้ากระดาษต้องกว้าง 100 มม. (เท่าป้ายทั้งใบ) ไม่งั้นระบบจะพิมพ์คร่อมป้าย เนื้อหาไปตกบนหาง
 const TAG_PAGE_W = 100;           // ความกว้างหน้ากระดาษ = ความยาวป้ายทั้งใบ (มม.)
-const TAG_W = 50, TAG_H = 15;     // ขนาด "หัวป้าย" ที่พิมพ์ได้จริง (มม.)
+const TAG_W = 50, TAG_H = 15;     // หัวป้าย 50 มม. · ระยะ feed ต่อ 1 ป้าย 15 มม.
 const TAG_HEAD_SIDE = 'right';    // หัวป้ายอยู่ครึ่งไหนของแผ่น: 'right' | 'left'
 const TAG_HALF = TAG_W / 2;       // เส้นพับอยู่กึ่งกลางหัวป้าย
-const TAG_QR = 11.2;              // ขนาด QR (มม.) — ใหญ่กว่านี้ไม่ได้ ป้ายสูงแค่ 15 มม.
+
+// ★ ความสูงที่พิมพ์ลงป้ายได้จริง — น้อยกว่า 15 มม. เพราะ 15 มม. รวมช่องว่างระหว่างป้ายด้วย
+//   ถ้าพิมพ์แล้วบรรทัดล่างยังโดนตัด → ลดเลขนี้ลงทีละ 0.5
+//   ถ้าเหลือที่ว่างด้านล่างเยอะ → เพิ่มขึ้นทีละ 0.5 (สูงสุดไม่เกิน 15)
+const TAG_BODY_H = 12.4;
+
+const TAG_QR = 10.4;              // ขนาด QR (มม.) — ต้องไม่เกิน TAG_BODY_H ลบ padding
 const TAG_COL = 10.6;             // ความกว้างคอลัมน์ข้าง QR
 const TAG_RCOL = 22.8;            // ความกว้างแผงขวา
-const TAG_RH = 13.4;              // ความสูงใช้งานของแผง (หัก padding แล้ว)
+const TAG_RH = TAG_BODY_H - 1.4;  // ความสูงใช้งานของแผง (หัก padding บน-ล่าง)
 const TAG_FOLD_LINE = true;       // แสดงเส้นประช่วยพับ (ตั้ง false ถ้าใช้ป้ายที่ปรุรอยพับมาแล้ว)
 
 const TAG_STYLE = `
@@ -433,19 +439,19 @@ const TAG_STYLE = `
   body { font-family:'Sarabun', -apple-system, 'Helvetica Neue', Arial, sans-serif;
          color:#000; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 
-  /* 1 หน้า = ป้าย 1 ใบ (100 มม.) — เว้นครึ่งที่เป็นหางไว้ว่าง พิมพ์เฉพาะบนหัว */
-  .page { width:${TAG_PAGE_W}mm; height:${TAG_H}mm; display:flex; overflow:hidden;
-          page-break-after:always; break-after:page; }
+  /* 1 หน้า = ป้าย 1 ใบ (100 มม.) — เว้นครึ่งที่เป็นหางไว้ว่าง พิมพ์เฉพาะบนหัว
+     เนื้อหาชิดขอบบนและสูงไม่เกิน TAG_BODY_H กันบรรทัดล่างตกลงไปในช่องว่างระหว่างป้าย */
+  .page { width:${TAG_PAGE_W}mm; height:${TAG_H}mm; display:flex; align-items:flex-start;
+          overflow:hidden; page-break-after:always; break-after:page; }
   .page:last-child { page-break-after:auto; break-after:auto; }
-  .tail { width:${TAG_PAGE_W - TAG_W}mm; height:${TAG_H}mm; flex:0 0 auto; }
-  .tag  { width:${TAG_W}mm; height:${TAG_H}mm; display:flex; overflow:hidden; flex:0 0 auto; }
-  .pnl  { width:${TAG_HALF}mm; height:${TAG_H}mm; padding:1mm 1.1mm; overflow:hidden; }
+  .tail { width:${TAG_PAGE_W - TAG_W}mm; height:${TAG_BODY_H}mm; flex:0 0 auto; }
+  .tag  { width:${TAG_W}mm; height:${TAG_BODY_H}mm; display:flex; overflow:hidden; flex:0 0 auto; }
+  .pnl  { width:${TAG_HALF}mm; height:${TAG_BODY_H}mm; padding:0.7mm 1.1mm; overflow:hidden; }
   ${TAG_FOLD_LINE ? `.pnl.a { border-right:0.1mm dotted #000; }` : ''}
 
   /* ── หน้าหลัก: QR + ชื่อสินค้า + ราคา ──
-     QR 11.2 มม. → v3 (29×29) ได้โมดูลละ ~0.36 มม. สแกนติดง่ายบนป้ายเล็ก
      คอลัมน์ข้าง QR สูงเท่า QR เป๊ะ → ชื่อชิดขอบบน / ราคาชิดขอบล่าง ของ QR พอดี */
-  .pnl.a { display:flex; align-items:center; gap:0.8mm; padding:0.8mm 1.1mm; }
+  .pnl.a { display:flex; align-items:center; gap:0.8mm; }
   .qr    { width:${TAG_QR}mm; height:${TAG_QR}mm; flex:0 0 ${TAG_QR}mm; display:block; align-self:center; }
   .acol  { flex:1; min-width:0; height:${TAG_QR}mm;
            display:flex; flex-direction:column; justify-content:space-between; }
@@ -454,7 +460,7 @@ const TAG_STYLE = `
   .pr    { font-weight:800; line-height:1.2; white-space:nowrap; overflow:hidden; }
 
   /* ── หน้าสเปก: ANAKYN#xxxx / WG / D: ... (ขนาดฟอนต์คำนวณต่อใบใน buildTags) ── */
-  .pnl.b { display:flex; flex-direction:column; justify-content:flex-start; padding:0.8mm 1.1mm; }
+  .pnl.b { display:flex; flex-direction:column; justify-content:flex-start; }
   .cd    { font-weight:700; line-height:1.2; margin-bottom:0.3mm;
            white-space:nowrap; overflow:hidden; }
   .sp    { line-height:1.32; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
