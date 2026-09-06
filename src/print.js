@@ -421,10 +421,10 @@ const TAG_W = 50, TAG_H = 15;     // หัวป้าย 50 มม. · ระ�
 const TAG_HEAD_SIDE = 'right';    // หัวป้ายอยู่ครึ่งไหนของแผ่น: 'right' | 'left'
 const TAG_HALF = TAG_W / 2;       // เส้นพับอยู่กึ่งกลางหัวป้าย
 
-// ★ ความสูงที่พิมพ์ลงป้ายได้จริง — น้อยกว่า 15 มม. เพราะ 15 มม. รวมช่องว่างระหว่างป้ายด้วย
-//   ถ้าพิมพ์แล้วบรรทัดล่างยังโดนตัด → ลดเลขนี้ลงทีละ 0.5
-//   ถ้าเหลือที่ว่างด้านล่างเยอะ → เพิ่มขึ้นทีละ 0.5 (สูงสุดไม่เกิน 15)
-const TAG_BODY_H = 12.6;
+// ★ ความสูงที่พิมพ์ติดจริง — วัดด้วย tag-window-test.html แล้ว = 12 มม.
+//   (กรอบ 13 ขอบล่างขาด · กรอบ 12 ครบทั้งบน-ล่าง)
+//   เกินกว่านี้ offset ช่วยไม่ได้ — เลื่อนขึ้นก็ตัดหัว เลื่อนลงก็ตัดท้าย
+const TAG_BODY_H = 12;
 
 // ★ เลื่อนเนื้อหาขึ้น-ลง (มม.) — ชดเชยกรณีเครื่องพิมพ์วางภาพเยื้องจากตำแหน่งจริง
 //   ค่าลบ = เลื่อนขึ้น · ค่าบวก = เลื่อนลง · 0 = ไม่ชดเชย
@@ -452,21 +452,22 @@ const TAG_STYLE = `
          color:#000; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 
   /* 1 หน้า = ป้าย 1 ใบ (100 มม.) — เว้นครึ่งที่เป็นหางไว้ว่าง พิมพ์เฉพาะบนหัว
-     TAG_FLIP = true  → เนื้อหาชิดขอบล่าง + หมุน 180° (หนีโซนที่หัวพิมพ์กินขอบบน)
-     TAG_FLIP = false → เนื้อหาชิดขอบบนแบบเดิม */
-  .page { width:${TAG_PAGE_W}mm; height:${TAG_H}mm; display:flex;
-          align-items:${TAG_FLIP ? 'flex-end' : 'flex-start'};
+     ★ align-items:center = จัดกึ่งกลางแนวตั้งเสมอ (ทั้งโหมดปกติและกลับหัว)
+       หัวพิมพ์กินขอบบนและขอบล่างข้างละ ~1.5 มม. — จัดกึ่งกลางแล้ว
+       เนื้อหา 12 มม. จะมีระยะกันชนเท่ากันทั้งสองด้าน ไม่โดนตัดฝั่งไหนเลย
+       (ห้ามใช้ flex-start/flex-end เพราะจะดันเนื้อหาเข้าโซนที่พิมพ์ไม่ติด) */
+  .page { width:${TAG_PAGE_W}mm; height:${TAG_H}mm; display:flex; align-items:center;
           overflow:hidden; page-break-after:always; break-after:page; }
   .page:last-child { page-break-after:auto; break-after:auto; }
   .tail { width:${TAG_PAGE_W - TAG_W}mm; height:${TAG_BODY_H}mm; flex:0 0 auto; }
-  /* หมุนรอบจุดกึ่งกลางตัวเอง → ยังอยู่ครึ่งเดิมของแผ่น แค่พลิกหัวกลับ
-     ค่า TAG_SHIFT_Y ยังหมายถึง "ลบ = เลื่อนขึ้น" เหมือนเดิมทั้งสองโหมด */
+  /* TAG_FLIP หมุน 180° รอบจุดกึ่งกลางตัวเอง → ยังอยู่ครึ่งเดิมของแผ่น แค่พลิกหัวกลับ
+     TAG_SHIFT_Y ใช้ position:relative เพื่อให้เลื่อนได้แม่นยำโดยไม่กวนการจัดกึ่งกลาง */
   .tag  { width:${TAG_W}mm; height:${TAG_BODY_H}mm; display:flex; overflow:hidden; flex:0 0 auto;
+          position:relative; top:${TAG_SHIFT_Y}mm;
           ${TAG_FLIP
-            ? `margin-bottom:${(-TAG_SHIFT_Y).toFixed(2)}mm;
-               -webkit-transform:rotate(180deg); transform:rotate(180deg);
+            ? `-webkit-transform:rotate(180deg); transform:rotate(180deg);
                -webkit-transform-origin:center center; transform-origin:center center;`
-            : `margin-top:${TAG_SHIFT_Y}mm;`} }
+            : ''} }
   .pnl  { width:${TAG_HALF}mm; height:${TAG_BODY_H}mm; padding:0.7mm 1.1mm; overflow:hidden; }
   /* เส้นพับอยู่กลางป้ายเสมอ → เกาะกับแผงตัวแรกใน DOM ไม่ผูกกับ .pnl.a
      (โหมดกลับหัวจะสลับลำดับแผง เส้นพับต้องย้ายตาม ไม่งั้นไปโผล่ขอบนอก) */
