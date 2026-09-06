@@ -432,6 +432,12 @@ const TAG_BODY_H = 12.6;
 //     ไม่งั้นจะชดเชยซ้อนกัน 2 ชั้น แล้วเนื้อหาจะเลื่อนขึ้นเกินจนบรรทัดบนโดนตัด
 const TAG_SHIFT_Y = 0;
 
+// ★ กลับหัวป้าย 180° แล้ววางเนื้อหาชิดขอบ "ล่าง" ของหน้า
+//   ใช้แก้กรณีหัวพิมพ์กินขอบบนของป้าย (ขอบล่างพิมพ์ติดปกติ)
+//   พลิกแล้วบรรทัดที่เคยโดนตัดจะย้ายมาอยู่โซนที่พิมพ์ติด — ไม่ต้องย่อฟอนต์ ไม่เสียพื้นที่
+//   ตั้ง false = กลับไปแบบเดิม (ตั้งตรง ชิดขอบบน)
+const TAG_FLIP = true;
+
 const TAG_QR = 10.6;              // ขนาด QR (มม.) — ต้องไม่เกิน TAG_BODY_H ลบ padding
 const TAG_COL = 10.6;             // ความกว้างคอลัมน์ข้าง QR
 const TAG_RCOL = 22.8;            // ความกว้างแผงขวา
@@ -446,13 +452,19 @@ const TAG_STYLE = `
          color:#000; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 
   /* 1 หน้า = ป้าย 1 ใบ (100 มม.) — เว้นครึ่งที่เป็นหางไว้ว่าง พิมพ์เฉพาะบนหัว
-     เนื้อหาชิดขอบบนและสูงไม่เกิน TAG_BODY_H กันบรรทัดล่างตกลงไปในช่องว่างระหว่างป้าย */
-  .page { width:${TAG_PAGE_W}mm; height:${TAG_H}mm; display:flex; align-items:flex-start;
+     TAG_FLIP = true  → เนื้อหาชิดขอบล่าง + หมุน 180° (หนีโซนที่หัวพิมพ์กินขอบบน)
+     TAG_FLIP = false → เนื้อหาชิดขอบบนแบบเดิม */
+  .page { width:${TAG_PAGE_W}mm; height:${TAG_H}mm; display:flex;
+          align-items:${TAG_FLIP ? 'flex-end' : 'flex-start'};
           overflow:hidden; page-break-after:always; break-after:page; }
   .page:last-child { page-break-after:auto; break-after:auto; }
   .tail { width:${TAG_PAGE_W - TAG_W}mm; height:${TAG_BODY_H}mm; flex:0 0 auto; }
+  /* หมุนรอบจุดกึ่งกลางตัวเอง → ยังอยู่ครึ่งเดิมของแผ่น แค่พลิกหัวกลับ
+     ค่า TAG_SHIFT_Y ยังหมายถึง "ลบ = เลื่อนขึ้น" เหมือนเดิมทั้งสองโหมด */
   .tag  { width:${TAG_W}mm; height:${TAG_BODY_H}mm; display:flex; overflow:hidden; flex:0 0 auto;
-          margin-top:${TAG_SHIFT_Y}mm; }
+          ${TAG_FLIP
+            ? `margin-bottom:${(-TAG_SHIFT_Y).toFixed(2)}mm; transform:rotate(180deg);`
+            : `margin-top:${TAG_SHIFT_Y}mm;`} }
   .pnl  { width:${TAG_HALF}mm; height:${TAG_BODY_H}mm; padding:0.7mm 1.1mm; overflow:hidden; }
   ${TAG_FOLD_LINE ? `.pnl.a { border-right:0.1mm dotted #000; }` : ''}
 
