@@ -18,8 +18,9 @@ const STORE_KEY = 'anakyn_store_open';
 const T = {
   th: {
     dateLabel: 'วันนี้', openStatus: 'เปิดร้านแล้ว', closedStatus: 'ปิดร้านแล้ว',
-    todayLabel: 'ยอดขายวันนี้', stockLabel: 'สินค้าในสต๊อก', stockSub: 'ชิ้น',
-    profitLabel: 'กำไรเดือนนี้', profitSub: 'ก่อน VAT',
+    todayLabel: 'ยอดขายวันนี้', stockLabel: 'สินค้าในสต๊อก', stockSub: 'รายการ',
+    allLabel: 'สินค้าทั้งหมด', allSub: 'ชิ้น',
+    profitLabel: 'กำไรเดือนนี้', profitSub: 'ก่อน VAT', profitSub2: 'รวม VAT',
     menuTitle: 'เมนูทั้งหมด',
     menus: [
       { emoji: '🛍️', label: 'บันทึกขาย',    sub: 'New Sale',       screen: 'Sale',          col: '#550a19', bg: '#fdf0f2' },
@@ -40,8 +41,9 @@ const T = {
   },
   en: {
     dateLabel: 'Today', openStatus: 'Store open', closedStatus: 'Store closed',
-    todayLabel: "Today's sales", stockLabel: 'Items in stock', stockSub: 'items',
-    profitLabel: 'Monthly profit', profitSub: 'before VAT',
+    todayLabel: "Today's sales", stockLabel: 'Items in stock', stockSub: 'listings',
+    allLabel: 'All items', allSub: 'pieces',
+    profitLabel: 'Monthly profit', profitSub: 'before VAT', profitSub2: 'incl. VAT',
     menuTitle: 'All modules',
     menus: [
       { emoji: '🛍️', label: 'New Sale',       sub: 'บันทึกขาย',     screen: 'Sale',          col: '#550a19', bg: '#fdf0f2' },
@@ -233,8 +235,8 @@ export default function HomeScreen({ navigation, route }) {
         </View>
         <View style={styles.kpiRow}>
           {[
-            [t.stockLabel,  loading ? '—' : String(summary?.stock_count || 0),   t.stockSub,  '#534AB7', '#f0eeff', 'diamond-outline'],
-            [t.profitLabel, loading ? '—' : fmtCp(summary?.estimated_profit || 0), t.profitSub, '#1a5c28', '#e8f5e9', 'trending-up'],
+            [t.stockLabel, loading ? '—' : String(summary?.stock_count || 0), t.stockSub, '#534AB7', '#f0eeff', 'diamond-outline'],
+            [t.allLabel,   loading ? '—' : fmt(summary?.total_pieces || 0),   t.allSub,   '#854F0B', '#fff8e1', 'package-variant-closed'],
           ].map(([label, val, sub, col, bg, icon]) => (
             <View key={label} style={styles.kpiCard}>
               <View style={styles.kpiCardTop}>
@@ -247,6 +249,31 @@ export default function HomeScreen({ navigation, route }) {
               <Text style={styles.kpiCardSub}>{sub}</Text>
             </View>
           ))}
+        </View>
+
+        {/* กำไรเดือนนี้ — แสดงทั้งก่อน VAT และรวม VAT */}
+        <View style={[styles.kpiCard, styles.profitCard]}>
+          <View style={styles.kpiCardTop}>
+            <Text style={styles.kpiCardLabel}>{t.profitLabel}</Text>
+            <View style={[styles.kpiIcon, { backgroundColor: '#e8f5e9' }]}>
+              <MaterialCommunityIcons name="trending-up" size={13} color="#1a5c28" />
+            </View>
+          </View>
+          <View style={styles.profitRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.kpiCardValue}>
+                {loading ? '—' : `฿${fmt(summary?.estimated_profit || 0)}`}
+              </Text>
+              <Text style={styles.kpiCardSub}>{t.profitSub}</Text>
+            </View>
+            <View style={styles.profitDivider} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.kpiCardValue, { color: '#1a5c28' }]}>
+                {loading ? '—' : `฿${fmt(summary?.profit_incl_vat ?? summary?.estimated_profit ?? 0)}`}
+              </Text>
+              <Text style={styles.kpiCardSub}>{t.profitSub2}</Text>
+            </View>
+          </View>
         </View>
 
         {/* MENU GRID */}
@@ -488,6 +515,9 @@ const styles = StyleSheet.create({
   kpiMainSub:   { fontSize: 11, color: '#c090a0', marginTop: 3 },
   kpiRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   kpiCard: { flex: 1, backgroundColor: '#fff', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 10 },
+  profitCard: { flexGrow: 0, marginBottom: 10 },
+  profitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  profitDivider: { width: 0.5, alignSelf: 'stretch', backgroundColor: '#e8d5d9' },
   kpiCardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   kpiCardLabel: { fontSize: 10, color: '#a07080', flex: 1 },
   kpiIcon: { width: 22, height: 22, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
