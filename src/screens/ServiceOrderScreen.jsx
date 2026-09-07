@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
+import { useScaledStyles } from '../responsive';
 import { printServiceOrder, saveServiceOrder } from '../print';
 import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, InfoRow, TRow, VatRow, GrandTotal, DocFooter, DocActions, fmtBaht } from '../components/DocLayout';
 
@@ -32,6 +33,7 @@ const fmt = (n) => {
 };
 
 export default function ServiceOrderScreen({ navigation }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang]     = useState('th');
   const [orders, setOrders] = useState([]);
@@ -104,7 +106,7 @@ export default function ServiceOrderScreen({ navigation }) {
       <Header title={lang === 'th' ? 'ใบสั่งซ่อม' : 'Service Order'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')}
         rightComponent={
           <TouchableOpacity onPress={() => setShowNew(true)} style={s.iconBtn}>
-            <MaterialCommunityIcons name="plus" size={16} color="#f5e0e5" />
+            <MaterialCommunityIcons name="plus" size={sc(16)} color="#f5e0e5" />
           </TouchableOpacity>
         }
       />
@@ -138,7 +140,7 @@ export default function ServiceOrderScreen({ navigation }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'รับงานซ่อมใหม่' : 'New Service Order'}</Text>
             <TouchableOpacity onPress={() => setShowNew(false)}>
-              <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
           <ScrollView keyboardShouldPersistTaps="handled">
@@ -156,7 +158,7 @@ export default function ServiceOrderScreen({ navigation }) {
             <Text style={s.fieldLabel}>{lang === 'th' ? 'วันนัดรับ (YYYY-MM-DD)' : 'Due Date (YYYY-MM-DD)'}</Text>
             <TextInput style={s.input} value={dueDate} onChangeText={setDueDate} placeholder="2026-01-31" placeholderTextColor="#c0a0a8" />
             <TouchableOpacity onPress={handleCreate} disabled={saving} style={[s.createBtn, { opacity: saving ? 0.7 : 1, marginTop: 8 }]}>
-              {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={18} color="#fff5f7" />}
+              {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
               <Text style={s.createBtnText}>{saving ? 'กำลังบันทึก...' : (lang === 'th' ? 'รับงาน' : 'Accept Job')}</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -220,7 +222,7 @@ export default function ServiceOrderScreen({ navigation }) {
                   </View>
                   <DocActions lang={lang} onPrint={() => printServiceOrder(docObj)} onSavePdf={() => saveServiceOrder(docObj)} onBack={() => setSelSO(null)} />
                   <TouchableOpacity onPress={handleDelete} style={[s.delBtn, confirmDel && s.delBtnConfirm]} activeOpacity={0.85}>
-                    <MaterialCommunityIcons name="trash-can-outline" size={16} color={confirmDel ? '#fff' : '#a32d2d'} />
+                    <MaterialCommunityIcons name="trash-can-outline" size={sc(16)} color={confirmDel ? '#fff' : '#a32d2d'} />
                     <Text style={[s.delBtnText, confirmDel && { color: '#fff' }]}>
                       {confirmDel
                         ? (lang === 'th' ? 'แตะอีกครั้งเพื่อยืนยันลบ' : 'Tap again to confirm')
@@ -237,7 +239,7 @@ export default function ServiceOrderScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const baseStyles = {
   content:    { padding: 14, paddingBottom: 30 },
   emptyText:  { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
   card:       { backgroundColor: '#fff', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 10, marginBottom: 7, flexDirection: 'row', alignItems: 'center' },
@@ -262,4 +264,4 @@ const s = StyleSheet.create({
   delBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e8c0c8', backgroundColor: '#fff' },
   delBtnConfirm: { backgroundColor: '#a32d2d', borderColor: '#a32d2d' },
   delBtnText: { fontSize: 13, fontWeight: '600', color: '#a32d2d' },
-});
+};

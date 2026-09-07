@@ -11,6 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../api';
+import { useScaledStyles } from '../responsive';
 import { clearSession, getRole } from '../storage';
 
 const STORE_KEY = 'anakyn_store_open';
@@ -82,6 +83,7 @@ const SRVSTATUS_LABEL = { received: 'รับเรื่อง', repairing: '�
 const SRVSTATUS_COL   = { received: ['#fff8e1','#854F0B'], repairing: ['#e0f0ff','#1a3a60'], qc: ['#f0eeff','#3c3489'], notified: ['#fdf0f2','#7a1c2e'], picked_up: ['#e8f5e9','#1a5c28'] };
 
 export default function HomeScreen({ navigation, route }) {
+  const { styles, sc, center } = useScaledStyles(baseStyles);
   const insets     = useSafeAreaInsets();
   // role มาจาก 2 ทาง: params (ตอนเพิ่งล็อกอิน) และ storage (ตอนรีเฟรชหน้า/เปิดแอปใหม่)
   // ถ้าอ่านจาก params อย่างเดียว พอกดรีเฟรชจะกลายเป็น staff แล้วเมนูของ admin หายไป
@@ -198,7 +200,7 @@ export default function HomeScreen({ navigation, route }) {
           </View>
           <View style={styles.headerBtns}>
             <TouchableOpacity onPress={() => setLang(l => l === 'th' ? 'en' : 'th')} style={styles.headerBtn}>
-              <MaterialCommunityIcons name="translate" size={13} color="#f5e0e5" />
+              <MaterialCommunityIcons name="translate" size={sc(13)} color="#f5e0e5" />
               <Text style={styles.headerBtnText}>{lang === 'th' ? 'EN' : 'ไทย'}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleLogout} style={styles.headerBtn}>
@@ -214,7 +216,7 @@ export default function HomeScreen({ navigation, route }) {
             <Text style={styles.dateBold}>{storeOpen ? t.openStatus : t.closedStatus}</Text>
             <MaterialCommunityIcons
               name={storeOpen ? 'toggle-switch' : 'toggle-switch-off'}
-              size={18}
+              size={sc(18)}
               color={storeOpen ? '#7ec878' : '#e05c5c'}
             />
           </TouchableOpacity>
@@ -223,7 +225,7 @@ export default function HomeScreen({ navigation, route }) {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, center]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#550a19" />}
       >
@@ -242,7 +244,7 @@ export default function HomeScreen({ navigation, route }) {
               <View style={styles.kpiCardTop}>
                 <Text style={styles.kpiCardLabel}>{label}</Text>
                 <View style={[styles.kpiIcon, { backgroundColor: bg }]}>
-                  <MaterialCommunityIcons name={icon} size={13} color={col} />
+                  <MaterialCommunityIcons name={icon} size={sc(13)} color={col} />
                 </View>
               </View>
               <Text style={styles.kpiCardValue}>{val}</Text>
@@ -256,7 +258,7 @@ export default function HomeScreen({ navigation, route }) {
           <View style={styles.kpiCardTop}>
             <Text style={styles.kpiCardLabel}>{t.profitLabel}</Text>
             <View style={[styles.kpiIcon, { backgroundColor: '#e8f5e9' }]}>
-              <MaterialCommunityIcons name="trending-up" size={13} color="#1a5c28" />
+              <MaterialCommunityIcons name="trending-up" size={sc(13)} color="#1a5c28" />
             </View>
           </View>
           <View style={styles.profitRow}>
@@ -299,7 +301,7 @@ export default function HomeScreen({ navigation, route }) {
 
         {/* RECENT SALES */}
         <Text style={styles.listTitle}>
-          <MaterialCommunityIcons name="cart" size={13} color="#550a19" /> {t.recentTitle}
+          <MaterialCommunityIcons name="cart" size={sc(13)} color="#550a19" /> {t.recentTitle}
         </Text>
         {!loading && recentSales.length === 0 && (
           <Text style={styles.emptyText}>{t.noSales}</Text>
@@ -318,7 +320,7 @@ export default function HomeScreen({ navigation, route }) {
 
         {/* PENDING COUNTS */}
         <Text style={styles.listTitle}>
-          <MaterialCommunityIcons name="clock-outline" size={13} color="#550a19" /> {t.pendingLabel}
+          <MaterialCommunityIcons name="clock-outline" size={sc(13)} color="#550a19" /> {t.pendingLabel}
         </Text>
         <View style={styles.pendingRow}>
           {[
@@ -329,7 +331,7 @@ export default function HomeScreen({ navigation, route }) {
               style={[styles.pendingCard, { backgroundColor: p.bg }]}
             >
               <View style={[styles.pendingIcon, { backgroundColor: 'rgba(255,255,255,0.6)' }]}>
-                <MaterialCommunityIcons name={p.icon} size={18} color={p.col} />
+                <MaterialCommunityIcons name={p.icon} size={sc(18)} color={p.col} />
               </View>
               <View>
                 <Text style={[styles.pendingTitle, { color: p.col }]}>{p.title}</Text>
@@ -392,7 +394,7 @@ export default function HomeScreen({ navigation, route }) {
               </Text>
             </View>
             <TouchableOpacity onPress={() => setSaleDetail(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
 
@@ -469,7 +471,7 @@ export default function HomeScreen({ navigation, route }) {
                 style={[styles.sdReceiptBtn, rcBusy && { opacity: 0.7 }]}>
                 {rcBusy
                   ? <ActivityIndicator color="#fff5f7" size="small" />
-                  : <MaterialCommunityIcons name="receipt" size={17} color="#fff5f7" />}
+                  : <MaterialCommunityIcons name="receipt" size={sc(17)} color="#fff5f7" />}
                 <Text style={styles.sdReceiptText}>
                   {rcBusy ? 'กำลังเปิดใบเสร็จ...' : 'ใบเสร็จของบิลนี้'}
                 </Text>
@@ -483,7 +485,7 @@ export default function HomeScreen({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = {
   container: { flex: 1, backgroundColor: '#f9f4f5' },
   header: { backgroundColor: '#550a19' },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10 },
@@ -575,4 +577,4 @@ const styles = StyleSheet.create({
   sdEmpty:     { fontSize: 11.5, color: '#a07080', textAlign: 'center', paddingVertical: 14 },
   sdReceiptBtn:{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#550a19', borderRadius: 14, paddingVertical: 13, marginTop: 16 },
   sdReceiptText:{ fontSize: 14, fontWeight: '700', color: '#fff5f7' },
-});
+};

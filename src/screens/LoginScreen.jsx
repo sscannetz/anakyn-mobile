@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { api } from '../api';
+import { useScaledStyles } from '../responsive';
 import { saveSession } from '../storage';
 
 const T = {
@@ -54,6 +55,7 @@ const ROLES = [
 ];
 
 export default function LoginScreen({ navigation }) {
+  const { styles, sc, center } = useScaledStyles(baseStyles);
   const [lang, setLang]         = useState('th');
   const [role, setRole]         = useState('admin');
   const [email, setEmail]       = useState('');
@@ -98,7 +100,7 @@ export default function LoginScreen({ navigation }) {
           {/* HERO */}
           <View style={styles.hero}>
             <TouchableOpacity onPress={() => setLang(l => l === 'th' ? 'en' : 'th')} style={styles.langBtnAbs}>
-              <MaterialCommunityIcons name="translate" size={13} color="#f5e0e5" />
+              <MaterialCommunityIcons name="translate" size={sc(13)} color="#f5e0e5" />
               <Text style={styles.langBtnText}>{lang === 'th' ? 'EN' : 'ไทย'}</Text>
             </TouchableOpacity>
             <Text style={styles.heroTitle}>ANAKYN</Text>
@@ -132,7 +134,7 @@ export default function LoginScreen({ navigation }) {
 
             {/* Access badge */}
             <View style={[styles.badge, { backgroundColor: badgeBg, borderColor: badgeBorder }]}>
-              <MaterialCommunityIcons name={badgeIcon} size={15} color={activeRole?.col} />
+              <MaterialCommunityIcons name={badgeIcon} size={sc(15)} color={activeRole?.col} />
               <Text style={[styles.badgeText, { color: activeRole?.col }]}>{badgeText}</Text>
             </View>
 
@@ -168,7 +170,7 @@ export default function LoginScreen({ navigation }) {
                 onSubmitEditing={handleLogin}
               />
               <TouchableOpacity onPress={() => setShowPw(v => !v)} style={styles.eyeBtn}>
-                <MaterialCommunityIcons name={showPw ? 'eye' : 'eye-off'} size={18} color="#c0a0a8" />
+                <MaterialCommunityIcons name={showPw ? 'eye' : 'eye-off'} size={sc(18)} color="#c0a0a8" />
               </TouchableOpacity>
             </View>
 
@@ -181,7 +183,7 @@ export default function LoginScreen({ navigation }) {
               {loading ? (
                 <ActivityIndicator color="#fff5f7" size="small" />
               ) : (
-                <MaterialCommunityIcons name="login" size={18} color="#fff5f7" />
+                <MaterialCommunityIcons name="login" size={sc(18)} color="#fff5f7" />
               )}
               <Text style={styles.loginBtnText}>{loading ? t.loggingIn : t.loginBtn}</Text>
             </TouchableOpacity>
@@ -195,7 +197,7 @@ export default function LoginScreen({ navigation }) {
 
             {/* LINE button */}
             <TouchableOpacity style={styles.lineBtn}>
-              <MaterialCommunityIcons name="chat-processing" size={18} color="#fff" />
+              <MaterialCommunityIcons name="chat-processing" size={sc(18)} color="#fff" />
               <Text style={styles.lineBtnText}>{t.lineBtn}</Text>
             </TouchableOpacity>
 
@@ -207,7 +209,7 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = {
   safe: { flex: 1, backgroundColor: '#550a19' },
   scroll: { flexGrow: 1 },
   hero: {
@@ -284,4 +286,4 @@ const styles = StyleSheet.create({
   },
   lineBtnText: { fontSize: 14, fontWeight: '500', color: '#fff' },
   version: { textAlign: 'center', fontSize: 10, color: '#c0a0a8', marginTop: 16 },
-});
+};

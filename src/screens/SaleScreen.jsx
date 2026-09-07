@@ -11,6 +11,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import QrScanner from '../components/QrScanner';
 import { api } from '../api';
+import { useScaledStyles } from '../responsive';
 import { normSku, parseScanned } from '../scan';
 
 const T = {
@@ -71,18 +72,21 @@ const initials = (name) => {
 };
 
 function Sec({ children }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   return <View style={s.sec}>{children}</View>;
 }
 function SecHead({ icon, children }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   return (
     <View style={s.secHead}>
-      <MaterialCommunityIcons name={icon} size={14} color="#550a19" />
+      <MaterialCommunityIcons name={icon} size={sc(14)} color="#550a19" />
       <Text style={s.secHeadText}>{children}</Text>
     </View>
   );
 }
 
 export default function SaleScreen({ navigation, route }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang] = useState('th');
   const t = T[lang];
@@ -288,10 +292,10 @@ export default function SaleScreen({ navigation, route }) {
           const good = scanNote.ok || scanNote.reason === 'busy';
           return (
             <View style={[s.scanBox, !good && s.scanBoxErr]}>
-              <MaterialCommunityIcons name={info.icon} size={16} color={good ? '#1a5c28' : '#a32d2d'} />
+              <MaterialCommunityIcons name={info.icon} size={sc(16)} color={good ? '#1a5c28' : '#a32d2d'} />
               <Text style={[s.scanText, !good && { color: '#a32d2d' }]}>{info.msg}</Text>
               <TouchableOpacity onPress={() => setScanNote(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <MaterialCommunityIcons name="close" size={14} color={good ? '#1a5c28' : '#a32d2d'} />
+                <MaterialCommunityIcons name="close" size={sc(14)} color={good ? '#1a5c28' : '#a32d2d'} />
               </TouchableOpacity>
             </View>
           );
@@ -301,16 +305,16 @@ export default function SaleScreen({ navigation, route }) {
         <Sec>
           <SecHead icon="magnify">{t.addItem}</SecHead>
           <TouchableOpacity onPress={() => setShowPicker(true)} style={s.searchBar}>
-            <MaterialCommunityIcons name="magnify" size={15} color="#b08090" />
+            <MaterialCommunityIcons name="magnify" size={sc(15)} color="#b08090" />
             <Text style={s.searchPh}>{t.searchItem}</Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TouchableOpacity onPress={() => setShowPicker(true)} style={[s.fromStockBtn, { flex: 1 }]}>
-              <MaterialCommunityIcons name="view-list" size={16} color="#550a19" />
+              <MaterialCommunityIcons name="view-list" size={sc(16)} color="#550a19" />
               <Text style={s.fromStockText}>{t.fromStock} ({stockList.length})</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { setScanNote(null); setScanOpen(true); }} style={s.scanBtn}>
-              <MaterialCommunityIcons name="qrcode-scan" size={16} color="#fff5f7" />
+              <MaterialCommunityIcons name="qrcode-scan" size={sc(16)} color="#fff5f7" />
               <Text style={s.scanBtnText}>{lang === 'th' ? 'สแกน QR' : 'Scan QR'}</Text>
             </TouchableOpacity>
           </View>
@@ -326,7 +330,7 @@ export default function SaleScreen({ navigation, route }) {
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <TouchableOpacity onPress={() => setCartItems(prev => prev.filter((_, i) => i !== idx))} style={s.removeBtn}>
-                      <MaterialCommunityIcons name="close" size={11} color="#550a19" />
+                      <MaterialCommunityIcons name="close" size={sc(11)} color="#550a19" />
                     </TouchableOpacity>
                     <Text style={s.cartPrice}>฿{fmt(it.price)}</Text>
                   </View>
@@ -341,7 +345,7 @@ export default function SaleScreen({ navigation, route }) {
           }
 
           <TouchableOpacity onPress={() => setShowPicker(true)} style={s.addMoreBtn}>
-            <MaterialCommunityIcons name="plus" size={14} color="#b08090" />
+            <MaterialCommunityIcons name="plus" size={sc(14)} color="#b08090" />
             <Text style={s.addMoreText}>{t.addMore}</Text>
           </TouchableOpacity>
         </Sec>
@@ -353,7 +357,7 @@ export default function SaleScreen({ navigation, route }) {
           {!selCust && !manualCust && (
             <>
               <View style={s.searchBar}>
-                <MaterialCommunityIcons name="magnify" size={15} color="#b08090" />
+                <MaterialCommunityIcons name="magnify" size={sc(15)} color="#b08090" />
                 <TextInput
                   style={s.searchInput}
                   value={custQuery}
@@ -363,7 +367,7 @@ export default function SaleScreen({ navigation, route }) {
                 />
                 {!!custQuery && (
                   <TouchableOpacity onPress={() => setCustQuery('')}>
-                    <MaterialCommunityIcons name="close-circle" size={15} color="#c0a0a8" />
+                    <MaterialCommunityIcons name="close-circle" size={sc(15)} color="#c0a0a8" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -380,7 +384,7 @@ export default function SaleScreen({ navigation, route }) {
                   ))}
                   {/* ไม่มีในระบบ → ใช้ชื่อที่พิมพ์ */}
                   <TouchableOpacity onPress={() => { setManualCust(custQuery.trim()); setCustQuery(''); }} style={s.custAddRow}>
-                    <MaterialCommunityIcons name="account-plus" size={15} color="#550a19" />
+                    <MaterialCommunityIcons name="account-plus" size={sc(15)} color="#550a19" />
                     <Text style={s.custAddText}>
                       {lang === 'th' ? `ใช้ชื่อ "${custQuery.trim()}"` : `Use "${custQuery.trim()}"`}
                     </Text>
@@ -400,7 +404,7 @@ export default function SaleScreen({ navigation, route }) {
                 <Text style={s.custSub}>{lang === 'th' ? 'ลูกค้าใหม่ (พิมพ์เอง)' : 'New customer'}</Text>
               </View>
               <TouchableOpacity onPress={() => setManualCust('')} style={s.removeBtn}>
-                <MaterialCommunityIcons name="close" size={10} color="#550a19" />
+                <MaterialCommunityIcons name="close" size={sc(10)} color="#550a19" />
               </TouchableOpacity>
             </View>
           )}
@@ -416,7 +420,7 @@ export default function SaleScreen({ navigation, route }) {
               <View style={{ alignItems: 'flex-end', gap: 4 }}>
                 {selCust.is_vip && <View style={s.vipBadge}><Text style={s.vipText}>VIP</Text></View>}
                 <TouchableOpacity onPress={() => setSelCustId(null)} style={s.removeBtn}>
-                  <MaterialCommunityIcons name="close" size={10} color="#550a19" />
+                  <MaterialCommunityIcons name="close" size={sc(10)} color="#550a19" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -486,9 +490,9 @@ export default function SaleScreen({ navigation, route }) {
               return (
                 <TouchableOpacity key={m.key} onPress={() => setSelPay(p => p.includes(m.key) ? p.filter(k => k !== m.key) : [...p, m.key])}
                   style={[s.payCard, { borderColor: on ? '#550a19' : '#e8d5d9', borderWidth: on ? 1.5 : 0.5, backgroundColor: on ? '#fdf0f2' : '#fff' }]}>
-                  <MaterialCommunityIcons name={m.icon} size={18} color={on ? '#550a19' : '#2e7d32'} />
+                  <MaterialCommunityIcons name={m.icon} size={sc(18)} color={on ? '#550a19' : '#2e7d32'} />
                   <Text style={[s.payCardLabel, { color: '#2c1015' }]}>{m.label}</Text>
-                  {on && <MaterialCommunityIcons name="check" size={12} color="#550a19" />}
+                  {on && <MaterialCommunityIcons name="check" size={sc(12)} color="#550a19" />}
                 </TouchableOpacity>
               );
             })}
@@ -499,14 +503,14 @@ export default function SaleScreen({ navigation, route }) {
               <Text style={s.splitTitle}>{t.splitTitle}</Text>
               {selPay.includes('cash') && (
                 <View style={s.splitRow}>
-                  <MaterialCommunityIcons name="cash" size={18} color="#2e7d32" />
+                  <MaterialCommunityIcons name="cash" size={sc(18)} color="#2e7d32" />
                   <Text style={s.splitLabel}>{lang === 'th' ? 'เงินสด' : 'Cash'}</Text>
                   <TextInput style={s.splitInput} value={splitCash} onChangeText={setSplitCash} keyboardType="numeric" />
                 </View>
               )}
               {selPay.includes('qr') && (
                 <View style={s.splitRow}>
-                  <MaterialCommunityIcons name="qrcode" size={18} color="#2e7d32" />
+                  <MaterialCommunityIcons name="qrcode" size={sc(18)} color="#2e7d32" />
                   <Text style={s.splitLabel}>{lang === 'th' ? 'โอน / QR' : 'Transfer'}</Text>
                   <TextInput style={s.splitInput} value={splitQr !== null ? String(splitQr) : String(qrVal)} onChangeText={setSplitQr} keyboardType="numeric" />
                 </View>
@@ -524,7 +528,7 @@ export default function SaleScreen({ navigation, route }) {
         {/* CONFIRM BUTTON */}
         <TouchableOpacity onPress={handleConfirm} disabled={saving || cartItems.length === 0}
           style={[s.confirmBtn, { opacity: (saving || cartItems.length === 0) ? 0.6 : 1 }]}>
-          {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={18} color="#fff5f7" />}
+          {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
           <Text style={s.confirmBtnText}>{saving ? t.saving : t.confirmSale(fmt(grandTotal))}</Text>
         </TouchableOpacity>
 
@@ -537,7 +541,7 @@ export default function SaleScreen({ navigation, route }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{t.fromStock}</Text>
             <TouchableOpacity onPress={() => setShowPicker(false)}>
-              <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
           <TextInput
@@ -572,7 +576,7 @@ export default function SaleScreen({ navigation, route }) {
                       <Text style={s.stockPrice}>฿{fmt(item.sale_price)}</Text>
                       <MaterialCommunityIcons
                         name={full ? 'check-circle' : 'plus-circle-outline'}
-                        size={20} color={full ? '#2e7d32' : '#550a19'} style={{ marginLeft: 10 }} />
+                        size={sc(20)} color={full ? '#2e7d32' : '#550a19'} style={{ marginLeft: 10 }} />
                     </TouchableOpacity>
                   );
                 }}
@@ -585,7 +589,7 @@ export default function SaleScreen({ navigation, route }) {
               {lang === 'th' ? `ในตะกร้า ${cartItems.length} ชิ้น` : `${cartItems.length} in cart`}
             </Text>
             <TouchableOpacity onPress={() => { setShowPicker(false); setPickerQuery(''); }} style={s.pickDoneBtn}>
-              <MaterialCommunityIcons name="check" size={16} color="#fff5f7" />
+              <MaterialCommunityIcons name="check" size={sc(16)} color="#fff5f7" />
               <Text style={s.pickDoneText}>{lang === 'th' ? 'เสร็จแล้ว' : 'Done'}</Text>
             </TouchableOpacity>
           </View>
@@ -598,7 +602,7 @@ export default function SaleScreen({ navigation, route }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{t.customer}</Text>
             <TouchableOpacity onPress={() => setShowCustPicker(false)}>
-              <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
           <TextInput
@@ -636,7 +640,7 @@ export default function SaleScreen({ navigation, route }) {
   );
 }
 
-const s = StyleSheet.create({
+const baseStyles = {
   scroll: { flex: 1 },
   content: { padding: 14, paddingBottom: 30 },
   errBox: { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 10 },
@@ -717,4 +721,4 @@ const s = StyleSheet.create({
   stockName: { fontSize: 13, fontWeight: '500', color: '#2c1015' },
   stockSku: { fontSize: 10, color: '#a07080' },
   stockPrice: { fontSize: 13, fontWeight: '500', color: '#550a19' },
-});
+};

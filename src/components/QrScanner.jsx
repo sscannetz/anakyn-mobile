@@ -6,10 +6,12 @@
 // ══════════════════════════════════════════════════════
 import { useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Platform } from 'react-native';
+import { useScaledStyles } from '../responsive';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function QrScanner({ visible, onClose, onScan, note, count = 0, lang = 'th' }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   const [perm, requestPerm] = useCameraPermissions();
   const last = useRef({ code: '', at: 0 });
   const th = lang === 'th';
@@ -38,7 +40,7 @@ export default function QrScanner({ visible, onClose, onScan, note, count = 0, l
         <View style={s.head}>
           <Text style={s.title}>{th ? 'สแกน QR บนป้ายสินค้า' : 'Scan tag QR'}</Text>
           <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <MaterialCommunityIcons name="close" size={24} color="#fff" />
+            <MaterialCommunityIcons name="close" size={sc(24)} color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -46,12 +48,12 @@ export default function QrScanner({ visible, onClose, onScan, note, count = 0, l
         <View style={s.camWrap}>
           {!perm ? null : !perm.granted ? (
             <View style={s.center}>
-              <MaterialCommunityIcons name="camera-off-outline" size={44} color="#8a7d83" />
+              <MaterialCommunityIcons name="camera-off-outline" size={sc(44)} color="#8a7d83" />
               <Text style={s.permText}>
                 {th ? 'ต้องอนุญาตให้ใช้กล้องก่อนถึงจะสแกนได้' : 'Camera permission is required'}
               </Text>
               <TouchableOpacity onPress={requestPerm} style={s.permBtn}>
-                <MaterialCommunityIcons name="camera" size={16} color="#fff" />
+                <MaterialCommunityIcons name="camera" size={sc(16)} color="#fff" />
                 <Text style={s.permBtnText}>{th ? 'อนุญาตใช้กล้อง' : 'Allow camera'}</Text>
               </TouchableOpacity>
               {Platform.OS === 'web' && (
@@ -83,7 +85,7 @@ export default function QrScanner({ visible, onClose, onScan, note, count = 0, l
             <Text style={[s.noteText, !noteOk && { color: '#ffd7d7' }]} numberOfLines={2}>{noteText()}</Text>
           </View>
           <TouchableOpacity onPress={onClose} style={s.doneBtn}>
-            <MaterialCommunityIcons name="cart-check" size={17} color="#550a19" />
+            <MaterialCommunityIcons name="cart-check" size={sc(17)} color="#550a19" />
             <Text style={s.doneText}>
               {th ? `เสร็จแล้ว (${count} ชิ้น)` : `Done (${count})`}
             </Text>
@@ -94,7 +96,7 @@ export default function QrScanner({ visible, onClose, onScan, note, count = 0, l
   );
 }
 
-const s = StyleSheet.create({
+const baseStyles = {
   root:     { flex: 1, backgroundColor: '#1a0d11' },
   head:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
   title:    { fontSize: 15, fontWeight: '600', color: '#fff' },
@@ -111,4 +113,4 @@ const s = StyleSheet.create({
   noteText: { fontSize: 12.5, color: '#fff', lineHeight: 18 },
   doneBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: '#fff', borderRadius: 14, paddingVertical: 13 },
   doneText: { fontSize: 14, fontWeight: '700', color: '#550a19' },
-});
+};

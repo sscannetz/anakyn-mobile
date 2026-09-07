@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
+import { useScaledStyles } from '../responsive';
 import { printQuotation, saveQuotation } from '../print';
 import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, TRow, VatRow, GrandTotal, DocFooter, DocActions, fmtBaht } from '../components/DocLayout';
 
@@ -32,6 +33,7 @@ const STATUS_LABELS = {
 };
 
 export default function QuotationScreen({ navigation }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang] = useState('th');
   const [quotations, setQuotations] = useState([]);
@@ -96,7 +98,7 @@ export default function QuotationScreen({ navigation }) {
       <Header title={lang === 'th' ? 'ใบเสนอราคา' : 'Quotation'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')}
         rightComponent={
           <TouchableOpacity onPress={() => setShowNew(true)} style={s.iconBtn}>
-            <MaterialCommunityIcons name="plus" size={16} color="#f5e0e5" />
+            <MaterialCommunityIcons name="plus" size={sc(16)} color="#f5e0e5" />
           </TouchableOpacity>
         }
       />
@@ -134,7 +136,7 @@ export default function QuotationScreen({ navigation }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'ออกใบเสนอราคาใหม่' : 'New Quotation'}</Text>
             <TouchableOpacity onPress={() => setShowNew(false)}>
-              <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
           <ScrollView keyboardShouldPersistTaps="handled">
@@ -154,7 +156,7 @@ export default function QuotationScreen({ navigation }) {
             </ScrollView>
             <Text style={s.fieldLabel}>{lang === 'th' ? 'สินค้า' : 'Items'}</Text>
             <TouchableOpacity onPress={() => setShowProdPicker(true)} style={s.addItemBtn}>
-              <MaterialCommunityIcons name="plus" size={16} color="#550a19" />
+              <MaterialCommunityIcons name="plus" size={sc(16)} color="#550a19" />
               <Text style={s.addItemText}>{lang === 'th' ? 'เพิ่มสินค้า' : 'Add item'}</Text>
             </TouchableOpacity>
             {selProds.map((sp, i) => (
@@ -162,7 +164,7 @@ export default function QuotationScreen({ navigation }) {
                 <Text style={[s.cardNo, { flex: 1 }]}>{sp.name}</Text>
                 <Text style={s.cardAmt}>฿{fmt(sp.price)}</Text>
                 <TouchableOpacity onPress={() => setSelProds(prev => prev.filter((_, idx) => idx !== i))} style={{ marginLeft: 8 }}>
-                  <MaterialCommunityIcons name="close" size={14} color="#550a19" />
+                  <MaterialCommunityIcons name="close" size={sc(14)} color="#550a19" />
                 </TouchableOpacity>
               </View>
             ))}
@@ -191,7 +193,7 @@ export default function QuotationScreen({ navigation }) {
             <TextInput style={[s.input, { height: 80, textAlignVertical: 'top' }]} value={notes} onChangeText={setNotes}
               placeholder={lang === 'th' ? 'หมายเหตุ...' : 'Notes...'} placeholderTextColor="#c0a0a8" multiline />
             <TouchableOpacity onPress={handleCreate} disabled={saving} style={[s.createBtn, { opacity: saving ? 0.7 : 1 }]}>
-              {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={18} color="#fff5f7" />}
+              {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
               <Text style={s.createBtnText}>{saving ? (lang === 'th' ? 'กำลังบันทึก...' : 'Saving...') : (lang === 'th' ? 'สร้างใบเสนอราคา' : 'Create Quotation')}</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -204,7 +206,7 @@ export default function QuotationScreen({ navigation }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'เลือกสินค้า' : 'Select Product'}</Text>
             <TouchableOpacity onPress={() => setShowProdPicker(false)}>
-              <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
           <TextInput style={s.searchInput} value={prodQuery} onChangeText={setProdQuery} placeholder="ค้นหา..." placeholderTextColor="#b08090" autoFocus />
@@ -287,7 +289,7 @@ export default function QuotationScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const baseStyles = {
   content:    { padding: 14, paddingBottom: 30 },
   emptyText:  { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
   card:       { backgroundColor: '#fff', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 10, marginBottom: 7, flexDirection: 'row', alignItems: 'center' },
@@ -325,4 +327,4 @@ const s = StyleSheet.create({
   prodRow:    { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
   stBtn:      { borderWidth: 0.5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   stBtnText:  { fontSize: 12, fontWeight: '500' },
-});
+};

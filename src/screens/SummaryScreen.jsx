@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
+import { useScaledStyles } from '../responsive';
 import { printSummary } from '../print';
 
 const T = {
@@ -44,12 +45,13 @@ const fmt    = (n) => { const x = Number(n); return Math.round(Number.isFinite(x
 const fmtCp  = (n) => { n = Number(n); if (!Number.isFinite(n)) n = 0; return n >= 1000000 ? `${(n/1000000).toFixed(1)}M` : n >= 1000 ? `${(n/1000).toFixed(0)}k` : String(Math.round(n)); };
 
 function KPICard({ label, value, sub, icon, col, bg, subUp }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   return (
     <View style={s.kpiCard}>
       <View style={s.kpiTop}>
         <Text style={s.kpiLabel}>{label}</Text>
         <View style={[s.kpiIcon, { backgroundColor: bg }]}>
-          <MaterialCommunityIcons name={icon} size={13} color={col} />
+          <MaterialCommunityIcons name={icon} size={sc(13)} color={col} />
         </View>
       </View>
       <Text style={s.kpiVal}>฿{fmtCp(value)}</Text>
@@ -63,6 +65,7 @@ function KPICard({ label, value, sub, icon, col, bg, subUp }) {
 }
 
 export default function SummaryScreen({ navigation }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   const insets  = useSafeAreaInsets();
   const [lang, setLang]   = useState('th');
   const [period, setPeriod] = useState(2);
@@ -105,7 +108,7 @@ export default function SummaryScreen({ navigation }) {
         {!loading && (
           <TouchableOpacity onPress={() => printSummary(d, t.periods[period])}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-end', backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, paddingHorizontal: 11, paddingVertical: 7, marginBottom: 10 }}>
-            <MaterialCommunityIcons name="printer" size={15} color="#550a19" />
+            <MaterialCommunityIcons name="printer" size={sc(15)} color="#550a19" />
             <Text style={{ fontSize: 12, color: '#550a19', fontWeight: '500' }}>{lang === 'th' ? 'ปริ้น / บันทึก PDF' : 'Print / Save PDF'}</Text>
           </TouchableOpacity>
         )}
@@ -194,7 +197,7 @@ export default function SummaryScreen({ navigation }) {
               [t.pendingQt,  d.pending_quotation,  'file-document',  '#534AB7', '#f0eeff'],
             ].map(([label, count, icon, col, bg]) => (
               <View key={label} style={[s.pendingCard, { backgroundColor: bg }]}>
-                <MaterialCommunityIcons name={icon} size={18} color={col} />
+                <MaterialCommunityIcons name={icon} size={sc(18)} color={col} />
                 <Text style={[s.pendingCount, { color: col }]}>{count ?? 0}</Text>
                 <Text style={[s.pendingLabel, { color: col }]}>{label}</Text>
               </View>
@@ -208,7 +211,7 @@ export default function SummaryScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const baseStyles = {
   periodTabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#e8d5d9' },
   periodTab:  { flex: 1, paddingVertical: 10, alignItems: 'center' },
   periodTabText: { fontSize: 11 },
@@ -239,4 +242,4 @@ const s = StyleSheet.create({
   pendingCard:{ flex: 1, borderRadius: 10, padding: 10, alignItems: 'center', gap: 4 },
   pendingCount:{ fontSize: 22, fontWeight: '500' },
   pendingLabel:{ fontSize: 10, textAlign: 'center' },
-});
+};

@@ -3,6 +3,7 @@
 // แปลงดีไซน์จากเวอร์ชันเว็บ (DocWrapper / DocHeader / Parties / Sec / ...)
 // ══════════════════════════════════════════════════════
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { useScaledStyles } from '../responsive';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export const DOC = {
@@ -17,10 +18,12 @@ const fmtBaht = (n) => {
 };
 
 export function DocWrapper({ children }) {
+  const { styles: d, sc } = useScaledStyles(baseStyles);
   return <View style={d.wrap}>{children}</View>;
 }
 
 export function DocHeader({ badge, docNo, meta = [] }) {
+  const { styles: d, sc } = useScaledStyles(baseStyles);
   return (
     <View style={d.header}>
       <View style={d.headerTop}>
@@ -48,6 +51,7 @@ export function DocHeader({ badge, docNo, meta = [] }) {
 }
 
 export function Parties({ seller, buyer }) {
+  const { styles: d, sc } = useScaledStyles(baseStyles);
   const list = [seller, buyer].filter(Boolean);
   return (
     <View style={d.parties}>
@@ -63,15 +67,18 @@ export function Parties({ seller, buyer }) {
 }
 
 export function Sec({ children, tint, style }) {
+  const { styles: d, sc } = useScaledStyles(baseStyles);
   return <View style={[d.sec, tint && { backgroundColor: tint }, style]}>{children}</View>;
 }
 
 export function SL({ children }) {
+  const { styles: d, sc } = useScaledStyles(baseStyles);
   return <Text style={d.sl}>{children}</Text>;
 }
 
 // แถวหัวตารางสินค้า: รายการ | จำนวน | ราคา
 export function ItemHead({ cols = ['รายการ', 'จำนวน', 'ราคา'] }) {
+  const { styles: d, sc } = useScaledStyles(baseStyles);
   return (
     <View style={d.itemHead}>
       <Text style={[d.itemHeadText, { flex: 1 }]}>{cols[0]}</Text>
@@ -82,6 +89,7 @@ export function ItemHead({ cols = ['รายการ', 'จำนวน', 'ร
 }
 
 export function ItemRow({ name, sub, specs = [], qty, price }) {
+  const { styles: d, sc } = useScaledStyles(baseStyles);
   return (
     <View style={d.itemRow}>
       <View style={{ flex: 1 }}>
@@ -100,10 +108,12 @@ export function ItemRow({ name, sub, specs = [], qty, price }) {
 }
 
 export function Chip({ children }) {
+  const { styles: d, sc } = useScaledStyles(baseStyles);
   return <View style={d.chip}><Text style={d.chipText}>{children}</Text></View>;
 }
 
 export function TRow({ label, value, color, borderTop }) {
+  const { styles: d, sc } = useScaledStyles(baseStyles);
   return (
     <View style={[d.trow, borderTop && d.trowBorder]}>
       <Text style={d.trowLabel}>{label}</Text>
@@ -113,6 +123,7 @@ export function TRow({ label, value, color, borderTop }) {
 }
 
 export function GrandTotal({ label, value }) {
+  const { styles: d, sc } = useScaledStyles(baseStyles);
   return (
     <View style={d.grand}>
       <Text style={d.grandLabel}>{label}</Text>
@@ -122,6 +133,7 @@ export function GrandTotal({ label, value }) {
 }
 
 export function InfoRow({ label, value }) {
+  const { styles: d, sc } = useScaledStyles(baseStyles);
   return (
     <View style={{ marginBottom: 8 }}>
       <Text style={d.infoLabel}>{label}</Text>
@@ -131,11 +143,13 @@ export function InfoRow({ label, value }) {
 }
 
 export function DocFooter({ children }) {
+  const { styles: d, sc } = useScaledStyles(baseStyles);
   return <Text style={d.footer}>{children}</Text>;
 }
 
 // ── แถว VAT: เปิด/ปิด + ใส่ % เอง ──
 export function VatRow({ enabled, rate, amount, onToggle, onRate, lang = 'th' }) {
+  const { styles: d, sc } = useScaledStyles(baseStyles);
   return (
     <View style={d.vatRow}>
       <Text style={d.vatLabel}>VAT</Text>
@@ -169,21 +183,22 @@ export function VatRow({ enabled, rate, amount, onToggle, onRate, lang = 'th' })
 
 // ── ปุ่มล่างสุด: สั่งปริ้น + บันทึก PDF (แยกกัน) + ปุ่มย้อนกลับ ──
 export function DocActions({ onPrint, onSavePdf, onBack, lang = 'th' }) {
+  const { styles: d, sc } = useScaledStyles(baseStyles);
   return (
     <View style={d.actionsWrap}>
       <View style={d.actions}>
         <TouchableOpacity onPress={onPrint} style={[d.actBtn, d.actPrint]} activeOpacity={0.85}>
-          <MaterialCommunityIcons name="printer" size={18} color="#fff5f7" />
+          <MaterialCommunityIcons name="printer" size={sc(18)} color="#fff5f7" />
           <Text style={d.actPrintText}>{lang === 'th' ? 'สั่งปริ้น' : 'Print'}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={onSavePdf} style={[d.actBtn, d.actPdf]} activeOpacity={0.85}>
-          <MaterialCommunityIcons name="file-pdf-box" size={19} color="#550a19" />
+          <MaterialCommunityIcons name="file-pdf-box" size={sc(19)} color="#550a19" />
           <Text style={d.actPdfText}>{lang === 'th' ? 'บันทึก PDF' : 'Save PDF'}</Text>
         </TouchableOpacity>
       </View>
       {onBack && (
         <TouchableOpacity onPress={onBack} style={d.actBack} activeOpacity={0.85}>
-          <MaterialCommunityIcons name="arrow-left" size={18} color="#806070" />
+          <MaterialCommunityIcons name="arrow-left" size={sc(18)} color="#806070" />
           <Text style={d.actBackText}>{lang === 'th' ? 'ย้อนกลับ' : 'Back'}</Text>
         </TouchableOpacity>
       )}
@@ -193,7 +208,7 @@ export function DocActions({ onPrint, onSavePdf, onBack, lang = 'th' }) {
 
 export { fmtBaht };
 
-const d = StyleSheet.create({
+const baseStyles = {
   wrap: { backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#c8a0b0', borderRadius: 14, overflow: 'hidden' },
 
   header: { backgroundColor: DOC.maroon, paddingHorizontal: 16, paddingTop: 16 },
@@ -264,4 +279,4 @@ const d = StyleSheet.create({
   actPdfText: { fontSize: 14, fontWeight: '600', color: DOC.maroon },
   actBack: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 13, borderRadius: 12, backgroundColor: '#f9f4f5', borderWidth: 1, borderColor: '#e8d5d9', marginTop: 10 },
   actBackText: { fontSize: 14, fontWeight: '600', color: '#806070' },
-});
+};

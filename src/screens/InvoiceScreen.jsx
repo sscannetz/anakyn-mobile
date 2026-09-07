@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
+import { useScaledStyles } from '../responsive';
 import { printInvoice, saveInvoice } from '../print';
 import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, TRow, VatRow, GrandTotal, DocFooter, DocActions, fmtBaht } from '../components/DocLayout';
 
@@ -49,6 +50,7 @@ const STATUS_STYLE = {
 };
 
 export default function InvoiceScreen({ navigation }) {
+  const { styles, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang] = useState('th');
   const t = T[lang];
@@ -88,7 +90,7 @@ export default function InvoiceScreen({ navigation }) {
       <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')}
         rightComponent={
           <TouchableOpacity onPress={() => setShowNew(true)} style={styles.newBtn}>
-            <MaterialCommunityIcons name="plus" size={16} color="#f5e0e5" />
+            <MaterialCommunityIcons name="plus" size={sc(16)} color="#f5e0e5" />
           </TouchableOpacity>
         }
       />
@@ -128,7 +130,7 @@ export default function InvoiceScreen({ navigation }) {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t.newTitle}</Text>
             <TouchableOpacity onPress={() => setShowNew(false)}>
-              <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
           {!!error && <View style={styles.errBox}><Text style={styles.errText}>{error}</Text></View>}
@@ -162,7 +164,7 @@ export default function InvoiceScreen({ navigation }) {
           </View>
           <TouchableOpacity onPress={handleIssue} disabled={issuing}
             style={[styles.issueBtn, { opacity: issuing ? 0.7 : 1 }]}>
-            {issuing ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="receipt" size={18} color="#fff5f7" />}
+            {issuing ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="receipt" size={sc(18)} color="#fff5f7" />}
             <Text style={styles.issueBtnText}>{issuing ? t.issuing : t.issueBtnLabel}</Text>
           </TouchableOpacity>
         </View>
@@ -217,7 +219,7 @@ export default function InvoiceScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = {
   content:      { padding: 14, paddingBottom: 30 },
   listTitle:    { fontSize: 12, fontWeight: '500', color: '#550a19', marginBottom: 10 },
   emptyText:    { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
@@ -263,4 +265,4 @@ const styles = StyleSheet.create({
   grandRow:     { backgroundColor: '#550a19', marginHorizontal: -16, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 6 },
   grandLabel:   { fontSize: 13, fontWeight: '500', color: '#f0d0d8' },
   grandVal:     { fontSize: 20, fontWeight: '500', color: '#fff5f7' },
-});
+};

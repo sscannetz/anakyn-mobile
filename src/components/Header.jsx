@@ -2,10 +2,12 @@
 // Header.jsx — Header component ที่ใช้ทุก screen
 // ══════════════════════════════════════════════════════
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { useScaledStyles } from '../responsive';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function Header({ title, onBack, lang, onLangToggle, rightComponent }) {
+  const { styles, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
 
   return (
@@ -13,7 +15,7 @@ export default function Header({ title, onBack, lang, onLangToggle, rightCompone
       <View style={styles.row}>
         {onBack ? (
           <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color="#f0d0d8" />
+            <MaterialCommunityIcons name="arrow-left" size={sc(20)} color="#f0d0d8" />
           </TouchableOpacity>
         ) : (
           <View style={styles.logoBlock}>
@@ -27,7 +29,7 @@ export default function Header({ title, onBack, lang, onLangToggle, rightCompone
         <View style={styles.rightGroup}>
           {onLangToggle && (
             <TouchableOpacity onPress={onLangToggle} style={styles.langBtn}>
-              <MaterialCommunityIcons name="translate" size={13} color="#f5e0e5" />
+              <MaterialCommunityIcons name="translate" size={sc(13)} color="#f5e0e5" />
               <Text style={styles.langText}>{lang === 'th' ? 'EN' : 'ไทย'}</Text>
             </TouchableOpacity>
           )}
@@ -38,7 +40,7 @@ export default function Header({ title, onBack, lang, onLangToggle, rightCompone
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = {
   container: {
     backgroundColor: '#550a19',
     paddingHorizontal: 16,
@@ -98,4 +100,4 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#f5e0e5',
   },
-});
+};

@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
+import { useScaledStyles } from '../responsive';
 import { getRole } from '../storage';
 
 const T = {
@@ -53,6 +54,7 @@ const T = {
 const nameOf = (u) => u?.full_name || u?.name || '';
 
 export default function AddUserScreen({ navigation }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang]       = useState('th');
   const [users, setUsers]     = useState([]);
@@ -157,7 +159,7 @@ export default function AddUserScreen({ navigation }) {
       <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
         <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
         <View style={s.center}>
-          <MaterialCommunityIcons name="lock" size={40} color="#d4a0ac" />
+          <MaterialCommunityIcons name="lock" size={sc(40)} color="#d4a0ac" />
           <Text style={s.adminOnlyText}>{t.adminOnly}</Text>
         </View>
       </View>
@@ -169,7 +171,7 @@ export default function AddUserScreen({ navigation }) {
       <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')}
         rightComponent={
           <TouchableOpacity onPress={openNew} style={s.iconBtn}>
-            <MaterialCommunityIcons name="plus" size={16} color="#f5e0e5" />
+            <MaterialCommunityIcons name="plus" size={sc(16)} color="#f5e0e5" />
           </TouchableOpacity>
         }
       />
@@ -203,10 +205,10 @@ export default function AddUserScreen({ navigation }) {
               </View>
             </View>
             <TouchableOpacity onPress={() => openEdit(u)} style={s.actBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <MaterialCommunityIcons name="pencil-outline" size={18} color="#550a19" />
+              <MaterialCommunityIcons name="pencil-outline" size={sc(18)} color="#550a19" />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { setDelError(''); setDelTarget(u); }} style={s.actBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <MaterialCommunityIcons name="trash-can-outline" size={18} color="#c0a0a8" />
+              <MaterialCommunityIcons name="trash-can-outline" size={sc(18)} color="#c0a0a8" />
             </TouchableOpacity>
           </TouchableOpacity>
         ))}
@@ -219,7 +221,7 @@ export default function AddUserScreen({ navigation }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{isEdit ? t.editUser : t.addUser}</Text>
             <TouchableOpacity onPress={() => setForm(null)}>
-              <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
           <ScrollView keyboardShouldPersistTaps="handled">
@@ -248,7 +250,7 @@ export default function AddUserScreen({ navigation }) {
                 secureTextEntry={!showPw} autoCapitalize="none"
                 placeholder={isEdit ? '••••••••' : ''} placeholderTextColor="#c0a0a8" />
               <TouchableOpacity onPress={() => setShowPw(v => !v)} style={s.eyeBtn}>
-                <MaterialCommunityIcons name={showPw ? 'eye-off' : 'eye'} size={18} color="#c0a0a8" />
+                <MaterialCommunityIcons name={showPw ? 'eye-off' : 'eye'} size={sc(18)} color="#c0a0a8" />
               </TouchableOpacity>
             </View>
             <Text style={s.hint}>{isEdit ? t.pwHintEdit : t.pwHintNew}</Text>
@@ -268,7 +270,7 @@ export default function AddUserScreen({ navigation }) {
                   style={[s.roleBtn, { backgroundColor: role === r ? '#550a19' : '#f9f4f5', borderColor: role === r ? '#550a19' : '#e8d5d9' }]}>
                   <MaterialCommunityIcons
                     name={r === 'admin' ? 'crown' : 'account'}
-                    size={14} color={role === r ? '#f5e0e5' : '#a07080'} />
+                    size={sc(14)} color={role === r ? '#f5e0e5' : '#a07080'} />
                   <Text style={[s.roleBtnText, { color: role === r ? '#f5e0e5' : '#a07080' }]}>{t.roles[r]}</Text>
                 </TouchableOpacity>
               ))}
@@ -289,7 +291,7 @@ export default function AddUserScreen({ navigation }) {
             <TouchableOpacity onPress={handleSave} disabled={saving} style={[s.saveBtn, { opacity: saving ? 0.7 : 1, marginTop: 16 }]}>
               {saving
                 ? <ActivityIndicator color="#fff5f7" size="small" />
-                : <MaterialCommunityIcons name={isEdit ? 'content-save' : 'account-plus'} size={18} color="#fff5f7" />}
+                : <MaterialCommunityIcons name={isEdit ? 'content-save' : 'account-plus'} size={sc(18)} color="#fff5f7" />}
               <Text style={s.saveBtnText}>{saving ? t.saving : (isEdit ? t.saveEditBtn : t.saveBtn)}</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -300,7 +302,7 @@ export default function AddUserScreen({ navigation }) {
       <Modal visible={!!delTarget} animationType="fade" transparent onRequestClose={() => setDelTarget(null)}>
         <View style={s.overlay}>
           <View style={s.confirmBox}>
-            <MaterialCommunityIcons name="trash-can" size={28} color="#c62828" style={{ marginBottom: 8 }} />
+            <MaterialCommunityIcons name="trash-can" size={sc(28)} color="#c62828" style={{ marginBottom: 8 }} />
             <Text style={s.confirmMsg}>{t.deleteConfirm}</Text>
             {delTarget && <Text style={s.confirmName}>{nameOf(delTarget) || delTarget.email}</Text>}
             {!!delError && <Text style={s.confirmErr}>{delError}</Text>}
@@ -319,7 +321,7 @@ export default function AddUserScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const baseStyles = {
   content:    { padding: 14, paddingBottom: 30 },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
   adminOnlyText: { fontSize: 14, color: '#a07080', fontWeight: '500' },
@@ -362,4 +364,4 @@ const s = StyleSheet.create({
   confirmBtns:{ flexDirection: 'row', gap: 10, width: '100%' },
   confirmBtn: { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   confirmBtnText: { fontSize: 13, fontWeight: '500' },
-});
+};

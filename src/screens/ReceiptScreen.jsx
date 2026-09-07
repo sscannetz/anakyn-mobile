@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
+import { useScaledStyles } from '../responsive';
 import { printReceipt, saveReceipt } from '../print';
 import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, TRow, GrandTotal, DocFooter, DocActions, fmtBaht } from '../components/DocLayout';
 
@@ -30,6 +31,7 @@ const payLabel = (key, lang) => {
 };
 
 export default function ReceiptScreen({ navigation, route }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang]         = useState('th');
   const [receipts, setReceipts] = useState([]);
@@ -88,7 +90,7 @@ export default function ReceiptScreen({ navigation, route }) {
       <Header title={lang === 'th' ? 'ใบเสร็จรับเงิน' : 'Receipt'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')}
         rightComponent={
           <TouchableOpacity onPress={() => setShowNew(true)} style={s.iconBtn}>
-            <MaterialCommunityIcons name="plus" size={16} color="#f5e0e5" />
+            <MaterialCommunityIcons name="plus" size={sc(16)} color="#f5e0e5" />
           </TouchableOpacity>
         }
       />
@@ -124,7 +126,7 @@ export default function ReceiptScreen({ navigation, route }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'ออกใบเสร็จใหม่' : 'New Receipt'}</Text>
             <TouchableOpacity onPress={() => setShowNew(false)}>
-              <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
           {!!error && <View style={s.errBox}><Text style={s.errText}>{error}</Text></View>}
@@ -155,7 +157,7 @@ export default function ReceiptScreen({ navigation, route }) {
             placeholder={lang === 'th' ? 'หมายเหตุ (ถ้ามี)' : 'Note (optional)'} placeholderTextColor="#c0a0a8" />
           <TouchableOpacity onPress={handleIssue} disabled={issuing}
             style={[s.issueBtn, { opacity: issuing ? 0.7 : 1 }]}>
-            {issuing ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="receipt" size={18} color="#fff5f7" />}
+            {issuing ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="receipt" size={sc(18)} color="#fff5f7" />}
             <Text style={s.issueBtnText}>{issuing ? (lang === 'th' ? 'กำลังออก...' : 'Issuing...') : (lang === 'th' ? 'ออกใบเสร็จ' : 'Issue receipt')}</Text>
           </TouchableOpacity>
         </View>
@@ -195,7 +197,7 @@ export default function ReceiptScreen({ navigation, route }) {
             </DocWrapper>
             <DocActions lang={lang} onPrint={() => printReceipt(selRc)} onSavePdf={() => saveReceipt(selRc)} onBack={() => setSelRc(null)} />
             <TouchableOpacity onPress={handleDelete} style={[s.delBtn, confirmDel && s.delBtnConfirm]} activeOpacity={0.85}>
-              <MaterialCommunityIcons name="trash-can-outline" size={16} color={confirmDel ? '#fff' : '#a32d2d'} />
+              <MaterialCommunityIcons name="trash-can-outline" size={sc(16)} color={confirmDel ? '#fff' : '#a32d2d'} />
               <Text style={[s.delBtnText, confirmDel && { color: '#fff' }]}>
                 {confirmDel
                   ? (lang === 'th' ? 'แตะอีกครั้งเพื่อยืนยันลบ' : 'Tap again to confirm')
@@ -209,7 +211,7 @@ export default function ReceiptScreen({ navigation, route }) {
   );
 }
 
-const s = StyleSheet.create({
+const baseStyles = {
   content:    { padding: 14, paddingBottom: 30 },
   listTitle:  { fontSize: 12, fontWeight: '500', color: '#550a19', marginBottom: 10 },
   emptyText:  { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
@@ -237,4 +239,4 @@ const s = StyleSheet.create({
   delBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e8c0c8', backgroundColor: '#fff' },
   delBtnConfirm: { backgroundColor: '#a32d2d', borderColor: '#a32d2d' },
   delBtnText: { fontSize: 13, fontWeight: '600', color: '#a32d2d' },
-});
+};

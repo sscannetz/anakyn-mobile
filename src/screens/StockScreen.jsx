@@ -12,6 +12,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import { api } from '../api';
+import { useScaledStyles } from '../responsive';
 import { printStock, printTags, saveTags } from '../print';
 
 const GOLD_BAHT_GRAMS = 15.244;
@@ -99,20 +100,24 @@ const initD = () => ({ id: Date.now() + Math.random(), weight: '', qty: '1', sha
 const categoryMap = { 'แหวน':'ring','สร้อยคอ':'necklace','ต่างหู':'earring','กำไล':'bracelet','จี้':'pendant','อื่นๆ':'other', 'Ring':'ring','Necklace':'necklace','Earring':'earring','Bracelet':'bracelet','Pendant':'pendant','Other':'other' };
 
 function Field({ label, children }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   return <View style={s.field}><Text style={s.fieldLabel}>{label}</Text>{children}</View>;
 }
 function Sec({ children }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   return <View style={s.sec}>{children}</View>;
 }
 function SecHead({ icon, children, col = '#550a19' }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   return (
     <View style={s.secHead}>
-      <MaterialCommunityIcons name={icon} size={14} color={col} />
+      <MaterialCommunityIcons name={icon} size={sc(14)} color={col} />
       <Text style={[s.secHeadText, { color: col }]}>{children}</Text>
     </View>
   );
 }
 function Toggle({ on, onChange }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   return (
     <TouchableOpacity onPress={() => onChange(!on)} style={[s.toggle, { backgroundColor: on ? '#550a19' : '#e0d8da' }]}>
       <View style={[s.toggleKnob, { left: on ? 18 : 2 }]} />
@@ -121,6 +126,7 @@ function Toggle({ on, onChange }) {
 }
 
 export default function StockScreen({ navigation }) {
+  const { styles: s, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang] = useState('th');
   const t = T[lang];
@@ -343,16 +349,16 @@ export default function StockScreen({ navigation }) {
               <Image source={{ uri: photoUri }} style={s.photo} />
               <View style={s.photoOverlay}>
                 <TouchableOpacity onPress={() => setPhotoMenuOpen(true)} style={s.photoBtn}>
-                  <MaterialCommunityIcons name="camera" size={14} color="#fff" />
+                  <MaterialCommunityIcons name="camera" size={sc(14)} color="#fff" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setPhotoUri(null)} style={s.photoBtn}>
-                  <MaterialCommunityIcons name="trash-can" size={14} color="#fff" />
+                  <MaterialCommunityIcons name="trash-can" size={sc(14)} color="#fff" />
                 </TouchableOpacity>
               </View>
             </View>
           ) : (
             <TouchableOpacity onPress={() => setPhotoMenuOpen(true)} style={s.photoPlaceholder}>
-              <MaterialCommunityIcons name="camera" size={24} color="#c8a0b0" />
+              <MaterialCommunityIcons name="camera" size={sc(24)} color="#c8a0b0" />
               <Text style={s.photoHint}>{t.photoHint}</Text>
             </TouchableOpacity>
           )}
@@ -444,7 +450,7 @@ export default function StockScreen({ navigation }) {
                 <Text style={s.diamondTitle}>{lang === 'th' ? `เพชรเม็ดที่ ${idx + 1}` : `Diamond #${idx + 1}`} {idx === 0 ? '(หลัก)' : '(ข้าง)'}</Text>
                 {idx > 0 && (
                   <TouchableOpacity onPress={() => setDiamonds(ds => ds.filter(x => x.id !== d.id))} style={s.removeBtn}>
-                    <MaterialCommunityIcons name="close" size={10} color="#550a19" />
+                    <MaterialCommunityIcons name="close" size={sc(10)} color="#550a19" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -499,7 +505,7 @@ export default function StockScreen({ navigation }) {
             </View>
           ))}
           <TouchableOpacity onPress={() => setDiamonds(ds => [...ds, initD()])} style={s.addDiamondBtn}>
-            <MaterialCommunityIcons name="plus" size={14} color="#534AB7" />
+            <MaterialCommunityIcons name="plus" size={sc(14)} color="#534AB7" />
             <Text style={s.addDiamondText}>{t.addDiamond}</Text>
           </TouchableOpacity>
         </Sec>
@@ -535,7 +541,7 @@ export default function StockScreen({ navigation }) {
         {/* SAVE BUTTON */}
         <TouchableOpacity onPress={handleSave} disabled={saving}
           style={[s.saveBtn, { opacity: saving ? 0.7 : 1 }]}>
-          {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={18} color="#fff5f7" />}
+          {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
           <Text style={s.saveBtnText}>{saving ? t.saving : t.saveBtn(skuLabel)}</Text>
         </TouchableOpacity>
 
@@ -545,11 +551,11 @@ export default function StockScreen({ navigation }) {
           {stockList.length > 0 && (
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
               <TouchableOpacity onPress={() => printStock(stockList)} style={s.toolBtn}>
-                <MaterialCommunityIcons name="printer" size={15} color="#550a19" />
+                <MaterialCommunityIcons name="printer" size={sc(15)} color="#550a19" />
                 <Text style={s.toolBtnText}>{lang === 'th' ? 'ปริ้น / บันทึก PDF' : 'Print / Save PDF'}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setTagOpen(true)} style={[s.toolBtn, { backgroundColor: '#f0eeff', borderColor: '#c8c0f0' }]}>
-                <MaterialCommunityIcons name="tag-multiple" size={15} color="#534AB7" />
+                <MaterialCommunityIcons name="tag-multiple" size={sc(15)} color="#534AB7" />
                 <Text style={[s.toolBtnText, { color: '#534AB7' }]}>
                   {lang === 'th' ? 'พิมพ์ป้ายสินค้า' : 'Print tags'}{tagCount ? ` (${tagCount})` : ''}
                 </Text>
@@ -559,7 +565,7 @@ export default function StockScreen({ navigation }) {
           {loadingList && <ActivityIndicator color="#550a19" />}
           {!!qtyErr && (
             <View style={s.qtyErrBox}>
-              <MaterialCommunityIcons name="alert-circle-outline" size={14} color="#a32d2d" />
+              <MaterialCommunityIcons name="alert-circle-outline" size={sc(14)} color="#a32d2d" />
               <Text style={s.qtyErrText}>{qtyErr}</Text>
             </View>
           )}
@@ -585,7 +591,7 @@ export default function StockScreen({ navigation }) {
                     <TouchableOpacity onPress={() => bumpQty(p, -1)} disabled={qty <= 0}
                       style={[s.qtyBtn, qty <= 0 && { opacity: 0.35 }]}
                       hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
-                      <MaterialCommunityIcons name="minus" size={13} color="#550a19" />
+                      <MaterialCommunityIcons name="minus" size={sc(13)} color="#550a19" />
                     </TouchableOpacity>
                     <View style={s.qtyValWrap}>
                       <TextInput
@@ -605,7 +611,7 @@ export default function StockScreen({ navigation }) {
                     </View>
                     <TouchableOpacity onPress={() => bumpQty(p, 1)} style={s.qtyBtn}
                       hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
-                      <MaterialCommunityIcons name="plus" size={13} color="#550a19" />
+                      <MaterialCommunityIcons name="plus" size={sc(13)} color="#550a19" />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -613,7 +619,7 @@ export default function StockScreen({ navigation }) {
                 <TouchableOpacity onPress={() => addTag(p.id)} activeOpacity={0.7}
                   style={[s.rowAddBtn, n > 0 && s.rowAddBtnOn]}
                   hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}>
-                  <MaterialCommunityIcons name={n > 0 ? 'tag' : 'tag-plus-outline'} size={15}
+                  <MaterialCommunityIcons name={n > 0 ? 'tag' : 'tag-plus-outline'} size={sc(15)}
                     color={n > 0 ? '#fff' : '#534AB7'} />
                   {n > 0 && <Text style={s.rowAddCount}>{n}</Text>}
                 </TouchableOpacity>
@@ -640,12 +646,12 @@ export default function StockScreen({ navigation }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'พิมพ์ป้ายสินค้า' : 'Print product tags'}</Text>
             <TouchableOpacity onPress={() => setTagOpen(false)}>
-              <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
 
           <View style={s.tagHint}>
-            <MaterialCommunityIcons name="information-outline" size={14} color="#534AB7" />
+            <MaterialCommunityIcons name="information-outline" size={sc(14)} color="#534AB7" />
             <Text style={s.tagHintText}>
               {lang === 'th'
                 ? 'ป้ายขนาด 50 × 15 มม. — ตั้งขนาดกระดาษใน driver เครื่องพิมพ์เป็น 50×15 มม. ก่อนสั่งพิมพ์'
@@ -673,7 +679,7 @@ export default function StockScreen({ navigation }) {
                   <TouchableOpacity onPress={() => setCopies(p.id, n > 0 ? 0 : 1)} style={s.tagCheck}>
                     <MaterialCommunityIcons
                       name={n > 0 ? 'checkbox-marked' : 'checkbox-blank-outline'}
-                      size={20} color={n > 0 ? '#534AB7' : '#c0b8d8'} />
+                      size={sc(20)} color={n > 0 ? '#534AB7' : '#c0b8d8'} />
                   </TouchableOpacity>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={s.stockName} numberOfLines={1}>{p.name}</Text>
@@ -681,7 +687,7 @@ export default function StockScreen({ navigation }) {
                   </View>
                   <View style={s.stepper}>
                     <TouchableOpacity onPress={() => setCopies(p.id, n - 1)} style={s.stepBtn}>
-                      <MaterialCommunityIcons name="minus" size={14} color="#534AB7" />
+                      <MaterialCommunityIcons name="minus" size={sc(14)} color="#534AB7" />
                     </TouchableOpacity>
                     <TextInput
                       style={s.stepVal}
@@ -692,7 +698,7 @@ export default function StockScreen({ navigation }) {
                       textAlign="center"
                     />
                     <TouchableOpacity onPress={() => setCopies(p.id, n + 1)} style={s.stepBtn}>
-                      <MaterialCommunityIcons name="plus" size={14} color="#534AB7" />
+                      <MaterialCommunityIcons name="plus" size={sc(14)} color="#534AB7" />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -708,12 +714,12 @@ export default function StockScreen({ navigation }) {
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <TouchableOpacity disabled={!tagCount} onPress={() => saveTags(tagItems)}
                 style={[s.tagActionBtn, { backgroundColor: '#fff', borderWidth: 1, borderColor: '#534AB7', opacity: tagCount ? 1 : 0.4 }]}>
-                <MaterialCommunityIcons name="file-pdf-box" size={16} color="#534AB7" />
+                <MaterialCommunityIcons name="file-pdf-box" size={sc(16)} color="#534AB7" />
                 <Text style={[s.tagActionText, { color: '#534AB7' }]}>PDF</Text>
               </TouchableOpacity>
               <TouchableOpacity disabled={!tagCount} onPress={() => printTags(tagItems)}
                 style={[s.tagActionBtn, { backgroundColor: '#534AB7', opacity: tagCount ? 1 : 0.4 }]}>
-                <MaterialCommunityIcons name="printer" size={16} color="#fff" />
+                <MaterialCommunityIcons name="printer" size={sc(16)} color="#fff" />
                 <Text style={[s.tagActionText, { color: '#fff' }]}>{lang === 'th' ? 'สั่งพิมพ์' : 'Print'}</Text>
               </TouchableOpacity>
             </View>
@@ -727,11 +733,11 @@ export default function StockScreen({ navigation }) {
           <View style={s.bottomSheet}>
             <View style={s.sheetHandle} />
             <TouchableOpacity onPress={() => pickPhoto(true)} style={s.sheetBtn}>
-              <MaterialCommunityIcons name="camera" size={18} color="#550a19" />
+              <MaterialCommunityIcons name="camera" size={sc(18)} color="#550a19" />
               <Text style={s.sheetBtnText}>{t.photoTakeNew}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => pickPhoto(false)} style={s.sheetBtn}>
-              <MaterialCommunityIcons name="image" size={18} color="#550a19" />
+              <MaterialCommunityIcons name="image" size={sc(18)} color="#550a19" />
               <Text style={s.sheetBtnText}>{t.photoGallery}</Text>
             </TouchableOpacity>
           </View>
@@ -744,7 +750,7 @@ export default function StockScreen({ navigation }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{dropdownTarget ? t[dropdownTarget.field] : ''}</Text>
             <TouchableOpacity onPress={() => setDropdownTarget(null)}>
-              <MaterialCommunityIcons name="close" size={22} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
           <TextInput style={s.modalSearch} value={dropdownQuery} onChangeText={setDropdownQuery} placeholder="ค้นหา..." placeholderTextColor="#b08090" autoFocus />
@@ -772,16 +778,16 @@ export default function StockScreen({ navigation }) {
       {tagCount > 0 && !tagOpen && (
         <View style={[s.tagBar, { bottom: insets.bottom + 12 }]}>
           <TouchableOpacity onPress={() => setTagOpen(true)} style={s.tagBarInfo} activeOpacity={0.7}>
-            <MaterialCommunityIcons name="tag-multiple" size={17} color="#fff" />
+            <MaterialCommunityIcons name="tag-multiple" size={sc(17)} color="#fff" />
             <Text style={s.tagBarText}>
               {lang === 'th' ? `ป้ายรอพิมพ์ ${tagCount} ดวง` : `${tagCount} tag${tagCount === 1 ? '' : 's'} queued`}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setTagSel({})} style={s.tagBarIcon} hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}>
-            <MaterialCommunityIcons name="close" size={16} color="rgba(255,255,255,0.75)" />
+            <MaterialCommunityIcons name="close" size={sc(16)} color="rgba(255,255,255,0.75)" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => printTags(tagItems)} style={s.tagBarPrint} activeOpacity={0.8}>
-            <MaterialCommunityIcons name="printer" size={15} color="#534AB7" />
+            <MaterialCommunityIcons name="printer" size={sc(15)} color="#534AB7" />
             <Text style={s.tagBarPrintText}>{lang === 'th' ? 'พิมพ์' : 'Print'}</Text>
           </TouchableOpacity>
         </View>
@@ -790,7 +796,7 @@ export default function StockScreen({ navigation }) {
   );
 }
 
-const s = StyleSheet.create({
+const baseStyles = {
   content: { padding: 14, paddingBottom: 30 },
   errBox:  { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 10 },
   errText: { fontSize: 12, color: '#a32d2d' },
@@ -897,4 +903,4 @@ const s = StyleSheet.create({
   modalTitle: { fontSize: 16, fontWeight: '500', color: '#550a19' },
   modalSearch: { backgroundColor: '#f9f4f5', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10, padding: 10, fontSize: 14, color: '#2c1015', marginBottom: 10 },
   stockRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
-});
+};
