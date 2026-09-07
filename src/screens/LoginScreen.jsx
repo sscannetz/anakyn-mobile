@@ -99,7 +99,7 @@ export default function LoginScreen({ navigation }) {
 
           {/* HERO */}
           <View style={styles.hero}>
-            <TouchableOpacity onPress={() => setLang(l => l === 'th' ? 'en' : 'th')} style={styles.langBtnAbs}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setLang(l => l === 'th' ? 'en' : 'th')} style={styles.langBtnAbs}>
               <MaterialCommunityIcons name="translate" size={sc(13)} color="#f5e0e5" />
               <Text style={styles.langBtnText}>{lang === 'th' ? 'EN' : 'ไทย'}</Text>
             </TouchableOpacity>
@@ -117,7 +117,7 @@ export default function LoginScreen({ navigation }) {
               {ROLES.map(r => {
                 const active = role === r.key;
                 return (
-                  <TouchableOpacity
+                  <TouchableOpacity dataSet={{ hov: 'btn' }}
                     key={r.key}
                     onPress={() => setRole(r.key)}
                     style={[styles.roleCard, { borderColor: active ? r.border : '#e8c0c8', backgroundColor: active ? r.bg : '#fff' }]}
@@ -169,13 +169,13 @@ export default function LoginScreen({ navigation }) {
                 secureTextEntry={!showPw}
                 onSubmitEditing={handleLogin}
               />
-              <TouchableOpacity onPress={() => setShowPw(v => !v)} style={styles.eyeBtn}>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowPw(v => !v)} style={styles.eyeBtn}>
                 <MaterialCommunityIcons name={showPw ? 'eye' : 'eye-off'} size={sc(18)} color="#c0a0a8" />
               </TouchableOpacity>
             </View>
 
             {/* Login button */}
-            <TouchableOpacity
+            <TouchableOpacity dataSet={{ hov: 'btn' }}
               onPress={handleLogin}
               disabled={loading}
               style={[styles.loginBtn, { backgroundColor: activeRole?.col, opacity: loading ? 0.7 : 1 }]}
@@ -196,7 +196,7 @@ export default function LoginScreen({ navigation }) {
             </View>
 
             {/* LINE button */}
-            <TouchableOpacity style={styles.lineBtn}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} style={styles.lineBtn}>
               <MaterialCommunityIcons name="chat-processing" size={sc(18)} color="#fff" />
               <Text style={styles.lineBtnText}>{t.lineBtn}</Text>
             </TouchableOpacity>

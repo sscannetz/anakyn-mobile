@@ -39,7 +39,7 @@ export default function QrScanner({ visible, onClose, onScan, note, count = 0, l
         {/* หัวข้อ */}
         <View style={s.head}>
           <Text style={s.title}>{th ? 'สแกน QR บนป้ายสินค้า' : 'Scan tag QR'}</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <MaterialCommunityIcons name="close" size={sc(24)} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -52,7 +52,7 @@ export default function QrScanner({ visible, onClose, onScan, note, count = 0, l
               <Text style={s.permText}>
                 {th ? 'ต้องอนุญาตให้ใช้กล้องก่อนถึงจะสแกนได้' : 'Camera permission is required'}
               </Text>
-              <TouchableOpacity onPress={requestPerm} style={s.permBtn}>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={requestPerm} style={s.permBtn}>
                 <MaterialCommunityIcons name="camera" size={sc(16)} color="#fff" />
                 <Text style={s.permBtnText}>{th ? 'อนุญาตใช้กล้อง' : 'Allow camera'}</Text>
               </TouchableOpacity>
@@ -84,7 +84,7 @@ export default function QrScanner({ visible, onClose, onScan, note, count = 0, l
           <View style={[s.noteBox, !noteOk && s.noteBoxErr]}>
             <Text style={[s.noteText, !noteOk && { color: '#ffd7d7' }]} numberOfLines={2}>{noteText()}</Text>
           </View>
-          <TouchableOpacity onPress={onClose} style={s.doneBtn}>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onClose} style={s.doneBtn}>
             <MaterialCommunityIcons name="cart-check" size={sc(17)} color="#550a19" />
             <Text style={s.doneText}>
               {th ? `เสร็จแล้ว (${count} ชิ้น)` : `Done (${count})`}

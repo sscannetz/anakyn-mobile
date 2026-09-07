@@ -105,7 +105,7 @@ export default function ServiceOrderScreen({ navigation }) {
     <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
       <Header title={lang === 'th' ? 'ใบสั่งซ่อม' : 'Service Order'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')}
         rightComponent={
-          <TouchableOpacity onPress={() => setShowNew(true)} style={s.iconBtn}>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(true)} style={s.iconBtn}>
             <MaterialCommunityIcons name="plus" size={sc(16)} color="#f5e0e5" />
           </TouchableOpacity>
         }
@@ -116,7 +116,7 @@ export default function ServiceOrderScreen({ navigation }) {
         {orders.map(o => {
           const st = STATUS_STYLE[o.status] || STATUS_STYLE.received;
           return (
-            <TouchableOpacity key={o.id} onPress={() => { setDVatOn(false); setDVatRate('7'); setConfirmDel(false); setSelSO(o); }} style={s.card}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} key={o.id} onPress={() => { setDVatOn(false); setDVatRate('7'); setConfirmDel(false); setSelSO(o); }} style={s.card}>
               <View style={{ flex: 1 }}>
                 <Text style={s.cardNo}>{o.service_no}</Text>
                 <Text style={s.cardTitle}>{o.product_name || '—'}</Text>
@@ -139,7 +139,7 @@ export default function ServiceOrderScreen({ navigation }) {
         <View style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'รับงานซ่อมใหม่' : 'New Service Order'}</Text>
-            <TouchableOpacity onPress={() => setShowNew(false)}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(false)}>
               <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
@@ -157,7 +157,7 @@ export default function ServiceOrderScreen({ navigation }) {
             <TextInput style={s.input} value={estimatedCost} onChangeText={setEstimatedCost} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
             <Text style={s.fieldLabel}>{lang === 'th' ? 'วันนัดรับ (YYYY-MM-DD)' : 'Due Date (YYYY-MM-DD)'}</Text>
             <TextInput style={s.input} value={dueDate} onChangeText={setDueDate} placeholder="2026-01-31" placeholderTextColor="#c0a0a8" />
-            <TouchableOpacity onPress={handleCreate} disabled={saving} style={[s.createBtn, { opacity: saving ? 0.7 : 1, marginTop: 8 }]}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleCreate} disabled={saving} style={[s.createBtn, { opacity: saving ? 0.7 : 1, marginTop: 8 }]}>
               {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
               <Text style={s.createBtnText}>{saving ? 'กำลังบันทึก...' : (lang === 'th' ? 'รับงาน' : 'Accept Job')}</Text>
             </TouchableOpacity>
@@ -213,7 +213,7 @@ export default function ServiceOrderScreen({ navigation }) {
                     {['received','repairing','qc','notified','picked_up'].map(st => {
                       const stStyle = STATUS_STYLE[st];
                       return (
-                        <TouchableOpacity key={st} onPress={() => handleUpdateStatus(selSO.id, st)}
+                        <TouchableOpacity dataSet={{ hov: 'btn' }} key={st} onPress={() => handleUpdateStatus(selSO.id, st)}
                           style={[s.stBtn, { backgroundColor: selSO.status === st ? stStyle.col : stStyle.bg, borderColor: stStyle.col }]}>
                           <Text style={[s.stBtnText, { color: selSO.status === st ? '#fff' : stStyle.col }]}>{slabs[st]}</Text>
                         </TouchableOpacity>
@@ -221,7 +221,7 @@ export default function ServiceOrderScreen({ navigation }) {
                     })}
                   </View>
                   <DocActions lang={lang} onPrint={() => printServiceOrder(docObj)} onSavePdf={() => saveServiceOrder(docObj)} onBack={() => setSelSO(null)} />
-                  <TouchableOpacity onPress={handleDelete} style={[s.delBtn, confirmDel && s.delBtnConfirm]} activeOpacity={0.85}>
+                  <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleDelete} style={[s.delBtn, confirmDel && s.delBtnConfirm]} activeOpacity={0.85}>
                     <MaterialCommunityIcons name="trash-can-outline" size={sc(16)} color={confirmDel ? '#fff' : '#a32d2d'} />
                     <Text style={[s.delBtnText, confirmDel && { color: '#fff' }]}>
                       {confirmDel

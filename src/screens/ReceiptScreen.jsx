@@ -89,7 +89,7 @@ export default function ReceiptScreen({ navigation, route }) {
     <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
       <Header title={lang === 'th' ? 'ใบเสร็จรับเงิน' : 'Receipt'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')}
         rightComponent={
-          <TouchableOpacity onPress={() => setShowNew(true)} style={s.iconBtn}>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(true)} style={s.iconBtn}>
             <MaterialCommunityIcons name="plus" size={sc(16)} color="#f5e0e5" />
           </TouchableOpacity>
         }
@@ -99,7 +99,7 @@ export default function ReceiptScreen({ navigation, route }) {
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
         {!loading && receipts.length === 0 && <Text style={s.emptyText}>{lang === 'th' ? 'ยังไม่มีใบเสร็จ' : 'No receipts yet'}</Text>}
         {receipts.map(rc => (
-          <TouchableOpacity key={rc.id} onPress={() => {
+          <TouchableOpacity dataSet={{ hov: 'btn' }} key={rc.id} onPress={() => {
               setConfirmDel(false);
               setSelRc(rc);
               api.getReceipt(rc.id).then(full => setSelRc(prev => prev && prev.id === rc.id ? { ...prev, ...full } : prev)).catch(() => {});
@@ -125,7 +125,7 @@ export default function ReceiptScreen({ navigation, route }) {
         <View style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'ออกใบเสร็จใหม่' : 'New Receipt'}</Text>
-            <TouchableOpacity onPress={() => setShowNew(false)}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(false)}>
               <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
@@ -133,7 +133,7 @@ export default function ReceiptScreen({ navigation, route }) {
           <Text style={s.fieldLabel}>{lang === 'th' ? 'เลือกรายการขาย' : 'Select a sale'}</Text>
           <ScrollView style={{ maxHeight: 260, marginBottom: 12, borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10 }}>
             {sales.map(sa => (
-              <TouchableOpacity key={sa.id} onPress={() => setSelSaleId(sa.id)}
+              <TouchableOpacity dataSet={{ hov: 'btn' }} key={sa.id} onPress={() => setSelSaleId(sa.id)}
                 style={[s.saleRow, { backgroundColor: selSaleId === sa.id ? '#fdf0f2' : '#fff' }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={s.cardNo}>{sa.sale_no}</Text>
@@ -147,7 +147,7 @@ export default function ReceiptScreen({ navigation, route }) {
           <Text style={s.fieldLabel}>{lang === 'th' ? 'ช่องทางชำระเงิน' : 'Payment method'}</Text>
           <View style={s.payRow}>
             {PAY_OPTIONS.map(p => (
-              <TouchableOpacity key={p.key} onPress={() => setPayMethod(p.key)}
+              <TouchableOpacity dataSet={{ hov: 'btn' }} key={p.key} onPress={() => setPayMethod(p.key)}
                 style={[s.payBtn, { backgroundColor: payMethod === p.key ? '#550a19' : '#f9f4f5', borderColor: payMethod === p.key ? '#550a19' : '#e8d5d9' }]}>
                 <Text style={[s.payBtnText, { color: payMethod === p.key ? '#f5e0e5' : '#a07080' }]}>{lang === 'th' ? p.th : p.en}</Text>
               </TouchableOpacity>
@@ -155,7 +155,7 @@ export default function ReceiptScreen({ navigation, route }) {
           </View>
           <TextInput style={s.input} value={note} onChangeText={setNote}
             placeholder={lang === 'th' ? 'หมายเหตุ (ถ้ามี)' : 'Note (optional)'} placeholderTextColor="#c0a0a8" />
-          <TouchableOpacity onPress={handleIssue} disabled={issuing}
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleIssue} disabled={issuing}
             style={[s.issueBtn, { opacity: issuing ? 0.7 : 1 }]}>
             {issuing ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="receipt" size={sc(18)} color="#fff5f7" />}
             <Text style={s.issueBtnText}>{issuing ? (lang === 'th' ? 'กำลังออก...' : 'Issuing...') : (lang === 'th' ? 'ออกใบเสร็จ' : 'Issue receipt')}</Text>
@@ -196,7 +196,7 @@ export default function ReceiptScreen({ navigation, route }) {
               <DocFooter>ขอบคุณที่ใช้บริการ · Anakyn Gems Co., Ltd.</DocFooter>
             </DocWrapper>
             <DocActions lang={lang} onPrint={() => printReceipt(selRc)} onSavePdf={() => saveReceipt(selRc)} onBack={() => setSelRc(null)} />
-            <TouchableOpacity onPress={handleDelete} style={[s.delBtn, confirmDel && s.delBtnConfirm]} activeOpacity={0.85}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleDelete} style={[s.delBtn, confirmDel && s.delBtnConfirm]} activeOpacity={0.85}>
               <MaterialCommunityIcons name="trash-can-outline" size={sc(16)} color={confirmDel ? '#fff' : '#a32d2d'} />
               <Text style={[s.delBtnText, confirmDel && { color: '#fff' }]}>
                 {confirmDel

@@ -170,7 +170,7 @@ export function VatRow({ enabled, rate, amount, onToggle, onRate, lang = 'th' })
         <Text style={[d.vatAmt, { color: enabled ? DOC.ink : '#b08090' }]}>{enabled ? fmtBaht(amount) : '—'}</Text>
         <View style={d.vatToggle}>
           {[[lang === 'th' ? 'มี' : 'On', true], [lang === 'th' ? 'ไม่มี' : 'Off', false]].map(([lbl, val]) => (
-            <TouchableOpacity key={String(val)} onPress={() => onToggle(val)}
+            <TouchableOpacity dataSet={{ hov: 'btn' }} key={String(val)} onPress={() => onToggle(val)}
               style={[d.vatSeg, enabled === val && d.vatSegOn]} activeOpacity={0.8}>
               <Text style={[d.vatSegText, enabled === val && d.vatSegTextOn]}>{lbl}</Text>
             </TouchableOpacity>
@@ -187,17 +187,17 @@ export function DocActions({ onPrint, onSavePdf, onBack, lang = 'th' }) {
   return (
     <View style={d.actionsWrap}>
       <View style={d.actions}>
-        <TouchableOpacity onPress={onPrint} style={[d.actBtn, d.actPrint]} activeOpacity={0.85}>
+        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onPrint} style={[d.actBtn, d.actPrint]} activeOpacity={0.85}>
           <MaterialCommunityIcons name="printer" size={sc(18)} color="#fff5f7" />
           <Text style={d.actPrintText}>{lang === 'th' ? 'สั่งปริ้น' : 'Print'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={onSavePdf} style={[d.actBtn, d.actPdf]} activeOpacity={0.85}>
+        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onSavePdf} style={[d.actBtn, d.actPdf]} activeOpacity={0.85}>
           <MaterialCommunityIcons name="file-pdf-box" size={sc(19)} color="#550a19" />
           <Text style={d.actPdfText}>{lang === 'th' ? 'บันทึก PDF' : 'Save PDF'}</Text>
         </TouchableOpacity>
       </View>
       {onBack && (
-        <TouchableOpacity onPress={onBack} style={d.actBack} activeOpacity={0.85}>
+        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onBack} style={d.actBack} activeOpacity={0.85}>
           <MaterialCommunityIcons name="arrow-left" size={sc(18)} color="#806070" />
           <Text style={d.actBackText}>{lang === 'th' ? 'ย้อนกลับ' : 'Back'}</Text>
         </TouchableOpacity>

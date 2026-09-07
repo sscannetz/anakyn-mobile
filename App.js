@@ -65,6 +65,25 @@ export default function App() {
          (คูณขนาดฟอนต์/ปุ่มขึ้นตามจอ) แทนการบีบเป็นคอลัมน์แคบเหมือนเดิม */
       #root { height: auto !important; min-height: 100vh; display: flex; flex-direction: column; background: #f9f4f5; }
       #root > div { flex: 1 0 auto; width: 100%; }
+
+      /* ── ไฮไลท์ตอนเอาเมาส์ไปชี้ ──
+         ใช้ filter แทนการเปลี่ยน background โดยตรง → ใช้ได้กับการ์ดทุกสี
+         ไม่ต้องเขียนสี hover แยกทีละใบ และไม่ทับสไตล์เดิม
+         หุ้มด้วย @media (hover:hover) กันมือถือค้างสถานะ hover หลังแตะ */
+      [data-hov] { transition: filter .15s ease, box-shadow .15s ease, transform .15s ease; }
+      @media (hover: hover) and (pointer: fine) {
+        [data-hov="btn"]:hover,
+        [data-hov="card"]:hover {
+          filter: brightness(0.955);
+          box-shadow: 0 2px 8px rgba(85,10,25,0.13);
+        }
+        [data-hov="dark"]:hover {           /* การ์ดพื้นเข้ม — ต้องสว่างขึ้นถึงจะเห็น */
+          filter: brightness(1.22);
+          box-shadow: 0 2px 10px rgba(85,10,25,0.28);
+        }
+        [data-hov="btn"]:hover { cursor: pointer; }
+      }
+      [data-hov="btn"]:active { transform: scale(0.985); }
     `;
     if (!document.getElementById('anakyn-web-scroll-fix')) document.head.appendChild(style);
   }, []);

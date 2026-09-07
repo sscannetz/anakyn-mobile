@@ -199,11 +199,11 @@ export default function HomeScreen({ navigation, route }) {
             <Text style={styles.logoSub}>GEMS</Text>
           </View>
           <View style={styles.headerBtns}>
-            <TouchableOpacity onPress={() => setLang(l => l === 'th' ? 'en' : 'th')} style={styles.headerBtn}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setLang(l => l === 'th' ? 'en' : 'th')} style={styles.headerBtn}>
               <MaterialCommunityIcons name="translate" size={sc(13)} color="#f5e0e5" />
               <Text style={styles.headerBtnText}>{lang === 'th' ? 'EN' : 'ไทย'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleLogout} style={styles.headerBtn}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleLogout} style={styles.headerBtn}>
               <Text style={styles.headerBtnText}>{t.logout}</Text>
             </TouchableOpacity>
           </View>
@@ -211,7 +211,7 @@ export default function HomeScreen({ navigation, route }) {
 
         <View style={styles.dateStrip}>
           <Text style={styles.dateText}>{t.dateLabel} <Text style={styles.dateBold}>{todayStr}</Text></Text>
-          <TouchableOpacity onPress={toggleStore} style={styles.openRow} activeOpacity={0.7}>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={toggleStore} style={styles.openRow} activeOpacity={0.7}>
             <View style={[styles.statusDot, { backgroundColor: storeOpen ? '#7ec878' : '#e05c5c' }]} />
             <Text style={styles.dateBold}>{storeOpen ? t.openStatus : t.closedStatus}</Text>
             <MaterialCommunityIcons
@@ -230,7 +230,7 @@ export default function HomeScreen({ navigation, route }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#550a19" />}
       >
         {/* KPI */}
-        <View style={styles.kpiMain}>
+        <View dataSet={{ hov: 'dark' }} style={styles.kpiMain}>
           <Text style={styles.kpiMainLabel}>{t.todayLabel}</Text>
           <Text style={styles.kpiMainValue}>{loading ? '—' : `฿${fmt(summary?.total_sales || 0)}`}</Text>
           <Text style={styles.kpiMainSub}>{loading ? '' : `${summary?.order_count || 0} รายการ`}</Text>
@@ -241,7 +241,7 @@ export default function HomeScreen({ navigation, route }) {
             [t.stockLabel, loading ? '—' : String(summary?.stock_count || 0), t.stockSub, '#534AB7', '#f0eeff', 'diamond-outline'],
             [t.allLabel,   loading ? '—' : fmt(summary?.total_pieces || 0),   t.allSub,   '#854F0B', '#fff8e1', 'package-variant-closed'],
           ].map(([label, val, sub, col, bg, icon]) => (
-            <View key={label} style={styles.kpiCard}>
+            <View key={label} dataSet={{ hov: 'card' }} style={styles.kpiCard}>
               <View style={styles.kpiCardTop}>
                 <Text style={styles.kpiCardLabel}>{label}</Text>
                 <View style={[styles.kpiIcon, { backgroundColor: bg }]}>
@@ -255,7 +255,7 @@ export default function HomeScreen({ navigation, route }) {
         </View>
 
         {/* กำไรเดือนนี้ — แสดงทั้งก่อน VAT และรวม VAT */}
-        <View style={[styles.profitCard, styles.profitFlexItem]}>
+        <View dataSet={{ hov: 'card' }} style={[styles.profitCard, styles.profitFlexItem]}>
           <View style={styles.kpiCardTop}>
             <Text style={styles.kpiCardLabel}>{t.profitLabel}</Text>
             <View style={[styles.kpiIcon, { backgroundColor: '#e8f5e9' }]}>
@@ -285,7 +285,7 @@ export default function HomeScreen({ navigation, route }) {
           <Text style={styles.sectionTitle}>{t.menuTitle}</Text>
           <View style={[styles.menuGrid, menuGridStyle]}>
             {visibleMenus.map(m => (
-              <TouchableOpacity
+              <TouchableOpacity dataSet={{ hov: 'btn' }}
                 key={m.label}
                 onPress={() => m.screen && navigation.navigate(m.screen)}
                 style={[styles.menuItem, menuItemStyle]}
@@ -309,7 +309,7 @@ export default function HomeScreen({ navigation, route }) {
           <Text style={styles.emptyText}>{t.noSales}</Text>
         )}
         {recentSales.map(s => (
-          <TouchableOpacity key={s.id} onPress={() => openSale(s)} style={styles.listCard}>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} key={s.id} onPress={() => openSale(s)} style={styles.listCard}>
             <View style={{ flex: 1 }}>
               <Text style={styles.listCardTitle}>{s.sale_no}</Text>
               <Text style={styles.listCardSub}>
@@ -329,7 +329,7 @@ export default function HomeScreen({ navigation, route }) {
             { title: t.poTitle,  count: pendingPOs.length,   icon: 'truck-delivery', col: '#1a3a60', bg: '#e0f0ff', screen: 'PurchaseOrder' },
             { title: t.srvTitle, count: pendingSrvs.length,  icon: 'tools',          col: '#854F0B', bg: '#fff8e1', screen: 'ServiceOrder'  },
           ].map(p => (
-            <TouchableOpacity key={p.title} onPress={() => navigation.navigate(p.screen)}
+            <TouchableOpacity dataSet={{ hov: 'btn' }} key={p.title} onPress={() => navigation.navigate(p.screen)}
               style={[styles.pendingCard, { backgroundColor: p.bg }]}
             >
               <View style={[styles.pendingIcon, { backgroundColor: 'rgba(255,255,255,0.6)' }]}>
@@ -350,7 +350,7 @@ export default function HomeScreen({ navigation, route }) {
         {pendingPOs.map(po => {
           const [bg, col] = POSTATUS_COL[po.status] || ['#f5f5f5', '#666'];
           return (
-            <TouchableOpacity key={po.id} onPress={() => navigation.navigate('PurchaseOrder')} style={styles.listCard}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} key={po.id} onPress={() => navigation.navigate('PurchaseOrder')} style={styles.listCard}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.listCardNo}>{po.po_no}</Text>
                 <Text style={styles.listCardTitle}>{po.supplier_name || 'ไม่ระบุ'}</Text>
@@ -368,7 +368,7 @@ export default function HomeScreen({ navigation, route }) {
         {pendingSrvs.map(s => {
           const [bg, col] = SRVSTATUS_COL[s.status] || ['#f5f5f5', '#666'];
           return (
-            <TouchableOpacity key={s.id} onPress={() => navigation.navigate('ServiceOrder')} style={styles.listCard}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} key={s.id} onPress={() => navigation.navigate('ServiceOrder')} style={styles.listCard}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.listCardNo}>{s.service_no}</Text>
                 <Text style={styles.listCardTitle}>{s.product_name || '—'}</Text>
@@ -395,7 +395,7 @@ export default function HomeScreen({ navigation, route }) {
                 {saleDetail?.sold_at ? new Date(saleDetail.sold_at).toLocaleString('th-TH') : ''}
               </Text>
             </View>
-            <TouchableOpacity onPress={() => setSaleDetail(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setSaleDetail(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
@@ -469,7 +469,7 @@ export default function HomeScreen({ navigation, route }) {
                 </View>
               </View>
 
-              <TouchableOpacity onPress={openReceiptForSale} disabled={rcBusy}
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={openReceiptForSale} disabled={rcBusy}
                 style={[styles.sdReceiptBtn, rcBusy && { opacity: 0.7 }]}>
                 {rcBusy
                   ? <ActivityIndicator color="#fff5f7" size="small" />

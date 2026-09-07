@@ -89,7 +89,7 @@ export default function InvoiceScreen({ navigation }) {
     <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
       <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')}
         rightComponent={
-          <TouchableOpacity onPress={() => setShowNew(true)} style={styles.newBtn}>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(true)} style={styles.newBtn}>
             <MaterialCommunityIcons name="plus" size={sc(16)} color="#f5e0e5" />
           </TouchableOpacity>
         }
@@ -101,7 +101,7 @@ export default function InvoiceScreen({ navigation }) {
         {invoices.map(inv => {
           const st = STATUS_STYLE[inv.status] || STATUS_STYLE.draft;
           return (
-            <TouchableOpacity key={inv.id} onPress={() => {
+            <TouchableOpacity dataSet={{ hov: 'btn' }} key={inv.id} onPress={() => {
                 const b = Number(inv.subtotal ?? inv.tax_base) || 0;
                 setDVatOn(inv.vat_applied !== false);
                 setDVatRate(b > 0 && Number(inv.vat_amount) > 0 ? String(Math.round(Number(inv.vat_amount) / b * 100)) : '7');
@@ -129,7 +129,7 @@ export default function InvoiceScreen({ navigation }) {
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t.newTitle}</Text>
-            <TouchableOpacity onPress={() => setShowNew(false)}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(false)}>
               <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
@@ -137,7 +137,7 @@ export default function InvoiceScreen({ navigation }) {
           <Text style={styles.fieldLabel}>{t.selectSale}</Text>
           <ScrollView style={{ maxHeight: 300, marginBottom: 12, borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10 }}>
             {sales.map(s => (
-              <TouchableOpacity key={s.id} onPress={() => setSelSaleId(s.id)}
+              <TouchableOpacity dataSet={{ hov: 'btn' }} key={s.id} onPress={() => setSelSaleId(s.id)}
                 style={[styles.saleRow, { backgroundColor: selSaleId === s.id ? '#fdf0f2' : '#fff' }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardNo}>{s.sale_no}</Text>
@@ -150,7 +150,7 @@ export default function InvoiceScreen({ navigation }) {
           </ScrollView>
           <View style={styles.vatRow}>
             {[[t.vatOn, true],[t.vatOff, false]].map(([label, val]) => (
-              <TouchableOpacity key={label} onPress={() => setVatOn(val)}
+              <TouchableOpacity dataSet={{ hov: 'btn' }} key={label} onPress={() => setVatOn(val)}
                 style={[styles.vatBtn, { backgroundColor: vatOn === val ? '#550a19' : '#f9f4f5', borderColor: vatOn === val ? '#550a19' : '#e8d5d9' }]}>
                 <Text style={[styles.vatBtnText, { color: vatOn === val ? '#f5e0e5' : '#a07080' }]}>{label}</Text>
               </TouchableOpacity>
@@ -162,7 +162,7 @@ export default function InvoiceScreen({ navigation }) {
               </View>
             )}
           </View>
-          <TouchableOpacity onPress={handleIssue} disabled={issuing}
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleIssue} disabled={issuing}
             style={[styles.issueBtn, { opacity: issuing ? 0.7 : 1 }]}>
             {issuing ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="receipt" size={sc(18)} color="#fff5f7" />}
             <Text style={styles.issueBtnText}>{issuing ? t.issuing : t.issueBtnLabel}</Text>

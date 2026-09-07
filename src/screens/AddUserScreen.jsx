@@ -170,7 +170,7 @@ export default function AddUserScreen({ navigation }) {
     <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
       <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')}
         rightComponent={
-          <TouchableOpacity onPress={openNew} style={s.iconBtn}>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={openNew} style={s.iconBtn}>
             <MaterialCommunityIcons name="plus" size={sc(16)} color="#f5e0e5" />
           </TouchableOpacity>
         }
@@ -180,7 +180,7 @@ export default function AddUserScreen({ navigation }) {
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
         {!loading && users.length === 0 && <Text style={s.emptyText}>{t.noUsers}</Text>}
         {users.map(u => (
-          <TouchableOpacity key={u.id} activeOpacity={0.7} onPress={() => openEdit(u)} style={s.card}>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} key={u.id} activeOpacity={0.7} onPress={() => openEdit(u)} style={s.card}>
             <View style={[s.avatar, { backgroundColor: u.role === 'admin' ? '#fdf0f2' : '#e0f0ff' }]}>
               <Text style={[s.avatarText, { color: u.role === 'admin' ? '#550a19' : '#1a3a60' }]}>
                 {(nameOf(u) || u.email || '?').slice(0, 1).toUpperCase()}
@@ -204,10 +204,10 @@ export default function AddUserScreen({ navigation }) {
                 </View>
               </View>
             </View>
-            <TouchableOpacity onPress={() => openEdit(u)} style={s.actBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => openEdit(u)} style={s.actBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <MaterialCommunityIcons name="pencil-outline" size={sc(18)} color="#550a19" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => { setDelError(''); setDelTarget(u); }} style={s.actBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setDelError(''); setDelTarget(u); }} style={s.actBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <MaterialCommunityIcons name="trash-can-outline" size={sc(18)} color="#c0a0a8" />
             </TouchableOpacity>
           </TouchableOpacity>
@@ -220,7 +220,7 @@ export default function AddUserScreen({ navigation }) {
         <View style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{isEdit ? t.editUser : t.addUser}</Text>
-            <TouchableOpacity onPress={() => setForm(null)}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setForm(null)}>
               <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
@@ -249,7 +249,7 @@ export default function AddUserScreen({ navigation }) {
               <TextInput style={[s.input, { flex: 1, marginBottom: 0 }]} value={password} onChangeText={setPassword}
                 secureTextEntry={!showPw} autoCapitalize="none"
                 placeholder={isEdit ? '••••••••' : ''} placeholderTextColor="#c0a0a8" />
-              <TouchableOpacity onPress={() => setShowPw(v => !v)} style={s.eyeBtn}>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowPw(v => !v)} style={s.eyeBtn}>
                 <MaterialCommunityIcons name={showPw ? 'eye-off' : 'eye'} size={sc(18)} color="#c0a0a8" />
               </TouchableOpacity>
             </View>
@@ -266,7 +266,7 @@ export default function AddUserScreen({ navigation }) {
             <Text style={[s.fieldLabel, { marginTop: 6 }]}>{t.role}</Text>
             <View style={s.roleRow}>
               {['staff', 'admin'].map(r => (
-                <TouchableOpacity key={r} onPress={() => setRole(r)}
+                <TouchableOpacity dataSet={{ hov: 'btn' }} key={r} onPress={() => setRole(r)}
                   style={[s.roleBtn, { backgroundColor: role === r ? '#550a19' : '#f9f4f5', borderColor: role === r ? '#550a19' : '#e8d5d9' }]}>
                   <MaterialCommunityIcons
                     name={r === 'admin' ? 'crown' : 'account'}
@@ -288,7 +288,7 @@ export default function AddUserScreen({ navigation }) {
               </View>
             )}
 
-            <TouchableOpacity onPress={handleSave} disabled={saving} style={[s.saveBtn, { opacity: saving ? 0.7 : 1, marginTop: 16 }]}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleSave} disabled={saving} style={[s.saveBtn, { opacity: saving ? 0.7 : 1, marginTop: 16 }]}>
               {saving
                 ? <ActivityIndicator color="#fff5f7" size="small" />
                 : <MaterialCommunityIcons name={isEdit ? 'content-save' : 'account-plus'} size={sc(18)} color="#fff5f7" />}
@@ -307,10 +307,10 @@ export default function AddUserScreen({ navigation }) {
             {delTarget && <Text style={s.confirmName}>{nameOf(delTarget) || delTarget.email}</Text>}
             {!!delError && <Text style={s.confirmErr}>{delError}</Text>}
             <View style={s.confirmBtns}>
-              <TouchableOpacity onPress={() => setDelTarget(null)} style={[s.confirmBtn, { backgroundColor: '#f9f4f5' }]}>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setDelTarget(null)} style={[s.confirmBtn, { backgroundColor: '#f9f4f5' }]}>
                 <Text style={[s.confirmBtnText, { color: '#806070' }]}>{t.confirmNo}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleDelete} style={[s.confirmBtn, { backgroundColor: '#c62828' }]}>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleDelete} style={[s.confirmBtn, { backgroundColor: '#c62828' }]}>
                 <Text style={[s.confirmBtnText, { color: '#fff' }]}>{t.confirmYes}</Text>
               </TouchableOpacity>
             </View>

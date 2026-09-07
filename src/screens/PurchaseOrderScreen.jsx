@@ -89,7 +89,7 @@ export default function PurchaseOrderScreen({ navigation }) {
     <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
       <Header title={lang === 'th' ? 'ใบสั่งซื้อ' : 'Purchase Order'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')}
         rightComponent={
-          <TouchableOpacity onPress={() => setShowNew(true)} style={s.iconBtn}>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(true)} style={s.iconBtn}>
             <MaterialCommunityIcons name="plus" size={sc(16)} color="#f5e0e5" />
           </TouchableOpacity>
         }
@@ -100,7 +100,7 @@ export default function PurchaseOrderScreen({ navigation }) {
         {orders.map(o => {
           const st = STATUS_STYLE[o.status] || STATUS_STYLE.pending;
           return (
-            <TouchableOpacity key={o.id} onPress={() => {
+            <TouchableOpacity dataSet={{ hov: 'btn' }} key={o.id} onPress={() => {
                 const b = Number(o.subtotal) || 0;
                 setDVatOn(Number(o.vat_amount) > 0 || o.vat_applied === true);
                 setDVatRate(b > 0 && Number(o.vat_amount) > 0 ? String(Math.round(Number(o.vat_amount) / b * 100)) : '7');
@@ -128,7 +128,7 @@ export default function PurchaseOrderScreen({ navigation }) {
         <View style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'สร้างใบสั่งซื้อ' : 'Create Purchase Order'}</Text>
-            <TouchableOpacity onPress={() => setShowNew(false)}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(false)}>
               <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
@@ -145,13 +145,13 @@ export default function PurchaseOrderScreen({ navigation }) {
                 <TextInput style={[s.input, { width: 50, marginBottom: 0 }]} value={it.qty} onChangeText={v => updItem(idx, 'qty', v)} keyboardType="numeric" />
                 <TextInput style={[s.input, { flex: 1, marginBottom: 0 }]} value={it.price} onChangeText={v => updItem(idx, 'price', v)} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
                 {items.length > 1 && (
-                  <TouchableOpacity onPress={() => setItems(prev => prev.filter((_, i) => i !== idx))}>
+                  <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setItems(prev => prev.filter((_, i) => i !== idx))}>
                     <MaterialCommunityIcons name="close" size={sc(18)} color="#550a19" />
                   </TouchableOpacity>
                 )}
               </View>
             ))}
-            <TouchableOpacity onPress={() => setItems(prev => [...prev, { name: '', qty: '1', price: '' }])} style={s.addItemBtn}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setItems(prev => [...prev, { name: '', qty: '1', price: '' }])} style={s.addItemBtn}>
               <MaterialCommunityIcons name="plus" size={sc(14)} color="#550a19" />
               <Text style={s.addItemText}>{lang === 'th' ? 'เพิ่มรายการ' : 'Add item'}</Text>
             </TouchableOpacity>
@@ -161,7 +161,7 @@ export default function PurchaseOrderScreen({ navigation }) {
             </View>
             <Text style={s.fieldLabel}>{lang === 'th' ? 'หมายเหตุ' : 'Notes'}</Text>
             <TextInput style={[s.input, { height: 70, textAlignVertical: 'top', marginBottom: 16 }]} value={notes} onChangeText={setNotes} multiline placeholderTextColor="#c0a0a8" />
-            <TouchableOpacity onPress={handleCreate} disabled={saving} style={[s.createBtn, { opacity: saving ? 0.7 : 1 }]}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleCreate} disabled={saving} style={[s.createBtn, { opacity: saving ? 0.7 : 1 }]}>
               {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
               <Text style={s.createBtnText}>{saving ? 'กำลังบันทึก...' : (lang === 'th' ? 'สร้าง PO' : 'Create PO')}</Text>
             </TouchableOpacity>
@@ -215,7 +215,7 @@ export default function PurchaseOrderScreen({ navigation }) {
                     {['pending','sent','received','cancelled'].map(st => {
                       const stStyle = STATUS_STYLE[st];
                       return (
-                        <TouchableOpacity key={st} onPress={() => handleUpdateStatus(selPO.id, st)}
+                        <TouchableOpacity dataSet={{ hov: 'btn' }} key={st} onPress={() => handleUpdateStatus(selPO.id, st)}
                           style={[s.stBtn, { backgroundColor: selPO.status === st ? stStyle.col : stStyle.bg, borderColor: stStyle.col }]}>
                           <Text style={[s.stBtnText, { color: selPO.status === st ? '#fff' : stStyle.col }]}>{slabs[st]}</Text>
                         </TouchableOpacity>

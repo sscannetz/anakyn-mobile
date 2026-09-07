@@ -14,7 +14,7 @@ export default function Header({ title, onBack, lang, onLangToggle, rightCompone
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <View style={styles.row}>
         {onBack ? (
-          <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onBack} style={styles.backBtn}>
             <MaterialCommunityIcons name="arrow-left" size={sc(20)} color="#f0d0d8" />
           </TouchableOpacity>
         ) : (
@@ -28,7 +28,7 @@ export default function Header({ title, onBack, lang, onLangToggle, rightCompone
 
         <View style={styles.rightGroup}>
           {onLangToggle && (
-            <TouchableOpacity onPress={onLangToggle} style={styles.langBtn}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onLangToggle} style={styles.langBtn}>
               <MaterialCommunityIcons name="translate" size={sc(13)} color="#f5e0e5" />
               <Text style={styles.langText}>{lang === 'th' ? 'EN' : 'ไทย'}</Text>
             </TouchableOpacity>

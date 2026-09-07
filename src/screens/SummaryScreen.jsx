@@ -95,7 +95,7 @@ export default function SummaryScreen({ navigation }) {
       {/* PERIOD TABS */}
       <View style={s.periodTabs}>
         {t.periods.map((p, i) => (
-          <TouchableOpacity key={p} onPress={() => setPeriod(i)}
+          <TouchableOpacity dataSet={{ hov: 'btn' }} key={p} onPress={() => setPeriod(i)}
             style={[s.periodTab, { borderBottomWidth: period === i ? 2 : 0, borderBottomColor: '#550a19' }]}>
             <Text style={[s.periodTabText, { color: period === i ? '#550a19' : '#a07080', fontWeight: period === i ? '500' : '400' }]}>{p}</Text>
           </TouchableOpacity>
@@ -106,7 +106,7 @@ export default function SummaryScreen({ navigation }) {
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
 
         {!loading && (
-          <TouchableOpacity onPress={() => printSummary(d, t.periods[period])}
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printSummary(d, t.periods[period])}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-end', backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, paddingHorizontal: 11, paddingVertical: 7, marginBottom: 10 }}>
             <MaterialCommunityIcons name="printer" size={sc(15)} color="#550a19" />
             <Text style={{ fontSize: 12, color: '#550a19', fontWeight: '500' }}>{lang === 'th' ? 'ปริ้น / บันทึก PDF' : 'Print / Save PDF'}</Text>

@@ -294,7 +294,7 @@ export default function SaleScreen({ navigation, route }) {
             <View style={[s.scanBox, !good && s.scanBoxErr]}>
               <MaterialCommunityIcons name={info.icon} size={sc(16)} color={good ? '#1a5c28' : '#a32d2d'} />
               <Text style={[s.scanText, !good && { color: '#a32d2d' }]}>{info.msg}</Text>
-              <TouchableOpacity onPress={() => setScanNote(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setScanNote(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <MaterialCommunityIcons name="close" size={sc(14)} color={good ? '#1a5c28' : '#a32d2d'} />
               </TouchableOpacity>
             </View>
@@ -304,16 +304,16 @@ export default function SaleScreen({ navigation, route }) {
         {/* ADD ITEMS */}
         <Sec>
           <SecHead icon="magnify">{t.addItem}</SecHead>
-          <TouchableOpacity onPress={() => setShowPicker(true)} style={s.searchBar}>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowPicker(true)} style={s.searchBar}>
             <MaterialCommunityIcons name="magnify" size={sc(15)} color="#b08090" />
             <Text style={s.searchPh}>{t.searchItem}</Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity onPress={() => setShowPicker(true)} style={[s.fromStockBtn, { flex: 1 }]}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowPicker(true)} style={[s.fromStockBtn, { flex: 1 }]}>
               <MaterialCommunityIcons name="view-list" size={sc(16)} color="#550a19" />
               <Text style={s.fromStockText}>{t.fromStock} ({stockList.length})</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => { setScanNote(null); setScanOpen(true); }} style={s.scanBtn}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setScanNote(null); setScanOpen(true); }} style={s.scanBtn}>
               <MaterialCommunityIcons name="qrcode-scan" size={sc(16)} color="#fff5f7" />
               <Text style={s.scanBtnText}>{lang === 'th' ? 'สแกน QR' : 'Scan QR'}</Text>
             </TouchableOpacity>
@@ -329,7 +329,7 @@ export default function SaleScreen({ navigation, route }) {
                     <Text style={s.cartSku}>{it.sku} · {it.metal_type || '—'}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <TouchableOpacity onPress={() => setCartItems(prev => prev.filter((_, i) => i !== idx))} style={s.removeBtn}>
+                    <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setCartItems(prev => prev.filter((_, i) => i !== idx))} style={s.removeBtn}>
                       <MaterialCommunityIcons name="close" size={sc(11)} color="#550a19" />
                     </TouchableOpacity>
                     <Text style={s.cartPrice}>฿{fmt(it.price)}</Text>
@@ -344,7 +344,7 @@ export default function SaleScreen({ navigation, route }) {
             ))
           }
 
-          <TouchableOpacity onPress={() => setShowPicker(true)} style={s.addMoreBtn}>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowPicker(true)} style={s.addMoreBtn}>
             <MaterialCommunityIcons name="plus" size={sc(14)} color="#b08090" />
             <Text style={s.addMoreText}>{t.addMore}</Text>
           </TouchableOpacity>
@@ -366,7 +366,7 @@ export default function SaleScreen({ navigation, route }) {
                   placeholderTextColor="#b08090"
                 />
                 {!!custQuery && (
-                  <TouchableOpacity onPress={() => setCustQuery('')}>
+                  <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setCustQuery('')}>
                     <MaterialCommunityIcons name="close-circle" size={sc(15)} color="#c0a0a8" />
                   </TouchableOpacity>
                 )}
@@ -374,7 +374,7 @@ export default function SaleScreen({ navigation, route }) {
               {!!custQuery.trim() && (
                 <View style={s.custResults}>
                   {filteredCusts.slice(0, 5).map(c => (
-                    <TouchableOpacity key={c.id} onPress={() => { setSelCustId(c.id); setCustQuery(''); }} style={s.custResultRow}>
+                    <TouchableOpacity dataSet={{ hov: 'btn' }} key={c.id} onPress={() => { setSelCustId(c.id); setCustQuery(''); }} style={s.custResultRow}>
                       <View style={{ flex: 1 }}>
                         <Text style={s.custName}>{c.full_name}</Text>
                         <Text style={s.custSub}>{c.phone || '—'}</Text>
@@ -383,7 +383,7 @@ export default function SaleScreen({ navigation, route }) {
                     </TouchableOpacity>
                   ))}
                   {/* ไม่มีในระบบ → ใช้ชื่อที่พิมพ์ */}
-                  <TouchableOpacity onPress={() => { setManualCust(custQuery.trim()); setCustQuery(''); }} style={s.custAddRow}>
+                  <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setManualCust(custQuery.trim()); setCustQuery(''); }} style={s.custAddRow}>
                     <MaterialCommunityIcons name="account-plus" size={sc(15)} color="#550a19" />
                     <Text style={s.custAddText}>
                       {lang === 'th' ? `ใช้ชื่อ "${custQuery.trim()}"` : `Use "${custQuery.trim()}"`}
@@ -403,7 +403,7 @@ export default function SaleScreen({ navigation, route }) {
                 <Text style={s.custName}>{manualCust}</Text>
                 <Text style={s.custSub}>{lang === 'th' ? 'ลูกค้าใหม่ (พิมพ์เอง)' : 'New customer'}</Text>
               </View>
-              <TouchableOpacity onPress={() => setManualCust('')} style={s.removeBtn}>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setManualCust('')} style={s.removeBtn}>
                 <MaterialCommunityIcons name="close" size={sc(10)} color="#550a19" />
               </TouchableOpacity>
             </View>
@@ -419,7 +419,7 @@ export default function SaleScreen({ navigation, route }) {
               </View>
               <View style={{ alignItems: 'flex-end', gap: 4 }}>
                 {selCust.is_vip && <View style={s.vipBadge}><Text style={s.vipText}>VIP</Text></View>}
-                <TouchableOpacity onPress={() => setSelCustId(null)} style={s.removeBtn}>
+                <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setSelCustId(null)} style={s.removeBtn}>
                   <MaterialCommunityIcons name="close" size={sc(10)} color="#550a19" />
                 </TouchableOpacity>
               </View>
@@ -430,7 +430,7 @@ export default function SaleScreen({ navigation, route }) {
 
           {selCust?.is_vip && (
             <View style={s.toggleRow}>
-              <TouchableOpacity onPress={() => setVipOn(v => !v)} style={[s.toggle, { backgroundColor: vipOn ? '#550a19' : '#e0d8da' }]}>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setVipOn(v => !v)} style={[s.toggle, { backgroundColor: vipOn ? '#550a19' : '#e0d8da' }]}>
                 <View style={[s.toggleKnob, { left: vipOn ? 18 : 2 }]} />
               </TouchableOpacity>
               <Text style={s.toggleLabel}>{t.vipDisc} ({selCust.vip_discount_pct}%)</Text>
@@ -466,7 +466,7 @@ export default function SaleScreen({ navigation, route }) {
               <Text style={s.priceVal}>{vatOn ? `฿${fmt(vatAmt)}` : '—'}</Text>
               <View style={s.vatToggle}>
                 {[[t.vatOn, true],[t.vatOff, false]].map(([label, val]) => (
-                  <TouchableOpacity key={label} onPress={() => setVatOn(val)}
+                  <TouchableOpacity dataSet={{ hov: 'btn' }} key={label} onPress={() => setVatOn(val)}
                     style={[s.vatOption, { backgroundColor: vatOn === val ? '#550a19' : '#fff' }]}>
                     <Text style={[s.vatOptionText, { color: vatOn === val ? '#f5e0e5' : '#a07080' }]}>{label}</Text>
                   </TouchableOpacity>
@@ -488,7 +488,7 @@ export default function SaleScreen({ navigation, route }) {
             {t.payMethods.map(m => {
               const on = selPay.includes(m.key);
               return (
-                <TouchableOpacity key={m.key} onPress={() => setSelPay(p => p.includes(m.key) ? p.filter(k => k !== m.key) : [...p, m.key])}
+                <TouchableOpacity dataSet={{ hov: 'btn' }} key={m.key} onPress={() => setSelPay(p => p.includes(m.key) ? p.filter(k => k !== m.key) : [...p, m.key])}
                   style={[s.payCard, { borderColor: on ? '#550a19' : '#e8d5d9', borderWidth: on ? 1.5 : 0.5, backgroundColor: on ? '#fdf0f2' : '#fff' }]}>
                   <MaterialCommunityIcons name={m.icon} size={sc(18)} color={on ? '#550a19' : '#2e7d32'} />
                   <Text style={[s.payCardLabel, { color: '#2c1015' }]}>{m.label}</Text>
@@ -526,7 +526,7 @@ export default function SaleScreen({ navigation, route }) {
         </Sec>
 
         {/* CONFIRM BUTTON */}
-        <TouchableOpacity onPress={handleConfirm} disabled={saving || cartItems.length === 0}
+        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleConfirm} disabled={saving || cartItems.length === 0}
           style={[s.confirmBtn, { opacity: (saving || cartItems.length === 0) ? 0.6 : 1 }]}>
           {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
           <Text style={s.confirmBtnText}>{saving ? t.saving : t.confirmSale(fmt(grandTotal))}</Text>
@@ -540,7 +540,7 @@ export default function SaleScreen({ navigation, route }) {
         <View style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{t.fromStock}</Text>
-            <TouchableOpacity onPress={() => setShowPicker(false)}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowPicker(false)}>
               <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
@@ -564,7 +564,7 @@ export default function SaleScreen({ navigation, route }) {
                   const have = cartItems.filter(it => it.product_id === item.id).length;
                   const full = max > 0 && have >= max;
                   return (
-                    <TouchableOpacity onPress={() => addToCart(item)} disabled={full}
+                    <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => addToCart(item)} disabled={full}
                       style={[s.stockRow, full && { opacity: 0.45 }]}>
                       <View style={{ flex: 1 }}>
                         <Text style={s.stockName}>{item.name}</Text>
@@ -588,7 +588,7 @@ export default function SaleScreen({ navigation, route }) {
             <Text style={s.pickFootText}>
               {lang === 'th' ? `ในตะกร้า ${cartItems.length} ชิ้น` : `${cartItems.length} in cart`}
             </Text>
-            <TouchableOpacity onPress={() => { setShowPicker(false); setPickerQuery(''); }} style={s.pickDoneBtn}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setShowPicker(false); setPickerQuery(''); }} style={s.pickDoneBtn}>
               <MaterialCommunityIcons name="check" size={sc(16)} color="#fff5f7" />
               <Text style={s.pickDoneText}>{lang === 'th' ? 'เสร็จแล้ว' : 'Done'}</Text>
             </TouchableOpacity>
@@ -601,7 +601,7 @@ export default function SaleScreen({ navigation, route }) {
         <View style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{t.customer}</Text>
-            <TouchableOpacity onPress={() => setShowCustPicker(false)}>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowCustPicker(false)}>
               <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
@@ -618,7 +618,7 @@ export default function SaleScreen({ navigation, route }) {
             keyExtractor={item => String(item.id)}
             ListEmptyComponent={<Text style={s.emptyText}>{lang === 'th' ? 'ไม่พบลูกค้า' : 'No customers'}</Text>}
             renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => { setSelCustId(item.id); setShowCustPicker(false); setCustQuery(''); }} style={s.stockRow}>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setSelCustId(item.id); setShowCustPicker(false); setCustQuery(''); }} style={s.stockRow}>
                 <Text style={{ flex: 1, fontSize: 14, color: '#2c1015' }}>{item.full_name}</Text>
                 {item.is_vip && <View style={s.vipBadge}><Text style={s.vipText}>VIP</Text></View>}
               </TouchableOpacity>
