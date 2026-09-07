@@ -235,7 +235,8 @@ export default function HomeScreen({ navigation, route }) {
           <Text style={styles.kpiMainValue}>{loading ? '—' : `฿${fmt(summary?.total_sales || 0)}`}</Text>
           <Text style={styles.kpiMainSub}>{loading ? '' : `${summary?.order_count || 0} รายการ`}</Text>
         </View>
-        <View style={styles.kpiRow}>
+        <View style={styles.kpiWrap}>
+        <View style={[styles.kpiRow, styles.kpiFlexItem]}>
           {[
             [t.stockLabel, loading ? '—' : String(summary?.stock_count || 0), t.stockSub, '#534AB7', '#f0eeff', 'diamond-outline'],
             [t.allLabel,   loading ? '—' : fmt(summary?.total_pieces || 0),   t.allSub,   '#854F0B', '#fff8e1', 'package-variant-closed'],
@@ -254,7 +255,7 @@ export default function HomeScreen({ navigation, route }) {
         </View>
 
         {/* กำไรเดือนนี้ — แสดงทั้งก่อน VAT และรวม VAT */}
-        <View style={styles.profitCard}>
+        <View style={[styles.profitCard, styles.profitFlexItem]}>
           <View style={styles.kpiCardTop}>
             <Text style={styles.kpiCardLabel}>{t.profitLabel}</Text>
             <View style={[styles.kpiIcon, { backgroundColor: '#e8f5e9' }]}>
@@ -276,6 +277,7 @@ export default function HomeScreen({ navigation, route }) {
               <Text style={styles.kpiCardSub}>{t.profitSub2}</Text>
             </View>
           </View>
+        </View>
         </View>
 
         {/* MENU GRID */}
@@ -515,6 +517,11 @@ const baseStyles = {
   kpiMainLabel: { fontSize: 11, color: '#d4a0ac', marginBottom: 3 },
   kpiMainValue: { fontSize: 26, fontWeight: '500', color: '#fff5f7' },
   kpiMainSub:   { fontSize: 11, color: '#c090a0', marginTop: 3 },
+  // กล่องครอบ KPI + กำไร — จอกว้างเรียงแถวเดียว จอแคบตัดบรรทัดเองอัตโนมัติ
+  // ควบคุมจุดตัดด้วย minWidth ของลูก ไม่ต้องผูก breakpoint ตายตัว
+  kpiWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 10 },
+  kpiFlexItem:    { flex: 1, minWidth: 340, marginBottom: 0 },
+  profitFlexItem: { flex: 1, minWidth: 380, marginBottom: 0 },
   kpiRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   kpiCard: { flex: 1, backgroundColor: '#fff', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 10 },
   // การ์ดเดี่ยวเต็มความกว้าง — ห้ามใช้ flex:1 ของ kpiCard ไม่งั้นความสูงยุบเป็น 0
