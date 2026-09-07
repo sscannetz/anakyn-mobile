@@ -90,19 +90,16 @@ export function useResponsive() {
   } else {
     // เล็งให้ช่องกว้างราว 88-105px — ยิ่งช่องแคบ ไอคอนยิ่งชิดกัน
     const cols = Math.max(4, Math.min(8, Math.floor(avail / 88)));
-    menuItemWidth = `${(100 / cols).toFixed(4)}%`;
-    const cellW = avail / cols;
 
-    if (width >= 480) {
-      // แท็บเล็ตเล็ก / หน้าต่างเบราว์เซอร์แคบ → ไอคอนโตตามช่อง ช่องไฟจะได้ไม่บาน
-      menuIconSize = Math.min(96, Math.max(44, Math.round(cellW * 0.64)));
-      menuGap = 1;
-      menuPadX = 1;
-    } else {
-      menuIconSize = null;   // null = ใช้ค่าเดิมในสไตล์ (44px) — มือถือจริงไม่เปลี่ยนเลย
-      menuGap = null;
-      menuPadX = null;
-    }
+    // ⚠ ห้ามใช้ 100/cols เป๊ะ ๆ — รวมกันได้ 100% พอดี พอบวก gap เข้าไปจะเกิน
+    //   แล้วช่องสุดท้ายตกบรรทัด (4 คอลัมน์กลายเป็น 3) จึงหักทิ้ง 0.3% กันพลาด
+    menuItemWidth = `${(100 / cols - 0.3).toFixed(4)}%`;
+
+    // ไอคอนโตตามขนาดช่อง → สัดส่วนไอคอนต่อช่องคงที่ ช่องไฟไม่บานไม่ว่าจอกว้างเท่าไหร่
+    const cellW = avail / cols;
+    menuIconSize = Math.min(96, Math.max(40, Math.round(cellW * 0.64)));
+    menuGap = 0;
+    menuPadX = 1;
   }
 
   return useMemo(() => ({
