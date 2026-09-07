@@ -83,7 +83,7 @@ const SRVSTATUS_LABEL = { received: 'รับเรื่อง', repairing: '�
 const SRVSTATUS_COL   = { received: ['#fff8e1','#854F0B'], repairing: ['#e0f0ff','#1a3a60'], qc: ['#f0eeff','#3c3489'], notified: ['#fdf0f2','#7a1c2e'], picked_up: ['#e8f5e9','#1a5c28'] };
 
 export default function HomeScreen({ navigation, route }) {
-  const { styles, sc, center, menuItemWidth, menuGridStyle, menuIconStyle, menuEmojiSize } = useScaledStyles(baseStyles);
+  const { styles, sc, center, menuItemStyle, menuGridStyle, menuIconStyle, menuEmojiSize } = useScaledStyles(baseStyles);
   const insets     = useSafeAreaInsets();
   // role มาจาก 2 ทาง: params (ตอนเพิ่งล็อกอิน) และ storage (ตอนรีเฟรชหน้า/เปิดแอปใหม่)
   // ถ้าอ่านจาก params อย่างเดียว พอกดรีเฟรชจะกลายเป็น staff แล้วเมนูของ admin หายไป
@@ -288,7 +288,7 @@ export default function HomeScreen({ navigation, route }) {
               <TouchableOpacity
                 key={m.label}
                 onPress={() => m.screen && navigation.navigate(m.screen)}
-                style={[styles.menuItem, { width: menuItemWidth }]}
+                style={[styles.menuItem, menuItemStyle]}
                 activeOpacity={m.screen ? 0.7 : 1}
               >
                 <View style={[styles.menuIcon, { backgroundColor: m.bg }, menuIconStyle]}>

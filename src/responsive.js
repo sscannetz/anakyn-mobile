@@ -73,21 +73,26 @@ export function useResponsive() {
   // มือถือ: แบ่ง 4 คอลัมน์เท่า ๆ กัน (เหมือนเดิมทุกประการ)
   // จอใหญ่: ใช้ "ความกว้างคงที่" แทน % ไม่งั้นช่องจะกว้างมากจนไอคอนลอยอยู่กลางที่ว่าง
   //         แล้วปล่อยให้ขึ้นบรรทัดใหม่เองตามจำนวนที่ใส่ได้
-  const menuItemWidth = isDesktop ? 148 : isTablet ? 124 : '24%';
-  const menuIconSize  = isDesktop ? 84 : isTablet ? 62 : null; // null = ใช้ขนาดเดิมในสไตล์
+  // ไอคอนใหญ่ + ช่องไฟแคบ = เมนูดูแน่น ไม่โล่ง
+  // ขนาดตัวหนังสือไม่แตะ ปล่อยให้ scale ปกติจัดการ
+  const menuItemWidth = isDesktop ? 130 : isTablet ? 110 : '24%';
+  const menuIconSize  = isDesktop ? 104 : isTablet ? 76 : null; // null = ใช้ขนาดเดิมในสไตล์
+  const menuGap       = isTablet ? 4 : null;                    // เดิม 14/8 → แคบลงเหลือ 4
 
   return useMemo(() => ({
     width, height, isTablet, isDesktop, scale,
     sc: (n) => Math.round(n * scale),
-    menuItemWidth,
-    menuGridStyle: isTablet ? { gap: isDesktop ? 14 : 8 } : null,
+    menuItemStyle: isTablet
+      ? { width: menuItemWidth, paddingHorizontal: 2 }   // ลด padding ด้วย ช่องไฟจะได้แคบจริง
+      : { width: menuItemWidth },
+    menuGridStyle: menuGap != null ? { gap: menuGap } : null,
     menuIconStyle: menuIconSize
-      ? { width: menuIconSize, height: menuIconSize, borderRadius: Math.round(menuIconSize * 0.29) }
+      ? { width: menuIconSize, height: menuIconSize, borderRadius: Math.round(menuIconSize * 0.28) }
       : null,
     menuEmojiSize: menuIconSize ? Math.round(menuIconSize * 0.52) : 22,
     // เต็มความกว้างจอ — ไม่บีบเป็นคอลัมน์กลางแล้ว
     center: null,
-  }), [width, height, isTablet, isDesktop, scale, menuItemWidth, menuIconSize]);
+  }), [width, height, isTablet, isDesktop, scale, menuItemWidth, menuIconSize, menuGap]);
 }
 
 /**
