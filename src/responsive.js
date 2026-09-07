@@ -73,26 +73,52 @@ export function useResponsive() {
   // มือถือ: แบ่ง 4 คอลัมน์เท่า ๆ กัน (เหมือนเดิมทุกประการ)
   // จอใหญ่: ใช้ "ความกว้างคงที่" แทน % ไม่งั้นช่องจะกว้างมากจนไอคอนลอยอยู่กลางที่ว่าง
   //         แล้วปล่อยให้ขึ้นบรรทัดใหม่เองตามจำนวนที่ใส่ได้
-  // ไอคอนใหญ่ + ช่องไฟแคบ = เมนูดูแน่น ไม่โล่ง
-  // ขนาดตัวหนังสือไม่แตะ ปล่อยให้ scale ปกติจัดการ
-  const menuItemWidth = isDesktop ? 130 : isTablet ? 110 : '24%';
-  const menuIconSize  = isDesktop ? 104 : isTablet ? 76 : null; // null = ใช้ขนาดเดิมในสไตล์
-  const menuGap       = isTablet ? 4 : null;                    // เดิม 14/8 → แคบลงเหลือ 4
+  // ── กริดเมนู ──
+  // จอใหญ่ (768+) : ช่องขนาดคงที่ ไอคอนใหญ่ ช่องไฟแคบ
+  // จอเล็ก (<768) : คำนวณจำนวนคอลัมน์จากความกว้างจริง แล้วขยายไอคอนตามขนาดช่อง
+  //                 → สัดส่วน "ไอคอนต่อช่อง" คงที่ ไม่ว่าจอกว้างเท่าไหร่ ช่องไฟเลยไม่บาน
+  //                 มือถือจริง (~390px) ยังได้ 4 คอลัมน์ ไอคอน 44px เท่าเดิมทุกอย่าง
+  const contentPad = 14 * scale;
+  const avail = Math.max(280, width - contentPad * 2);
+
+  let menuItemWidth, menuIconSize, menuGap, menuPadX;
+  if (isTablet) {
+    menuItemWidth = isDesktop ? 130 : 110;
+    menuIconSize  = isDesktop ? 104 : 76;
+    menuGap = 4;
+    menuPadX = 2;
+  } else {
+    // เล็งให้ช่องกว้างราว 105-125px ตลอด — ไม่ปล่อยให้ช่องบานจนไอคอนลอย
+    const cols = Math.max(4, Math.min(6, Math.floor(avail / 105)));
+    menuItemWidth = `${(100 / cols).toFixed(4)}%`;
+    const cellW = avail / cols;
+
+    if (width >= 480) {
+      // แท็บเล็ตเล็ก / หน้าต่างเบราว์เซอร์แคบ → ไอคอนโตตามช่อง ช่องไฟจะได้ไม่บาน
+      menuIconSize = Math.min(96, Math.max(44, Math.round(cellW * 0.49)));
+      menuGap = 2;
+      menuPadX = 3;
+    } else {
+      menuIconSize = null;   // null = ใช้ค่าเดิมในสไตล์ (44px) — มือถือจริงไม่เปลี่ยนเลย
+      menuGap = null;
+      menuPadX = null;
+    }
+  }
 
   return useMemo(() => ({
     width, height, isTablet, isDesktop, scale,
     sc: (n) => Math.round(n * scale),
-    menuItemStyle: isTablet
-      ? { width: menuItemWidth, paddingHorizontal: 2 }   // ลด padding ด้วย ช่องไฟจะได้แคบจริง
+    menuItemStyle: menuPadX != null
+      ? { width: menuItemWidth, paddingHorizontal: menuPadX }
       : { width: menuItemWidth },
     menuGridStyle: menuGap != null ? { gap: menuGap } : null,
     menuIconStyle: menuIconSize
       ? { width: menuIconSize, height: menuIconSize, borderRadius: Math.round(menuIconSize * 0.28) }
       : null,
-    menuEmojiSize: menuIconSize ? Math.round(menuIconSize * 0.52) : 22,
+    menuEmojiSize: menuIconSize ? Math.round(menuIconSize * 0.5) : 22,
     // เต็มความกว้างจอ — ไม่บีบเป็นคอลัมน์กลางแล้ว
     center: null,
-  }), [width, height, isTablet, isDesktop, scale, menuItemWidth, menuIconSize, menuGap]);
+  }), [width, height, isTablet, isDesktop, scale, menuItemWidth, menuIconSize, menuGap, menuPadX]);
 }
 
 /**
