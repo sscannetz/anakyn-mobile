@@ -61,10 +61,10 @@ export default function App() {
       @font-face { font-family: 'material-community'; src: url('${ICON_TTF}') format('truetype'); font-display: swap; }
       html { height: 100%; }
       body { height: auto !important; min-height: 100%; overflow-y: auto !important; }
-      /* จำกัดความกว้างเป็นคอลัมน์กลางจอ กันเนื้อหายืดเต็มจอใหญ่ (Windows/iPad) แล้วตัวหนังสือดูจิ๋ว
-         บนมือถือ (จอ < 620px) จะเต็มจอตามปกติเพราะ width:100% */
-      #root { height: auto !important; min-height: 100vh; display: flex; flex-direction: column; align-items: center; background: #efe6e9; }
-      #root > div { flex: 1 0 auto; width: 100%; max-width: 620px; box-shadow: 0 0 24px rgba(85,10,25,0.10); }
+      /* เต็มความกว้างหน้าจอ — ความอ่านง่ายบนจอใหญ่จัดการด้วย src/responsive.js
+         (คูณขนาดฟอนต์/ปุ่มขึ้นตามจอ) แทนการบีบเป็นคอลัมน์แคบเหมือนเดิม */
+      #root { height: auto !important; min-height: 100vh; display: flex; flex-direction: column; background: #f9f4f5; }
+      #root > div { flex: 1 0 auto; width: 100%; }
     `;
     if (!document.getElementById('anakyn-web-scroll-fix')) document.head.appendChild(style);
   }, []);

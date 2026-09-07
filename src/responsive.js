@@ -68,14 +68,17 @@ export function useResponsive() {
   const isDesktop = width >= BP.desktop;
   const isTablet = width >= BP.tablet;
   const scale = isDesktop ? 1.45 : isTablet ? 1.22 : 1;
-  const maxWidth = isDesktop ? 1180 : isTablet ? 900 : null;
+
+  // จำนวนคอลัมน์ของกริดเมนู — จอกว้างใส่ได้มากขึ้น ไม่งั้นไอคอนห่างกันจนดูโล่ง
+  const menuCols = isDesktop ? 8 : isTablet ? 6 : 4;
 
   return useMemo(() => ({
-    width, height, isTablet, isDesktop, scale, maxWidth,
+    width, height, isTablet, isDesktop, scale, menuCols,
     sc: (n) => Math.round(n * scale),
-    // ใส่ใน contentContainerStyle ของ ScrollView → เนื้อหาอยู่กลางจอ ไม่ยืดสุดขอบ
-    center: maxWidth ? { maxWidth, width: '100%', alignSelf: 'center' } : null,
-  }), [width, height, isTablet, isDesktop, scale, maxWidth]);
+    menuItemWidth: `${(100 / menuCols).toFixed(4)}%`,
+    // เต็มความกว้างจอ — ไม่บีบเป็นคอลัมน์กลางแล้ว
+    center: null,
+  }), [width, height, isTablet, isDesktop, scale, menuCols]);
 }
 
 /**
