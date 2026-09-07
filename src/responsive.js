@@ -69,16 +69,25 @@ export function useResponsive() {
   const isTablet = width >= BP.tablet;
   const scale = isDesktop ? 1.45 : isTablet ? 1.22 : 1;
 
-  // จำนวนคอลัมน์ของกริดเมนู — จอกว้างใส่ได้มากขึ้น ไม่งั้นไอคอนห่างกันจนดูโล่ง
-  const menuCols = isDesktop ? 8 : isTablet ? 6 : 4;
+  // ── กริดเมนู ──
+  // มือถือ: แบ่ง 4 คอลัมน์เท่า ๆ กัน (เหมือนเดิมทุกประการ)
+  // จอใหญ่: ใช้ "ความกว้างคงที่" แทน % ไม่งั้นช่องจะกว้างมากจนไอคอนลอยอยู่กลางที่ว่าง
+  //         แล้วปล่อยให้ขึ้นบรรทัดใหม่เองตามจำนวนที่ใส่ได้
+  const menuItemWidth = isDesktop ? 148 : isTablet ? 124 : '24%';
+  const menuIconSize  = isDesktop ? 84 : isTablet ? 62 : null; // null = ใช้ขนาดเดิมในสไตล์
 
   return useMemo(() => ({
-    width, height, isTablet, isDesktop, scale, menuCols,
+    width, height, isTablet, isDesktop, scale,
     sc: (n) => Math.round(n * scale),
-    menuItemWidth: `${(100 / menuCols).toFixed(4)}%`,
+    menuItemWidth,
+    menuGridStyle: isTablet ? { gap: isDesktop ? 14 : 8 } : null,
+    menuIconStyle: menuIconSize
+      ? { width: menuIconSize, height: menuIconSize, borderRadius: Math.round(menuIconSize * 0.29) }
+      : null,
+    menuEmojiSize: menuIconSize ? Math.round(menuIconSize * 0.52) : 22,
     // เต็มความกว้างจอ — ไม่บีบเป็นคอลัมน์กลางแล้ว
     center: null,
-  }), [width, height, isTablet, isDesktop, scale, menuCols]);
+  }), [width, height, isTablet, isDesktop, scale, menuItemWidth, menuIconSize]);
 }
 
 /**

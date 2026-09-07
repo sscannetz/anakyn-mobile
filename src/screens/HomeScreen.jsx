@@ -83,7 +83,7 @@ const SRVSTATUS_LABEL = { received: 'รับเรื่อง', repairing: '�
 const SRVSTATUS_COL   = { received: ['#fff8e1','#854F0B'], repairing: ['#e0f0ff','#1a3a60'], qc: ['#f0eeff','#3c3489'], notified: ['#fdf0f2','#7a1c2e'], picked_up: ['#e8f5e9','#1a5c28'] };
 
 export default function HomeScreen({ navigation, route }) {
-  const { styles, sc, center, menuItemWidth } = useScaledStyles(baseStyles);
+  const { styles, sc, center, menuItemWidth, menuGridStyle, menuIconStyle, menuEmojiSize } = useScaledStyles(baseStyles);
   const insets     = useSafeAreaInsets();
   // role มาจาก 2 ทาง: params (ตอนเพิ่งล็อกอิน) และ storage (ตอนรีเฟรชหน้า/เปิดแอปใหม่)
   // ถ้าอ่านจาก params อย่างเดียว พอกดรีเฟรชจะกลายเป็น staff แล้วเมนูของ admin หายไป
@@ -281,7 +281,7 @@ export default function HomeScreen({ navigation, route }) {
         {/* MENU GRID */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.menuTitle}</Text>
-          <View style={styles.menuGrid}>
+          <View style={[styles.menuGrid, menuGridStyle]}>
             {visibleMenus.map(m => (
               <TouchableOpacity
                 key={m.label}
@@ -289,8 +289,8 @@ export default function HomeScreen({ navigation, route }) {
                 style={[styles.menuItem, { width: menuItemWidth }]}
                 activeOpacity={m.screen ? 0.7 : 1}
               >
-                <View style={[styles.menuIcon, { backgroundColor: m.bg }]}>
-                  <Text style={{ fontSize: sc(22) }}>{m.emoji}</Text>
+                <View style={[styles.menuIcon, { backgroundColor: m.bg }, menuIconStyle]}>
+                  <Text style={{ fontSize: menuEmojiSize }}>{m.emoji}</Text>
                 </View>
                 <Text style={[styles.menuLabel, { color: m.screen ? '#2c1015' : '#b09090' }]}>{m.label}</Text>
                 <Text style={styles.menuSub}>{m.sub}</Text>
