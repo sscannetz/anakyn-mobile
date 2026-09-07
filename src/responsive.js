@@ -67,7 +67,10 @@ export function useResponsive() {
   const { width, height } = useWindowDimensions();
   const isDesktop = width >= BP.desktop;
   const isTablet = width >= BP.tablet;
-  const scale = isDesktop ? 1.45 : isTablet ? 1.22 : 1;
+  // ★ ตัวคูณขนาดโดยรวม — คุมตัวหนังสือ ระยะขอบ ความสูงการ์ด ฯลฯ
+  //   ไม่มีผลกับไอคอนเมนู เพราะไอคอนตั้งเป็นค่าคงที่ (menuIconSize) แยกต่างหาก
+  //   ใหญ่ไป → ลดลงทีละ 0.05 · เล็กไป → เพิ่มทีละ 0.05
+  const scale = isDesktop ? 1.18 : isTablet ? 1.08 : 1;
 
   // ── กริดเมนู ──
   // มือถือ: แบ่ง 4 คอลัมน์เท่า ๆ กัน (เหมือนเดิมทุกประการ)
