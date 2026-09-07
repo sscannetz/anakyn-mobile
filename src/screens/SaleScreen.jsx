@@ -358,7 +358,7 @@ export default function SaleScreen({ navigation, route }) {
             <>
               <View style={s.searchBar}>
                 <MaterialCommunityIcons name="magnify" size={sc(15)} color="#b08090" />
-                <TextInput
+                <TextInput dataSet={{ hov: 'field' }}
                   style={s.searchInput}
                   value={custQuery}
                   onChangeText={setCustQuery}
@@ -439,7 +439,7 @@ export default function SaleScreen({ navigation, route }) {
           )}
           <View style={s.extraRow}>
             <Text style={s.extraLabel}>{t.extraDisc}</Text>
-            <TextInput
+            <TextInput dataSet={{ hov: 'field' }}
               style={s.smallInput}
               value={extraDisc}
               onChangeText={setExtraDisc}
@@ -505,14 +505,14 @@ export default function SaleScreen({ navigation, route }) {
                 <View style={s.splitRow}>
                   <MaterialCommunityIcons name="cash" size={sc(18)} color="#2e7d32" />
                   <Text style={s.splitLabel}>{lang === 'th' ? 'เงินสด' : 'Cash'}</Text>
-                  <TextInput style={s.splitInput} value={splitCash} onChangeText={setSplitCash} keyboardType="numeric" />
+                  <TextInput dataSet={{ hov: 'field' }} style={s.splitInput} value={splitCash} onChangeText={setSplitCash} keyboardType="numeric" />
                 </View>
               )}
               {selPay.includes('qr') && (
                 <View style={s.splitRow}>
                   <MaterialCommunityIcons name="qrcode" size={sc(18)} color="#2e7d32" />
                   <Text style={s.splitLabel}>{lang === 'th' ? 'โอน / QR' : 'Transfer'}</Text>
-                  <TextInput style={s.splitInput} value={splitQr !== null ? String(splitQr) : String(qrVal)} onChangeText={setSplitQr} keyboardType="numeric" />
+                  <TextInput dataSet={{ hov: 'field' }} style={s.splitInput} value={splitQr !== null ? String(splitQr) : String(qrVal)} onChangeText={setSplitQr} keyboardType="numeric" />
                 </View>
               )}
               <View style={[s.splitRow, { borderTopWidth: 0.5, borderTopColor: '#e8d5d9', paddingTop: 7, marginTop: 2 }]}>
@@ -544,7 +544,7 @@ export default function SaleScreen({ navigation, route }) {
               <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
-          <TextInput
+          <TextInput dataSet={{ hov: 'field' }}
             style={s.modalSearch}
             value={pickerQuery}
             onChangeText={setPickerQuery}
@@ -605,7 +605,7 @@ export default function SaleScreen({ navigation, route }) {
               <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
-          <TextInput
+          <TextInput dataSet={{ hov: 'field' }}
             style={s.modalSearch}
             value={custQuery}
             onChangeText={setCustQuery}

@@ -156,7 +156,7 @@ export function VatRow({ enabled, rate, amount, onToggle, onRate, lang = 'th' })
       <View style={d.vatRight}>
         {enabled ? (
           <View style={d.vatRateBox}>
-            <TextInput
+            <TextInput dataSet={{ hov: 'field' }}
               value={String(rate)}
               onChangeText={onRate}
               keyboardType="numeric"

@@ -228,25 +228,25 @@ export default function AddUserScreen({ navigation }) {
             {!!error && <View style={s.errBox}><Text style={s.errText}>{error}</Text></View>}
 
             <Text style={s.fieldLabel}>{t.name}</Text>
-            <TextInput style={s.input} value={fullName} onChangeText={setFullName} autoCapitalize="words" placeholderTextColor="#c0a0a8" />
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={fullName} onChangeText={setFullName} autoCapitalize="words" placeholderTextColor="#c0a0a8" />
 
             <View style={s.row2}>
               <View style={{ flex: 1 }}>
                 <Text style={s.fieldLabel}>{t.nickname} <Text style={s.optional}>{t.optional}</Text></Text>
-                <TextInput style={s.input} value={nickname} onChangeText={setNickname} placeholderTextColor="#c0a0a8" />
+                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={nickname} onChangeText={setNickname} placeholderTextColor="#c0a0a8" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.fieldLabel}>{t.phone} <Text style={s.optional}>{t.optional}</Text></Text>
-                <TextInput style={s.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholderTextColor="#c0a0a8" />
+                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholderTextColor="#c0a0a8" />
               </View>
             </View>
 
             <Text style={s.fieldLabel}>{t.email}</Text>
-            <TextInput style={s.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor="#c0a0a8" />
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor="#c0a0a8" />
 
             <Text style={s.fieldLabel}>{t.password}</Text>
             <View style={s.pwRow}>
-              <TextInput style={[s.input, { flex: 1, marginBottom: 0 }]} value={password} onChangeText={setPassword}
+              <TextInput dataSet={{ hov: 'field' }} style={[s.input, { flex: 1, marginBottom: 0 }]} value={password} onChangeText={setPassword}
                 secureTextEntry={!showPw} autoCapitalize="none"
                 placeholder={isEdit ? '••••••••' : ''} placeholderTextColor="#c0a0a8" />
               <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowPw(v => !v)} style={s.eyeBtn}>
@@ -258,7 +258,7 @@ export default function AddUserScreen({ navigation }) {
             {(!isEdit || !!password) && (
               <>
                 <Text style={[s.fieldLabel, { marginTop: 8 }]}>{t.confirmPw}</Text>
-                <TextInput style={s.input} value={confirmPw} onChangeText={setConfirmPw}
+                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={confirmPw} onChangeText={setConfirmPw}
                   secureTextEntry={!showPw} autoCapitalize="none" placeholderTextColor="#c0a0a8" />
               </>
             )}

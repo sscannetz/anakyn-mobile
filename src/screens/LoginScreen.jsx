@@ -147,7 +147,7 @@ export default function LoginScreen({ navigation }) {
 
             {/* Email */}
             <Text style={styles.fieldLabel}>{t.emailLabel}</Text>
-            <TextInput
+            <TextInput dataSet={{ hov: 'field' }}
               style={styles.input}
               value={email}
               onChangeText={setEmail}
@@ -160,7 +160,7 @@ export default function LoginScreen({ navigation }) {
             {/* Password */}
             <Text style={styles.fieldLabel}>{t.passLabel}</Text>
             <View style={styles.pwRow}>
-              <TextInput
+              <TextInput dataSet={{ hov: 'field' }}
                 style={[styles.input, { flex: 1, marginBottom: 0 }]}
                 value={password}
                 onChangeText={setPassword}

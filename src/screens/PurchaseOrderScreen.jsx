@@ -135,15 +135,15 @@ export default function PurchaseOrderScreen({ navigation }) {
           <ScrollView keyboardShouldPersistTaps="handled">
             {!!error && <View style={s.errBox}><Text style={s.errText}>{error}</Text></View>}
             <Text style={s.fieldLabel}>{lang === 'th' ? 'ชื่อ Supplier' : 'Supplier Name'}</Text>
-            <TextInput style={s.input} value={supName} onChangeText={setSupName} placeholder={lang === 'th' ? 'เช่น บริษัท XYZ จำกัด' : 'e.g. XYZ Co., Ltd.'} placeholderTextColor="#c0a0a8" />
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={supName} onChangeText={setSupName} placeholder={lang === 'th' ? 'เช่น บริษัท XYZ จำกัด' : 'e.g. XYZ Co., Ltd.'} placeholderTextColor="#c0a0a8" />
             <Text style={s.fieldLabel}>{lang === 'th' ? 'เบอร์โทร' : 'Phone'}</Text>
-            <TextInput style={s.input} value={supPhone} onChangeText={setSupPhone} keyboardType="phone-pad" />
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={supPhone} onChangeText={setSupPhone} keyboardType="phone-pad" />
             <Text style={s.fieldLabel}>{lang === 'th' ? 'รายการสินค้า' : 'Items'}</Text>
             {items.map((it, idx) => (
               <View key={idx} style={s.itemRow}>
-                <TextInput style={[s.input, { flex: 2, marginBottom: 0 }]} value={it.name} onChangeText={v => updItem(idx, 'name', v)} placeholder={lang === 'th' ? 'ชื่อสินค้า' : 'Item name'} placeholderTextColor="#c0a0a8" />
-                <TextInput style={[s.input, { width: 50, marginBottom: 0 }]} value={it.qty} onChangeText={v => updItem(idx, 'qty', v)} keyboardType="numeric" />
-                <TextInput style={[s.input, { flex: 1, marginBottom: 0 }]} value={it.price} onChangeText={v => updItem(idx, 'price', v)} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
+                <TextInput dataSet={{ hov: 'field' }} style={[s.input, { flex: 2, marginBottom: 0 }]} value={it.name} onChangeText={v => updItem(idx, 'name', v)} placeholder={lang === 'th' ? 'ชื่อสินค้า' : 'Item name'} placeholderTextColor="#c0a0a8" />
+                <TextInput dataSet={{ hov: 'field' }} style={[s.input, { width: 50, marginBottom: 0 }]} value={it.qty} onChangeText={v => updItem(idx, 'qty', v)} keyboardType="numeric" />
+                <TextInput dataSet={{ hov: 'field' }} style={[s.input, { flex: 1, marginBottom: 0 }]} value={it.price} onChangeText={v => updItem(idx, 'price', v)} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
                 {items.length > 1 && (
                   <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setItems(prev => prev.filter((_, i) => i !== idx))}>
                     <MaterialCommunityIcons name="close" size={sc(18)} color="#550a19" />
@@ -160,7 +160,7 @@ export default function PurchaseOrderScreen({ navigation }) {
               <Text style={[s.totalVal, { fontSize: 18, color: '#550a19' }]}>฿{fmt(total)}</Text>
             </View>
             <Text style={s.fieldLabel}>{lang === 'th' ? 'หมายเหตุ' : 'Notes'}</Text>
-            <TextInput style={[s.input, { height: 70, textAlignVertical: 'top', marginBottom: 16 }]} value={notes} onChangeText={setNotes} multiline placeholderTextColor="#c0a0a8" />
+            <TextInput dataSet={{ hov: 'field' }} style={[s.input, { height: 70, textAlignVertical: 'top', marginBottom: 16 }]} value={notes} onChangeText={setNotes} multiline placeholderTextColor="#c0a0a8" />
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleCreate} disabled={saving} style={[s.createBtn, { opacity: saving ? 0.7 : 1 }]}>
               {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
               <Text style={s.createBtnText}>{saving ? 'กำลังบันทึก...' : (lang === 'th' ? 'สร้าง PO' : 'Create PO')}</Text>

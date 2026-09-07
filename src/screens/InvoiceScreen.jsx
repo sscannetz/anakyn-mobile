@@ -157,7 +157,7 @@ export default function InvoiceScreen({ navigation }) {
             ))}
             {vatOn && (
               <View style={styles.rateBox}>
-                <TextInput value={vatRate} onChangeText={setVatRate} keyboardType="numeric" maxLength={5} selectTextOnFocus style={styles.rateInput} />
+                <TextInput dataSet={{ hov: 'field' }} value={vatRate} onChangeText={setVatRate} keyboardType="numeric" maxLength={5} selectTextOnFocus style={styles.rateInput} />
                 <Text style={styles.ratePct}>%</Text>
               </View>
             )}

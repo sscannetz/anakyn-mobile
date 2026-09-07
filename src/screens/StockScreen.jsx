@@ -368,7 +368,7 @@ export default function StockScreen({ navigation }) {
         <Sec>
           <SecHead icon="information">{t.infoSection}</SecHead>
           <Field label={t.itemName}>
-            <TextInput style={s.input} value={itemName} onChangeText={setItemName} placeholder={t.itemNamePh} placeholderTextColor="#c0a0a8" />
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={itemName} onChangeText={setItemName} placeholder={t.itemNamePh} placeholderTextColor="#c0a0a8" />
           </Field>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <View style={{ flex: 1 }}>
@@ -388,12 +388,12 @@ export default function StockScreen({ navigation }) {
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <View style={{ flex: 1 }}>
               <Field label={t.stockQty}>
-                <TextInput style={s.input} value={qty} onChangeText={setQty} keyboardType="numeric" />
+                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={qty} onChangeText={setQty} keyboardType="numeric" />
               </Field>
             </View>
             <View style={{ flex: 1 }}>
               <Field label={t.laborCost}>
-                <TextInput style={s.input} value={laborCost} onChangeText={setLaborCost} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
+                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={laborCost} onChangeText={setLaborCost} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
               </Field>
             </View>
           </View>
@@ -415,7 +415,7 @@ export default function StockScreen({ navigation }) {
           </View>
           <View style={[s.metalBox, { backgroundColor: tab.bg, borderColor: tab.border }]}>
             <Field label={isGold ? t.goldPriceLabel : t.silverPriceLabel}>
-              <TextInput style={[s.input, { borderColor: tab.border }]}
+              <TextInput dataSet={{ hov: 'field' }} style={[s.input, { borderColor: tab.border }]}
                 value={isGold ? goldPrice : silverPrice}
                 onChangeText={isGold ? setGoldPrice : setSilverPrice}
                 keyboardType="numeric" />
@@ -423,7 +423,7 @@ export default function StockScreen({ navigation }) {
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <View style={{ flex: 1 }}>
                 <Field label={t.actualWeight}>
-                  <TextInput style={[s.input, { borderColor: tab.border }]} value={metalWeight} onChangeText={setMetalWeight} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor="#c0a0a8" />
+                  <TextInput dataSet={{ hov: 'field' }} style={[s.input, { borderColor: tab.border }]} value={metalWeight} onChangeText={setMetalWeight} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor="#c0a0a8" />
                 </Field>
               </View>
               <View style={{ flex: 1 }}>
@@ -457,12 +457,12 @@ export default function StockScreen({ navigation }) {
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <View style={{ flex: 1 }}>
                   <Field label={t.dWeight}>
-                    <TextInput style={[s.input, s.dInput]} value={d.weight} onChangeText={v => updD(d.id, 'weight', v)} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor="#c0a0a8" />
+                    <TextInput dataSet={{ hov: 'field' }} style={[s.input, s.dInput]} value={d.weight} onChangeText={v => updD(d.id, 'weight', v)} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor="#c0a0a8" />
                   </Field>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Field label={t.dQty}>
-                    <TextInput style={[s.input, s.dInput]} value={d.qty} onChangeText={v => updD(d.id, 'qty', v)} keyboardType="numeric" />
+                    <TextInput dataSet={{ hov: 'field' }} style={[s.input, s.dInput]} value={d.qty} onChangeText={v => updD(d.id, 'qty', v)} keyboardType="numeric" />
                   </Field>
                 </View>
               </View>
@@ -495,12 +495,12 @@ export default function StockScreen({ navigation }) {
                     ))}
                   </View>
                   <Field label={t.reportNo}>
-                    <TextInput style={[s.input, s.dInput]} value={d.certNo} onChangeText={v => updD(d.id, 'certNo', v)} placeholder="e.g. 2486901234" placeholderTextColor="#c0a0a8" />
+                    <TextInput dataSet={{ hov: 'field' }} style={[s.input, s.dInput]} value={d.certNo} onChangeText={v => updD(d.id, 'certNo', v)} placeholder="e.g. 2486901234" placeholderTextColor="#c0a0a8" />
                   </Field>
                 </View>
               )}
               <Field label={t.dCost}>
-                <TextInput style={[s.input, s.dInput]} value={d.cost} onChangeText={v => updD(d.id, 'cost', v)} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
+                <TextInput dataSet={{ hov: 'field' }} style={[s.input, s.dInput]} value={d.cost} onChangeText={v => updD(d.id, 'cost', v)} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
               </Field>
             </View>
           ))}
@@ -526,7 +526,7 @@ export default function StockScreen({ navigation }) {
           </View>
           <View style={s.sellingBox}>
             <Text style={s.fieldLabel}>{t.sellingPrice}</Text>
-            <TextInput style={s.input} value={sellingPrice} onChangeText={setSellingPrice} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={sellingPrice} onChangeText={setSellingPrice} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
             {sellingPrice && totalCost > 0 && (
               <View style={s.profitRow}>
                 <Text style={s.profitLabel}>{t.profit}</Text>
@@ -594,7 +594,7 @@ export default function StockScreen({ navigation }) {
                       <MaterialCommunityIcons name="minus" size={sc(13)} color="#550a19" />
                     </TouchableOpacity>
                     <View style={s.qtyValWrap}>
-                      <TextInput
+                      <TextInput dataSet={{ hov: 'field' }}
                         style={[s.qtyVal, qty === 0 && { color: '#c62828' }]}
                         value={qtyEdit[p.id] ?? String(qty)}
                         onChangeText={(v) => {
@@ -689,7 +689,7 @@ export default function StockScreen({ navigation }) {
                     <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setCopies(p.id, n - 1)} style={s.stepBtn}>
                       <MaterialCommunityIcons name="minus" size={sc(14)} color="#534AB7" />
                     </TouchableOpacity>
-                    <TextInput
+                    <TextInput dataSet={{ hov: 'field' }}
                       style={s.stepVal}
                       value={String(n)}
                       onChangeText={(v) => setCopies(p.id, parseInt(v.replace(/[^0-9]/g, '').slice(0, 2), 10) || 0)}
@@ -753,7 +753,7 @@ export default function StockScreen({ navigation }) {
               <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
-          <TextInput style={s.modalSearch} value={dropdownQuery} onChangeText={setDropdownQuery} placeholder="ค้นหา..." placeholderTextColor="#b08090" autoFocus />
+          <TextInput dataSet={{ hov: 'field' }} style={s.modalSearch} value={dropdownQuery} onChangeText={setDropdownQuery} placeholder="ค้นหา..." placeholderTextColor="#b08090" autoFocus />
           <FlatList
             data={filteredDropdown}
             keyExtractor={item => item}

@@ -176,7 +176,7 @@ export default function QuotationScreen({ navigation }) {
               ))}
               {vatOn && (
                 <View style={s.rateBox}>
-                  <TextInput value={vatRate} onChangeText={setVatRate} keyboardType="numeric" maxLength={5} selectTextOnFocus style={s.rateInput} />
+                  <TextInput dataSet={{ hov: 'field' }} value={vatRate} onChangeText={setVatRate} keyboardType="numeric" maxLength={5} selectTextOnFocus style={s.rateInput} />
                   <Text style={s.ratePct}>%</Text>
                 </View>
               )}
@@ -190,7 +190,7 @@ export default function QuotationScreen({ navigation }) {
                 <Text style={[s.totalVal, { fontSize: 18, color: '#550a19' }]}>฿{fmt(total)}</Text>
               </View>
             </View>
-            <TextInput style={[s.input, { height: 80, textAlignVertical: 'top' }]} value={notes} onChangeText={setNotes}
+            <TextInput dataSet={{ hov: 'field' }} style={[s.input, { height: 80, textAlignVertical: 'top' }]} value={notes} onChangeText={setNotes}
               placeholder={lang === 'th' ? 'หมายเหตุ...' : 'Notes...'} placeholderTextColor="#c0a0a8" multiline />
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleCreate} disabled={saving} style={[s.createBtn, { opacity: saving ? 0.7 : 1 }]}>
               {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
@@ -209,7 +209,7 @@ export default function QuotationScreen({ navigation }) {
               <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
           </View>
-          <TextInput style={s.searchInput} value={prodQuery} onChangeText={setProdQuery} placeholder="ค้นหา..." placeholderTextColor="#b08090" autoFocus />
+          <TextInput dataSet={{ hov: 'field' }} style={s.searchInput} value={prodQuery} onChangeText={setProdQuery} placeholder="ค้นหา..." placeholderTextColor="#b08090" autoFocus />
           <FlatList
             data={filteredProds}
             keyExtractor={item => String(item.id)}

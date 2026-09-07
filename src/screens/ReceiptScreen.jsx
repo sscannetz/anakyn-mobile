@@ -153,7 +153,7 @@ export default function ReceiptScreen({ navigation, route }) {
               </TouchableOpacity>
             ))}
           </View>
-          <TextInput style={s.input} value={note} onChangeText={setNote}
+          <TextInput dataSet={{ hov: 'field' }} style={s.input} value={note} onChangeText={setNote}
             placeholder={lang === 'th' ? 'หมายเหตุ (ถ้ามี)' : 'Note (optional)'} placeholderTextColor="#c0a0a8" />
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleIssue} disabled={issuing}
             style={[s.issueBtn, { opacity: issuing ? 0.7 : 1 }]}>

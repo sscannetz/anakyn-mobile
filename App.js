@@ -84,6 +84,20 @@ export default function App() {
         [data-hov="btn"]:hover { cursor: pointer; }
       }
       [data-hov="btn"]:active { transform: scale(0.985); }
+
+      /* ── ช่องกรอกข้อมูล ──
+         ใช้ border + เงา ไม่ใช้ filter เพราะ filter จะทำให้ตัวหนังสือที่พิมพ์เข้มตามไปด้วย
+         ต้องใส่ !important เพราะ react-native-web เขียนสีขอบมาเป็นคลาสของตัวเอง */
+      [data-hov="field"] { transition: border-color .15s ease, box-shadow .15s ease; }
+      @media (hover: hover) and (pointer: fine) {
+        [data-hov="field"]:hover { border-color: #c9a2ad !important; }
+      }
+      [data-hov="field"]:focus,
+      [data-hov="field"]:focus-visible {
+        border-color: #550a19 !important;
+        box-shadow: 0 0 0 3px rgba(85,10,25,0.13) !important;
+        outline: none !important;
+      }
     `;
     if (!document.getElementById('anakyn-web-scroll-fix')) document.head.appendChild(style);
   }, []);

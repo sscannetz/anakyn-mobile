@@ -146,17 +146,17 @@ export default function ServiceOrderScreen({ navigation }) {
           <ScrollView keyboardShouldPersistTaps="handled">
             {!!error && <View style={s.errBox}><Text style={s.errText}>{error}</Text></View>}
             <Text style={s.fieldLabel}>{lang === 'th' ? 'ชื่อลูกค้า' : 'Customer Name'}</Text>
-            <TextInput style={s.input} value={custName} onChangeText={setCustName} placeholderTextColor="#c0a0a8" />
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={custName} onChangeText={setCustName} placeholderTextColor="#c0a0a8" />
             <Text style={s.fieldLabel}>{lang === 'th' ? 'เบอร์โทร' : 'Phone'}</Text>
-            <TextInput style={s.input} value={custPhone} onChangeText={setCustPhone} keyboardType="phone-pad" />
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={custPhone} onChangeText={setCustPhone} keyboardType="phone-pad" />
             <Text style={s.fieldLabel}>{lang === 'th' ? 'ชื่อสินค้าที่นำมาซ่อม' : 'Product Name'}</Text>
-            <TextInput style={s.input} value={prodName} onChangeText={setProdName} placeholderTextColor="#c0a0a8" />
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={prodName} onChangeText={setProdName} placeholderTextColor="#c0a0a8" />
             <Text style={s.fieldLabel}>{lang === 'th' ? 'อาการเสีย / ปัญหา' : 'Issue Description'}</Text>
-            <TextInput style={[s.input, { height: 70, textAlignVertical: 'top' }]} value={issue} onChangeText={setIssue} multiline placeholderTextColor="#c0a0a8" />
+            <TextInput dataSet={{ hov: 'field' }} style={[s.input, { height: 70, textAlignVertical: 'top' }]} value={issue} onChangeText={setIssue} multiline placeholderTextColor="#c0a0a8" />
             <Text style={s.fieldLabel}>{lang === 'th' ? 'ค่าซ่อมประมาณ (บาท)' : 'Estimated Cost (THB)'}</Text>
-            <TextInput style={s.input} value={estimatedCost} onChangeText={setEstimatedCost} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={estimatedCost} onChangeText={setEstimatedCost} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
             <Text style={s.fieldLabel}>{lang === 'th' ? 'วันนัดรับ (YYYY-MM-DD)' : 'Due Date (YYYY-MM-DD)'}</Text>
-            <TextInput style={s.input} value={dueDate} onChangeText={setDueDate} placeholder="2026-01-31" placeholderTextColor="#c0a0a8" />
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={dueDate} onChangeText={setDueDate} placeholder="2026-01-31" placeholderTextColor="#c0a0a8" />
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleCreate} disabled={saving} style={[s.createBtn, { opacity: saving ? 0.7 : 1, marginTop: 8 }]}>
               {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
               <Text style={s.createBtnText}>{saving ? 'กำลังบันทึก...' : (lang === 'th' ? 'รับงาน' : 'Accept Job')}</Text>
