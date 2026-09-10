@@ -46,6 +46,10 @@ export const api = {
   updateProduct: (id, data) => request(`/products/${id}`, { method: 'PUT', body: data }),
   deleteProduct: (id) => request(`/products/${id}`, { method: 'DELETE' }),
 
+  // ── Payment gateway (Omise) ──
+  createPromptPay: (data) => request('/payments/promptpay', { method: 'POST', body: data }),
+  getPayment:      (id)   => request(`/payments/${id}`),
+
   // ── Sales ──
   getSales: (limit) => request(`/sales${limit ? `?limit=${limit}` : ''}`),
   getSale: (id) => request(`/sales/${id}`),

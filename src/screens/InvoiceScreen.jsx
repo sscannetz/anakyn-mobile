@@ -9,6 +9,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
+import ConnectingBar from '../components/ConnectingBar';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { printInvoice, saveInvoice } from '../print';
@@ -94,6 +95,7 @@ export default function InvoiceScreen({ navigation }) {
           </TouchableOpacity>
         }
       />
+      <ConnectingBar visible={loading} lang={lang} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.listTitle}>{t.listTitle}</Text>
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}

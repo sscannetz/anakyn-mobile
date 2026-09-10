@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { getToken } from './src/storage';
@@ -15,6 +15,7 @@ import LoginScreen       from './src/screens/LoginScreen';
 import HomeScreen        from './src/screens/HomeScreen';
 import SaleScreen        from './src/screens/SaleScreen';
 import StockScreen       from './src/screens/StockScreen';
+import InventoryScreen   from './src/screens/InventoryScreen';
 import InvoiceScreen     from './src/screens/InvoiceScreen';
 import QuotationScreen   from './src/screens/QuotationScreen';
 import PurchaseOrderScreen from './src/screens/PurchaseOrderScreen';
@@ -66,6 +67,12 @@ export default function App() {
       #root { height: auto !important; min-height: 100vh; display: flex; flex-direction: column; background: #f9f4f5; }
       #root > div { flex: 1 0 auto; width: 100%; }
 
+      /* ── ตอนเปิดโมดัล ล็อกไม่ให้หน้าที่อยู่ข้างหลังเลื่อน ──
+         react-native-web ไม่ล็อก body ให้เอง หน้าหลังเลยโชว์แถบเลื่อนของตัวเอง
+         ซ้อนกับแถบเลื่อนของโมดัล กลายเป็น scroll bar 2 อัน
+         ModalContent ใส่ role="dialog" เฉพาะตอนโมดัลเปิดจริง จึงเกาะตัวนี้ได้ตรง ๆ */
+      body:has([role="dialog"]) { overflow: hidden !important; }
+
       /* ── ไฮไลท์ตอนเอาเมาส์ไปชี้ ──
          ใช้ filter แทนการเปลี่ยน background โดยตรง → ใช้ได้กับการ์ดทุกสี
          ไม่ต้องเขียนสี hover แยกทีละใบ และไม่ทับสไตล์เดิม
@@ -104,8 +111,9 @@ export default function App() {
 
   if (!initialRoute) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#550a19' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#550a19', gap: 14 }}>
         <ActivityIndicator color="#f0d0d8" size="large" />
+        <Text style={{ fontSize: 13, color: '#d4a0ac' }}>กำลังเชื่อมต่อเซิร์ฟเวอร์...</Text>
       </View>
     );
   }
@@ -123,6 +131,7 @@ export default function App() {
             <Stack.Screen name="Home"          component={HomeScreen}           />
             <Stack.Screen name="Sale"          component={SaleScreen}           />
             <Stack.Screen name="Stock"         component={StockScreen}          />
+            <Stack.Screen name="Inventory"     component={InventoryScreen}      />
             <Stack.Screen name="Invoice"       component={InvoiceScreen}        />
             <Stack.Screen name="Quotation"     component={QuotationScreen}      />
             <Stack.Screen name="PurchaseOrder" component={PurchaseOrderScreen}  />

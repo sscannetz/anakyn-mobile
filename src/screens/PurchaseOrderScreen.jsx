@@ -9,6 +9,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
+import ConnectingBar from '../components/ConnectingBar';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { printPO, savePO } from '../print';
@@ -94,6 +95,7 @@ export default function PurchaseOrderScreen({ navigation }) {
           </TouchableOpacity>
         }
       />
+      <ConnectingBar visible={loading} lang={lang} />
       <ScrollView contentContainerStyle={s.content}>
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
         {!loading && orders.length === 0 && <Text style={s.emptyText}>{lang === 'th' ? 'ยังไม่มีใบสั่งซื้อ' : 'No purchase orders yet'}</Text>}

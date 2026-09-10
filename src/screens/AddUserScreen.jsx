@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
+import ConnectingBar from '../components/ConnectingBar';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { getRole } from '../storage';
@@ -175,6 +176,7 @@ export default function AddUserScreen({ navigation }) {
           </TouchableOpacity>
         }
       />
+      <ConnectingBar visible={loading} lang={lang} />
 
       <ScrollView contentContainerStyle={s.content}>
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}

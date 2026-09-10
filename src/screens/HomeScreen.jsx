@@ -4,28 +4,28 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, ActivityIndicator, Modal,
+  RefreshControl, ActivityIndicator, Modal, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { clearSession, getRole } from '../storage';
-
-const STORE_KEY = 'anakyn_store_open';
+import { LOGO_LIGHT_URI } from '../logoBase64';
+import ConnectingBar from '../components/ConnectingBar';
 
 const T = {
   th: {
-    dateLabel: 'วันนี้', openStatus: 'เปิดร้านแล้ว', closedStatus: 'ปิดร้านแล้ว',
+    dateLabel: 'วันนี้',
     todayLabel: 'ยอดขายวันนี้', stockLabel: 'สินค้าในสต๊อก', stockSub: 'รายการ',
     allLabel: 'สินค้าทั้งหมด', allSub: 'ชิ้น',
     profitLabel: 'กำไรเดือนนี้', profitSub: 'ก่อน VAT', profitSub2: 'รวม VAT',
     menuTitle: 'เมนูทั้งหมด',
     menus: [
       { emoji: '🛍️', label: 'บันทึกขาย',    sub: 'New Sale',       screen: 'Sale',          col: '#550a19', bg: '#fdf0f2' },
-      { emoji: '💎', label: 'สต๊อกสินค้า',  sub: 'Stock',          screen: 'Stock',          col: '#534AB7', bg: '#f0eeff' },
+      { emoji: '🏷️', label: 'สต๊อกสินค้า',  sub: 'Stock',          screen: 'Inventory',      col: '#534AB7', bg: '#f0eeff' },
+      { emoji: '💎', label: 'เพิ่มสต๊อกสินค้า', sub: 'Add Stock',   screen: 'Stock',          col: '#534AB7', bg: '#f0eeff' },
       { emoji: '🧾', label: 'Invoice',       sub: 'ใบกำกับภาษี',   screen: 'Invoice',        col: '#1a5c28', bg: '#e8f5e9' },
       { emoji: '📋', label: 'ใบเสนอราคา',   sub: 'Quotation',      screen: 'Quotation',      col: '#1a3a60', bg: '#e0f0ff' },
       { emoji: '🚚', label: 'ใบสั่งซื้อ',   sub: 'Purchase Order', screen: 'PurchaseOrder',  col: '#854F0B', bg: '#fff8e1' },
@@ -41,14 +41,15 @@ const T = {
     due: 'นัดรับ', logout: 'ออกจากระบบ',
   },
   en: {
-    dateLabel: 'Today', openStatus: 'Store open', closedStatus: 'Store closed',
+    dateLabel: 'Today',
     todayLabel: "Today's sales", stockLabel: 'Items in stock', stockSub: 'listings',
     allLabel: 'All items', allSub: 'pieces',
     profitLabel: 'Monthly profit', profitSub: 'before VAT', profitSub2: 'incl. VAT',
     menuTitle: 'All modules',
     menus: [
       { emoji: '🛍️', label: 'New Sale',       sub: 'บันทึกขาย',     screen: 'Sale',          col: '#550a19', bg: '#fdf0f2' },
-      { emoji: '💎', label: 'Stock',          sub: 'สต๊อกสินค้า',   screen: 'Stock',          col: '#534AB7', bg: '#f0eeff' },
+      { emoji: '🏷️', label: 'Stock',          sub: 'สต๊อกสินค้า',   screen: 'Inventory',      col: '#534AB7', bg: '#f0eeff' },
+      { emoji: '💎', label: 'Add Stock',      sub: 'เพิ่มสต๊อกสินค้า', screen: 'Stock',       col: '#534AB7', bg: '#f0eeff' },
       { emoji: '🧾', label: 'Invoice',        sub: 'ใบกำกับภาษี',   screen: 'Invoice',        col: '#1a5c28', bg: '#e8f5e9' },
       { emoji: '📋', label: 'Quotation',      sub: 'ใบเสนอราคา',    screen: 'Quotation',      col: '#1a3a60', bg: '#e0f0ff' },
       { emoji: '🚚', label: 'Purchase Order', sub: 'ใบสั่งซื้อ',    screen: 'PurchaseOrder',  col: '#854F0B', bg: '#fff8e1' },
@@ -98,12 +99,15 @@ export default function HomeScreen({ navigation, route }) {
   const [lang, setLang] = useState('th');
   const t = T[lang];
 
-  const [storeOpen, setStoreOpen]       = useState(true);
   const [summary, setSummary]           = useState(null);
   const [recentSales, setRecentSales]   = useState([]);
   const [pendingPOs, setPendingPOs]     = useState([]);
   const [pendingSrvs, setPendingSrvs]   = useState([]);
   const [loading, setLoading]           = useState(true);
+  // แถบ "กำลังเชื่อมต่อ" โชว์เฉพาะการโหลดรอบแรกหลังเปิด/รีเฟรชหน้า
+  // (Render free tier หลับหลังไม่มี traffic ~15 นาที ตื่นครั้งแรกใช้เวลา 30-60 วิ)
+  // รอบถัด ๆ ไปเซิร์ฟเวอร์ตื่นแล้ว โหลดไวมาก ถ้าโชว์ทุกครั้งจะกะพริบกวนตา
+  const [firstLoad, setFirstLoad]       = useState(true);
   const [refreshing, setRefreshing]     = useState(false);
   const [saleDetail, setSaleDetail]     = useState(null);  // รายละเอียดบิลที่กดดู
 
@@ -145,18 +149,6 @@ export default function HomeScreen({ navigation, route }) {
     }
   };
 
-  useEffect(() => {
-    AsyncStorage.getItem(STORE_KEY).then(val => {
-      if (val !== null) setStoreOpen(val === 'true');
-    });
-  }, []);
-
-  const toggleStore = async () => {
-    const next = !storeOpen;
-    setStoreOpen(next);
-    await AsyncStorage.setItem(STORE_KEY, String(next));
-  };
-
   const loadData = useCallback(async () => {
     try {
       const [sum, sales, pos, services] = await Promise.all([
@@ -172,6 +164,7 @@ export default function HomeScreen({ navigation, route }) {
     } catch (_) {}
     setLoading(false);
     setRefreshing(false);
+    setFirstLoad(false);
   }, []);
 
   useFocusEffect(useCallback(() => { setLoading(true); loadData(); }, [loadData]));
@@ -194,10 +187,7 @@ export default function HomeScreen({ navigation, route }) {
       {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.logoText}>ANAKYN</Text>
-            <Text style={styles.logoSub}>GEMS</Text>
-          </View>
+          <Image source={{ uri: LOGO_LIGHT_URI }} style={styles.logoImg} resizeMode="contain" />
           <View style={styles.headerBtns}>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setLang(l => l === 'th' ? 'en' : 'th')} style={styles.headerBtn}>
               <MaterialCommunityIcons name="translate" size={sc(13)} color="#f5e0e5" />
@@ -211,17 +201,10 @@ export default function HomeScreen({ navigation, route }) {
 
         <View style={styles.dateStrip}>
           <Text style={styles.dateText}>{t.dateLabel} <Text style={styles.dateBold}>{todayStr}</Text></Text>
-          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={toggleStore} style={styles.openRow} activeOpacity={0.7}>
-            <View style={[styles.statusDot, { backgroundColor: storeOpen ? '#7ec878' : '#e05c5c' }]} />
-            <Text style={styles.dateBold}>{storeOpen ? t.openStatus : t.closedStatus}</Text>
-            <MaterialCommunityIcons
-              name={storeOpen ? 'toggle-switch' : 'toggle-switch-off'}
-              size={sc(18)}
-              color={storeOpen ? '#7ec878' : '#e05c5c'}
-            />
-          </TouchableOpacity>
         </View>
       </View>
+
+      <ConnectingBar visible={loading && firstLoad} lang={lang} />
 
       <ScrollView
         style={styles.scroll}
@@ -491,8 +474,8 @@ const baseStyles = {
   container: { flex: 1, backgroundColor: '#f9f4f5' },
   header: { backgroundColor: '#550a19' },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10 },
-  logoText: { fontSize: 18, fontWeight: '500', color: '#f5e8eb', letterSpacing: 2 },
-  logoSub:  { fontSize: 8, color: '#d4a0ac', letterSpacing: 3 },
+  // โลโก้ร้าน (เวอร์ชันสีครีม) — สัดส่วนต้นฉบับ 413 × 300
+  logoImg: { width: 55, height: 40 },
   headerBtns: { flexDirection: 'row', gap: 6 },
   headerBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
@@ -507,16 +490,14 @@ const baseStyles = {
   },
   dateText: { fontSize: 12, color: '#d4a0ac' },
   dateBold: { fontWeight: '600', color: '#f0d0d8' },
-  openRow:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statusDot: { width: 7, height: 7, borderRadius: 4 },
   scroll: { flex: 1 },
   scrollContent: { padding: 14, paddingBottom: 30 },
   kpiMain: {
     backgroundColor: '#550a19', borderRadius: 12, padding: 14, marginBottom: 8,
   },
-  kpiMainLabel: { fontSize: 11, color: '#d4a0ac', marginBottom: 3 },
+  kpiMainLabel: { fontSize: 11, color: '#d4a0ac', marginBottom: 3 },   // ชุดเดียวกับ kpiCardLabel / sectionTitle
   kpiMainValue: { fontSize: 26, fontWeight: '500', color: '#fff5f7' },
-  kpiMainSub:   { fontSize: 11, color: '#c090a0', marginTop: 3 },
+  kpiMainSub:   { fontSize: 10, color: '#c090a0', marginTop: 3 },      // ชุดเดียวกับ kpiCardSub
   // กล่องครอบ KPI + กำไร — จอกว้างเรียงแถวเดียว จอแคบตัดบรรทัดเองอัตโนมัติ
   // ควบคุมจุดตัดด้วย minWidth ของลูก ไม่ต้องผูก breakpoint ตายตัว
   kpiWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 10 },
@@ -529,12 +510,13 @@ const baseStyles = {
   profitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 2 },
   profitDivider: { width: 0.5, alignSelf: 'stretch', backgroundColor: '#e8d5d9' },
   kpiCardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  kpiCardLabel: { fontSize: 10, color: '#a07080', flex: 1 },
+  kpiCardLabel: { fontSize: 11, color: '#a07080', flex: 1 },
   kpiIcon: { width: 22, height: 22, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
   kpiCardValue: { fontSize: 17, fontWeight: '500', color: '#2c1015' },
   kpiCardSub:   { fontSize: 10, color: '#b09090', marginTop: 2 },
   section: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 12, marginBottom: 10 },
-  sectionTitle: { fontSize: 11, fontWeight: '500', color: '#a07080', letterSpacing: 1.5, marginBottom: 10 },
+  // ไม่ใส่ letterSpacing — ภาษาไทยใส่แล้วสระ/วรรณยุกต์ลอยห่างจากพยัญชนะ ดูไม่เข้าชุดกับ label อื่น
+  sectionTitle: { fontSize: 11, fontWeight: '500', color: '#a07080', marginBottom: 10 },
   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 2 },
   menuItem: { width: '24%', alignItems: 'center', padding: 6, borderRadius: 10 },
   menuIcon: { width: 44, height: 44, borderRadius: 13, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },

@@ -9,6 +9,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
+import ConnectingBar from '../components/ConnectingBar';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { printQuotation, saveQuotation } from '../print';
@@ -58,7 +59,7 @@ export default function QuotationScreen({ navigation }) {
 
   useEffect(() => {
     api.getQuotations().then(setQuotations).finally(() => setLoading(false));
-    api.getProducts().then(setProducts).catch(() => {});
+    api.getProducts({ light: 'true' }).then(setProducts).catch(() => {});
     api.getCustomers().then(setCustomers).catch(() => {});
   }, []);
 
@@ -102,6 +103,7 @@ export default function QuotationScreen({ navigation }) {
           </TouchableOpacity>
         }
       />
+      <ConnectingBar visible={loading} lang={lang} />
       <ScrollView contentContainerStyle={s.content}>
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
         {!loading && quotations.length === 0 && <Text style={s.emptyText}>{lang === 'th' ? 'ยังไม่มีใบเสนอราคา' : 'No quotations yet'}</Text>}

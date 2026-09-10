@@ -431,7 +431,7 @@ const TAG_PNL_B = TAG_W - TAG_FOLD_X; // ความกว้างแผงส
 // ★ ความสูงที่พิมพ์ติดจริง — วัดด้วย tag-window-test.html แล้ว = 12 มม.
 //   (กรอบ 13 ขอบล่างขาด · กรอบ 12 ครบทั้งบน-ล่าง)
 //   เกินกว่านี้ offset ช่วยไม่ได้ — เลื่อนขึ้นก็ตัดหัว เลื่อนลงก็ตัดท้าย
-const TAG_BODY_H = 12;
+const TAG_BODY_H = 11;
 
 // ★ เลื่อนเนื้อหาขึ้น-ลง (มม.) — ชดเชยกรณีเครื่องพิมพ์วางภาพเยื้องจากตำแหน่งจริง
 //   ค่าลบ = เลื่อนขึ้น · ค่าบวก = เลื่อนลง · 0 = ไม่ชดเชย
@@ -446,7 +446,7 @@ const TAG_SHIFT_Y = 0;
 const TAG_FLIP = true;
 
 const TAG_PAD_X = 1.1;            // padding ซ้าย-ขวาของแต่ละแผง
-const TAG_QR = 10.6;              // ขนาด QR (มม.) — ต้องไม่เกิน TAG_BODY_H ลบ padding
+const TAG_QR = 9.6;               // ขนาด QR (มม.) — ต้องไม่เกิน TAG_BODY_H ลบ padding (11 − 1.4)
 // คำนวณจาก TAG_FOLD_X ให้อัตโนมัติ — ขยับเส้นพับแล้วคอลัมน์ข้อความปรับตามเอง
 const TAG_COL  = +(TAG_PNL_A - TAG_PAD_X * 2 - TAG_QR - 0.8).toFixed(2); // คอลัมน์ชื่อ+ราคา ข้าง QR
 const TAG_RCOL = +(TAG_PNL_B - TAG_PAD_X * 2).toFixed(2);                // ความกว้างแผงสเปก

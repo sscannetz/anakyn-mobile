@@ -8,6 +8,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
+import ConnectingBar from '../components/ConnectingBar';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { printSummary } from '../print';
@@ -71,11 +72,13 @@ export default function SummaryScreen({ navigation }) {
   const [period, setPeriod] = useState(2);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  // แถบ "กำลังเชื่อมต่อ" โชว์แค่รอบแรก — สลับช่วงเวลาแล้วโหลดใหม่ไม่ต้องโชว์ซ้ำ
+  const [firstLoad, setFirstLoad] = useState(true);
   const t = T[lang];
 
   useEffect(() => {
     setLoading(true);
-    api.getSummary(t.periodKeys[period]).then(setSummary).catch(() => setSummary(null)).finally(() => setLoading(false));
+    api.getSummary(t.periodKeys[period]).then(setSummary).catch(() => setSummary(null)).finally(() => { setLoading(false); setFirstLoad(false); });
   }, [period, lang]);
 
   const d = summary || { total_sales: 0, order_count: 0, estimated_profit: 0, vat_collected: 0, top_items: [], payment_breakdown: {}, daily_chart: [], pending_po: 0, pending_service: 0, pending_quotation: 0 };
@@ -91,6 +94,7 @@ export default function SummaryScreen({ navigation }) {
   return (
     <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
       <Header title={lang === 'th' ? 'สรุปรายงาน' : 'Summary'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
+      <ConnectingBar visible={loading && firstLoad} lang={lang} />
 
       {/* PERIOD TABS */}
       <View style={s.periodTabs}>

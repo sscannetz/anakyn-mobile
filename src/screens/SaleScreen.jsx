@@ -9,6 +9,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
+import ConnectingBar from '../components/ConnectingBar';
+import PromptPayModal from '../components/PromptPayModal';
 import QrScanner from '../components/QrScanner';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
@@ -96,7 +98,7 @@ export default function SaleScreen({ navigation, route }) {
   const [customers, setCustomers]     = useState([]);
 
   useEffect(() => {
-    api.getProducts({ available: 'true' }).then(setStockList).finally(() => setLoadingStock(false));
+    api.getProducts({ available: 'true', light: 'true' }).then(setStockList).finally(() => setLoadingStock(false));
     api.getCustomers().then(setCustomers).catch(() => {});
   }, []);
 
@@ -127,6 +129,26 @@ export default function SaleScreen({ navigation, route }) {
   const qrVal      = splitQr !== null ? (parseFloat(String(splitQr).replace(/,/g, '')) || 0) : Math.max(0, grandTotal - cashVal);
   const remaining  = grandTotal - cashVal - qrVal;
 
+  // แบ่งยอดตามช่องทางที่เลือก
+  //   เลือกช่องทางเดียว          → ช่องทางนั้นรับเต็มจำนวน (ไม่ต้องกรอกช่องแบ่งยอด)
+  //   เลือกหลายช่องทาง           → ใช้ยอดที่กรอกในช่องแบ่งยอด (เงินสด / โอน-QR)
+  //   ยอดที่ยังไม่ถูกแบ่ง         → ยกให้บัตรเครดิต (ไม่มีช่องกรอก) หรือช่องทางสุดท้ายที่เลือก
+  // เดิมส่ง grandTotal ให้ทุกช่องทาง → เลือก 2 ช่องทาง ยอดที่บันทึกจะเป็น 2 เท่า
+  const paymentBreakdown = () => {
+    if (selPay.length === 0) return [];
+    if (selPay.length === 1) return [{ method: selPay[0], amount: grandTotal }];
+
+    const typed = { cash: cashVal, qr: qrVal };
+    const rows  = selPay.map(m => ({ method: m, amount: Math.max(0, typed[m] || 0) }));
+
+    const diff = grandTotal - rows.reduce((s, r) => s + r.amount, 0);
+    if (diff !== 0) {
+      const target = rows.find(r => r.method === 'card') || rows[rows.length - 1];
+      target.amount = Math.max(0, target.amount + diff);
+    }
+    return rows.filter(r => r.amount > 0);
+  };
+
   // ใช้เช็คจำนวนในตะกร้าได้ทันทีแม้อยู่ใน callback แบบ async (เช่นตอนสแกน)
   const cartRef = useRef(cartItems);
   cartRef.current = cartItems;
@@ -153,6 +175,10 @@ export default function SaleScreen({ navigation, route }) {
   // ใช้ร่วมกัน 3 ทาง: (1) ลิงก์จากป้าย (2) กล้องในหน้าเว็บ (3) เครื่องสแกนบาร์โค้ด USB
   const [scanNote, setScanNote] = useState(null);   // { ok } | { reason }
   const [scanOpen, setScanOpen] = useState(false);  // เปิดกล้องในหน้า
+
+  // ── รอชำระเงินผ่าน QR (Omise) ──
+  // เก็บบิล + ช่องทางหลักไว้ด้วย เพราะใบเสร็จจะออกหลังเงินเข้าแล้วเท่านั้น
+  const [qrPending, setQrPending] = useState(null);   // { payment, sale, mainPay }
   const stockRef = useRef(stockList);
   stockRef.current = stockList;
 
@@ -170,7 +196,7 @@ export default function SaleScreen({ navigation, route }) {
     // 2) ไม่เจอ → ถามเซิร์ฟเวอร์ตรง ๆ (เผื่อสินค้าถูกปิดขาย / รายการยังไม่อัปเดต)
     setScanNote({ reason: 'busy', text: code });
     try {
-      const rows = await api.getProducts({ search: key });
+      const rows = await api.getProducts({ search: key, light: 'true' });
       const hit = (rows || []).find(x => normSku(x.sku) === key);
       if (!hit) { setScanNote({ reason: 'notfound', text: code }); return; }
       if (hit.is_available === false) { setScanNote({ reason: 'sold', text: `${hit.name} · ${hit.sku}` }); return; }
@@ -224,6 +250,23 @@ export default function SaleScreen({ navigation, route }) {
     (c.phone || '').includes(custQuery)
   );
 
+  const PAY_MAP = { cash: 'cash', qr: 'transfer', transfer: 'transfer', card: 'card' };
+
+  // ออกใบเสร็จอัตโนมัติแล้วเด้งไปหน้าใบเสร็จเพื่อสั่งปริ้น
+  const issueReceiptAndGo = async (sale, mainPay) => {
+    try {
+      const rc = await api.createReceipt({
+        sale_id: sale.id,
+        payment_method: PAY_MAP[mainPay] || 'other',
+      });
+      navigation.navigate('Receipt', rc?.id ? { openReceiptId: rc.id } : undefined);
+    } catch (e) {
+      // การขายบันทึกแล้ว แต่ออกใบเสร็จอัตโนมัติไม่สำเร็จ — แจ้งให้เห็น (ไม่เงียบ) + พาไปออกเอง
+      setSaveError((lang === 'th' ? 'บันทึกการขายแล้ว แต่ออกใบเสร็จอัตโนมัติไม่สำเร็จ: ' : 'Sale saved but auto-receipt failed: ') + (e?.message || ''));
+      navigation.navigate('Receipt');
+    }
+  };
+
   const handleConfirm = async () => {
     if (cartItems.length === 0) { setSaveError(lang === 'th' ? 'กรุณาเพิ่มสินค้าก่อน' : 'Please add items first'); return; }
     setSaving(true); setSaveError(''); setSaveSuccess(false);
@@ -231,6 +274,7 @@ export default function SaleScreen({ navigation, route }) {
       // ชื่อลูกค้า: ใช้ที่กด "ใช้ชื่อ ..." ก่อน ถ้าไม่มีก็เอาที่พิมพ์ค้างไว้ในช่องค้นหา
       // (เดิมถ้าพิมพ์ชื่อแล้วกดยืนยันเลย โดยไม่กดปุ่ม "ใช้ชื่อ" ชื่อจะหายกลายเป็น "ไม่ระบุ")
       const custName = (manualCust.trim() || custQuery.trim());
+      const payRows  = paymentBreakdown();
       const sale = await api.createSale({
         customer_id: selCustId,
         customer_name: !selCustId && custName ? custName : undefined,
@@ -238,28 +282,31 @@ export default function SaleScreen({ navigation, route }) {
         vip_discount: vipAmt,
         extra_discount: parseFloat(extraDisc) || 0,
         vat_enabled: vatOn,
-        payment_methods: selPay.map(key => ({ method: key, amount: grandTotal })),
+        payment_methods: payRows,
       });
       setSaveSuccess(true);
       setCartItems([]); setExtraDisc('0'); setSplitCash('0'); setSplitQr(null); setManualCust(''); setCustQuery('');
-      api.getProducts({ available: 'true' }).then(setStockList);
-      // ── ออกใบเสร็จอัตโนมัติ แล้วเด้งไปหน้าใบเสร็จเพื่อสั่งปริ้น ──
-      try {
-        const payMap = { cash: 'cash', qr: 'transfer', transfer: 'transfer', card: 'card' };
-        const rc = await api.createReceipt({
-          sale_id: sale.id,
-          payment_method: payMap[selPay[0]] || 'other',
-        });
-        if (rc && rc.id) {
-          navigation.navigate('Receipt', { openReceiptId: rc.id });
-        } else {
-          navigation.navigate('Receipt');
+      api.getProducts({ available: 'true', light: 'true' }).then(setStockList);
+
+      // ใบเสร็จรับช่องทางเดียว → เลือกช่องทางที่จ่ายมากที่สุด (เดิมใช้ตัวแรกที่ติ๊ก
+      // ซึ่งอาจเป็นช่องที่จ่าย 0 บาท เช่น ติ๊กเงินสดไว้แต่จ่ายด้วย QR ทั้งหมด)
+      const mainPay = payRows.slice().sort((a, b) => b.amount - a.amount)[0]?.method || selPay[0];
+      const qrRow   = payRows.find(r => r.method === 'qr');
+
+      // ── มียอดที่จ่ายผ่าน QR → สร้าง QR แล้วรอเงินเข้าก่อน ค่อยออกใบเสร็จ ──
+      if (qrRow) {
+        try {
+          const payment = await api.createPromptPay({ sale_id: sale.id, amount: qrRow.amount });
+          setQrPending({ payment, sale, mainPay });
+          return;
+        } catch (e) {
+          // สร้าง QR ไม่สำเร็จ (เช่น ยอดเกินเพดาน / คีย์ยังไม่ได้ตั้ง) — บิลบันทึกไปแล้ว
+          // ไม่ปล่อยให้ค้าง ให้ออกใบเสร็จตามปกติแล้วแจ้งเตือนไว้
+          setSaveError((lang === 'th' ? 'บันทึกการขายแล้ว แต่สร้าง QR ไม่สำเร็จ: ' : 'Sale saved but QR failed: ') + (e?.message || ''));
         }
-      } catch (e) {
-        // การขายบันทึกแล้ว แต่ออกใบเสร็จอัตโนมัติไม่สำเร็จ — แจ้งให้เห็น (ไม่เงียบ) + พาไปหน้าใบเสร็จให้ออกเอง
-        setSaveError((lang === 'th' ? 'บันทึกการขายแล้ว แต่ออกใบเสร็จอัตโนมัติไม่สำเร็จ: ' : 'Sale saved but auto-receipt failed: ') + (e?.message || ''));
-        navigation.navigate('Receipt');
       }
+
+      await issueReceiptAndGo(sale, mainPay);
     } catch (err) {
       setSaveError(err.message || 'ไม่สามารถบันทึกการขายได้');
     } finally {
@@ -270,6 +317,7 @@ export default function SaleScreen({ navigation, route }) {
   return (
     <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
       <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
+      <ConnectingBar visible={loadingStock} lang={lang} />
 
       <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
 
@@ -636,6 +684,24 @@ export default function SaleScreen({ navigation, route }) {
         count={cartItems.length}
         lang={lang}
       />
+
+      {/* รอลูกค้าสแกนจ่ายด้วย PromptPay — ใบเสร็จออกหลังเงินเข้าเท่านั้น */}
+      {qrPending && (
+        <PromptPayModal
+          payment={qrPending.payment}
+          lang={lang}
+          onPaid={() => { /* รอผู้ใช้กด "ออกใบเสร็จ" เอง จะได้เห็นเครื่องหมายถูกก่อน */ }}
+          onClose={async () => {
+            const { sale, mainPay, payment } = qrPending;
+            setQrPending(null);
+            // เช็คสถานะล่าสุดอีกที — จ่ายแล้วค่อยออกใบเสร็จ
+            try {
+              const p = await api.getPayment(payment.id);
+              if (p.status === 'successful') await issueReceiptAndGo(sale, mainPay);
+            } catch (_) {}
+          }}
+        />
+      )}
     </View>
   );
 }
