@@ -10,6 +10,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import ConnectingBar from '../components/ConnectingBar';
+import {
+  useWide, Toolbar, SearchBox, Chip, PrimaryButton, Panel,
+  TableHead, TableRow, TdNo, TdMain, TdAmt, Pill, Empty,
+} from '../components/DataPanel';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { printPO, savePO } from '../print';
@@ -33,10 +37,27 @@ const STATUS_LABELS = {
   en: { pending: 'Pending', sent: 'Sent', received: 'Received', cancelled: 'Cancelled' },
 };
 
+const FILTERS = [
+  { key: 'all',      th: 'ทั้งหมด',   en: 'All' },
+  { key: 'pending',  th: 'รอส่ง',     en: 'Pending' },
+  { key: 'sent',     th: 'ส่งแล้ว',   en: 'Sent' },
+  { key: 'received', th: 'รับของแล้ว', en: 'Received' },
+];
+const TONE = { pending: 'attn', sent: 'attn', received: 'done', cancelled: 'dim' };
+const COLS = [
+  { label: 'เลขที่', w: 125 },
+  { label: 'วันที่', w: 95 },
+  { label: 'ผู้ขาย' },
+  { label: 'สถานะ', w: 105 },
+  { label: 'ยอด', w: 100, rt: true },
+];
+
 export default function PurchaseOrderScreen({ navigation }) {
   const { styles: s, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang]       = useState('th');
+  const [q, setQ] = useState('');
+  const [filter, setFilter] = useState('all');
   const [orders, setOrders]   = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -87,47 +108,69 @@ export default function PurchaseOrderScreen({ navigation }) {
     } catch (_) {}
   };
 
+  const wide = useWide();
+  const openPO = (o) => {
+    const b = Number(o.subtotal) || 0;
+    setDVatOn(Number(o.vat_amount) > 0 || o.vat_applied === true);
+    setDVatRate(b > 0 && Number(o.vat_amount) > 0 ? String(Math.round(Number(o.vat_amount) / b * 100)) : '7');
+    setSelPO(o);
+    api.getPurchaseOrder(o.id).then(full => setSelPO(prev => prev && prev.id === o.id ? { ...prev, ...full } : prev)).catch(() => {});
+  };
+  const needle = q.trim().toLowerCase();
+  const shown = orders.filter(v => {
+    if (filter !== 'all' && v.status !== filter) return false;
+    if (!needle) return true;
+    return `${v.po_no} ${v.supplier_name || ''}`.toLowerCase().includes(needle);
+  });
   return (
     <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
       <Header title={lang === 'th' ? 'ใบสั่งซื้อ' : 'Purchase Order'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading} lang={lang} />
-
-      {/* แถวเครื่องมือ — จำนวนรายการ และปุ่มสร้างใหม่ (ย้ายมาจากมุมแถบบน) */}
-      <View style={s.toolbar}>
-        <Text style={s.toolbarCount}>
-          {orders.length} {lang === 'th' ? 'ใบ' : 'orders'}
-        </Text>
-        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(true)} style={s.primaryBtn}>
-          <MaterialCommunityIcons name="plus" size={sc(15)} color="#fff5f7" />
-          <Text style={s.primaryBtnText}>{lang === 'th' ? 'สร้างใบสั่งซื้อ' : 'New order'}</Text>
-        </TouchableOpacity>
-      </View>
       <ScrollView contentContainerStyle={s.content}>
-        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
-        {!loading && orders.length === 0 && <Text style={s.emptyText}>{lang === 'th' ? 'ยังไม่มีใบสั่งซื้อ' : 'No purchase orders yet'}</Text>}
-        {orders.map(o => {
-          const st = STATUS_STYLE[o.status] || STATUS_STYLE.pending;
-          return (
-            <TouchableOpacity dataSet={{ hov: 'btn' }} key={o.id} onPress={() => {
-                const b = Number(o.subtotal) || 0;
-                setDVatOn(Number(o.vat_amount) > 0 || o.vat_applied === true);
-                setDVatRate(b > 0 && Number(o.vat_amount) > 0 ? String(Math.round(Number(o.vat_amount) / b * 100)) : '7');
-                setSelPO(o);
-                api.getPurchaseOrder(o.id).then(full => setSelPO(prev => prev && prev.id === o.id ? { ...prev, ...full } : prev)).catch(() => {});
-              }} style={s.card}>
-              <View style={{ flex: 1 }}>
-                <Text style={s.cardNo}>{o.po_no}</Text>
-                <Text style={s.cardSub}>{o.supplier_name || 'ไม่ระบุ'} · {new Date(o.created_at).toLocaleDateString('th-TH')}</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                <Text style={s.cardAmt}>฿{fmt(o.total)}</Text>
-                <View style={[s.badge, { backgroundColor: st.bg }]}>
-                  <Text style={[s.badgeText, { color: st.col }]}>{slabs[o.status] || o.status}</Text>
+        <Toolbar>
+          <SearchBox value={q} onChangeText={setQ}
+            placeholder={lang === 'th' ? 'ค้นหาเลขที่ PO หรือชื่อผู้ขาย' : 'Search PO no. or supplier'} />
+          {FILTERS.map(f => (
+            <Chip key={f.key} label={lang === 'th' ? f.th : f.en} on={filter === f.key} onPress={() => setFilter(f.key)} />
+          ))}
+          <PrimaryButton label={lang === 'th' ? 'สร้างใบสั่งซื้อ' : 'New order'} onPress={() => setShowNew(true)} />
+        </Toolbar>
+
+        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20, marginBottom: 12 }} />}
+
+        <Panel title={lang === 'th' ? 'ใบสั่งซื้อทั้งหมด' : 'All purchase orders'}
+          right={`${shown.length} ${lang === 'th' ? 'ใบ' : 'orders'}`}>
+          {wide && <TableHead cols={COLS} />}
+          {!loading && shown.length === 0 && <Empty text={lang === 'th' ? 'ยังไม่มีใบสั่งซื้อ' : 'No purchase orders yet'} />}
+          {shown.map((o, i) => {
+            const tone = TONE[o.status] || 'done';
+            const date = new Date(o.created_at).toLocaleDateString('th-TH');
+            const label = slabs[o.status] || o.status;
+            const last = i === shown.length - 1;
+            return wide ? (
+              <TableRow key={o.id} cols={COLS} last={last} onPress={() => openPO(o)}
+                cells={[
+                  <TdNo text={o.po_no} />,
+                  date,
+                  <TdMain text={o.supplier_name || 'ไม่ระบุ'} />,
+                  <Pill label={label} tone={tone} />,
+                  <TdAmt text={`฿${fmt(o.total)}`} />,
+                ]} />
+            ) : (
+              <TouchableOpacity dataSet={{ hov: 'btn' }} key={o.id} onPress={() => openPO(o)}
+                style={[s.mrow, last && { borderBottomWidth: 0 }]}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={s.cardNo}>{o.po_no}</Text>
+                  <Text style={s.cardSub}>{o.supplier_name || 'ไม่ระบุ'} · {date}</Text>
                 </View>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                  <Text style={s.cardAmt}>฿{fmt(o.total)}</Text>
+                  <Pill label={label} tone={tone} />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </Panel>
         <View style={{ height: 20 }} />
       </ScrollView>
 
@@ -247,6 +290,7 @@ const baseStyles = {
   primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
   primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: '#fff5f7' },
   content:    { padding: 14, paddingBottom: 30 },
+  mrow:       { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
   emptyText:  { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
   card:       { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
   cardNo:     { fontSize: 12, fontWeight: '500', color: '#550a19' },

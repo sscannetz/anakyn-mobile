@@ -21,10 +21,10 @@ const GOLD_OPTIONS = [
   { key: '18K', factor: 0.90 },
 ];
 export const METAL_TABS = [
-  { key: '9K',     label: '9K',     col: '#b87020', bg: '#fff8e8', border: '#e0c070' },
-  { key: '14K',    label: '14K',    col: '#b87020', bg: '#fff8e8', border: '#e0c070' },
-  { key: '18K',    label: '18K',    col: '#b87020', bg: '#fff8e8', border: '#e0c070' },
-  { key: 'silver', label: 'Silver', col: '#3060a0', bg: '#f0f4ff', border: '#90b8d8' },
+  { key: '9K',     label: '9K',     col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
+  { key: '14K',    label: '14K',    col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
+  { key: '18K',    label: '18K',    col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
+  { key: 'silver', label: 'Silver', col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
 ];
 const SHAPES = [
   'Round Brilliant','Princess Cut','Cushion Cut','Emerald Cut','Asscher Cut',
@@ -441,8 +441,8 @@ export default function ProductForm({
             </View>
             <View style={{ flex: 1 }}>
               <Field label={t.adjWeight}>
-                <View style={[s.input, { backgroundColor: '#f0fdf4', borderColor: '#a8d8b0', justifyContent: 'center' }]}>
-                  <Text style={{ fontSize: 13, fontWeight: '500', color: '#1a5c28' }}>{wNum > 0 ? wAdj.toFixed(2) : '—'} g</Text>
+                <View style={[s.input, { backgroundColor: '#fdf0f2', borderColor: '#e8c0c8', justifyContent: 'center' }]}>
+                  <Text style={{ fontSize: 13, fontWeight: '500', color: '#550a19' }}>{wNum > 0 ? wAdj.toFixed(2) : '—'} g</Text>
                 </View>
               </Field>
             </View>
@@ -456,7 +456,7 @@ export default function ProductForm({
 
       {/* DIAMONDS */}
       <Sec>
-        <SecHead icon="diamond-outline" col="#534AB7">{t.diamondSection}</SecHead>
+        <SecHead icon="diamond-outline" col="#550a19">{t.diamondSection}</SecHead>
         {diamonds.map((d, idx) => (
           <View key={d.id} style={s.diamondBox}>
             <View style={s.diamondHeader}>
@@ -502,8 +502,8 @@ export default function ProductForm({
                 <View style={s.certLabRow}>
                   {['IGI','GIA'].map((lab, i) => (
                     <TouchableOpacity dataSet={{ hov: 'btn' }} key={lab} onPress={() => updD(d.id, 'certLab', lab)}
-                      style={[s.certLabBtn, { backgroundColor: d.certLab === lab ? '#534AB7' : '#fff', borderRightWidth: i === 0 ? 0.5 : 0, borderRightColor: '#d4c8f0' }]}>
-                      <Text style={[s.certLabText, { color: d.certLab === lab ? '#fff' : '#534AB7' }]}>{lab}</Text>
+                      style={[s.certLabBtn, { backgroundColor: d.certLab === lab ? '#550a19' : '#fff', borderRightWidth: i === 0 ? 0.5 : 0, borderRightColor: '#ece0e3' }]}>
+                      <Text style={[s.certLabText, { color: d.certLab === lab ? '#fff' : '#550a19' }]}>{lab}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -518,7 +518,7 @@ export default function ProductForm({
           </View>
         ))}
         <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setDiamonds(ds => [...ds, newDiamond()])} style={s.addDiamondBtn}>
-          <MaterialCommunityIcons name="plus" size={sc(14)} color="#534AB7" />
+          <MaterialCommunityIcons name="plus" size={sc(14)} color="#550a19" />
           <Text style={s.addDiamondText}>{t.addDiamond}</Text>
         </TouchableOpacity>
       </Sec>
@@ -611,56 +611,56 @@ export default function ProductForm({
 const baseStyles = {
   errBox:  { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 10 },
   errText: { fontSize: 12, color: '#a32d2d' },
-  okBox:   { backgroundColor: '#e8f5e9', borderWidth: 0.5, borderColor: '#a8d8b0', borderRadius: 8, padding: 10, marginBottom: 10 },
-  okText:  { fontSize: 12, color: '#1a5c28' },
-  sec:     { backgroundColor: '#fff', borderRadius: 12, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 12, marginBottom: 10 },
+  okBox:   { backgroundColor: '#fdf0f2', borderWidth: 1, borderColor: '#f0d3da', borderRadius: 8, padding: 10, marginBottom: 10 },
+  okText:  { fontSize: 12, color: '#8c1b2f' },
+  sec:     { backgroundColor: '#fff', borderRadius: 12, borderWidth: 0.5, borderColor: '#ece0e3', padding: 12, marginBottom: 10 },
   secHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   secHeadText: { fontSize: 11, fontWeight: '500', letterSpacing: 1.5 },
   field: { marginBottom: 8 },
   fieldLabel: { fontSize: 11, color: '#a07080', marginBottom: 3 },
-  input: { backgroundColor: '#f9f4f5', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 8, padding: 9, fontSize: 13, fontWeight: '500', color: '#2c1015' },
+  input: { backgroundColor: '#fdfbfb', borderWidth: 0.5, borderColor: '#ece0e3', borderRadius: 8, padding: 9, fontSize: 13, fontWeight: '500', color: '#2c1015' },
   skuRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   skuPrefix: { backgroundColor: '#550a19', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
   skuPrefixText: { fontSize: 12, fontWeight: '500', color: '#f5e0e5' },
   skuNum: { flex: 1, fontSize: 16, fontWeight: '500', color: '#550a19', textAlign: 'center' },
-  skuBtn: { backgroundColor: '#f9f4f5', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
+  skuBtn: { backgroundColor: '#fdfbfb', borderWidth: 0.5, borderColor: '#ece0e3', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
   skuBtnPlus: { backgroundColor: '#fdf0f2' },
   skuBtnText: { fontSize: 12, color: '#a07080' },
-  photo: { width: '100%', height: 160, borderRadius: 10, borderWidth: 0.5, borderColor: '#e8d5d9' },
+  photo: { width: '100%', height: 160, borderRadius: 10, borderWidth: 0.5, borderColor: '#ece0e3' },
   photoOverlay: { position: 'absolute', top: 8, right: 8, flexDirection: 'row', gap: 6 },
   photoBtn: { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 7, width: 28, height: 28, justifyContent: 'center', alignItems: 'center' },
-  photoPlaceholder: { backgroundColor: '#f9f4f5', borderRadius: 10, borderWidth: 0.5, borderStyle: 'dashed', borderColor: '#c8a0ac', height: 72, justifyContent: 'center', alignItems: 'center', gap: 6, flexDirection: 'row' },
+  photoPlaceholder: { backgroundColor: '#fdfbfb', borderRadius: 10, borderWidth: 0.5, borderStyle: 'dashed', borderColor: '#c8a0ac', height: 72, justifyContent: 'center', alignItems: 'center', gap: 6, flexDirection: 'row' },
   photoHint: { fontSize: 12, color: '#b08090' },
   catChip: { borderWidth: 0.5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
   catChipText: { fontSize: 11 },
-  metalTabs: { flexDirection: 'row', borderRadius: 10, overflow: 'hidden', borderWidth: 0.5, borderColor: '#e8d5d9', marginBottom: 12 },
+  metalTabs: { flexDirection: 'row', borderRadius: 10, overflow: 'hidden', borderWidth: 0.5, borderColor: '#ece0e3', marginBottom: 12 },
   metalTab: { flex: 1, paddingVertical: 11, alignItems: 'center' },
   metalTabText: { fontSize: 13, fontWeight: '500' },
   metalBox: { borderRadius: 10, borderWidth: 0.5, padding: 12 },
   costBox: { borderRadius: 10, borderWidth: 0.5, padding: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   costBoxLabel: { fontSize: 12, fontWeight: '500' },
   costBoxValue: { fontSize: 16, fontWeight: '500' },
-  diamondBox: { backgroundColor: '#f8f4ff', borderRadius: 10, borderWidth: 0.5, borderColor: '#d4c8f0', padding: 10, marginBottom: 8 },
+  diamondBox: { backgroundColor: '#fdfbfb', borderRadius: 10, borderWidth: 0.5, borderColor: '#ece0e3', padding: 10, marginBottom: 8 },
   diamondHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  diamondTitle: { fontSize: 10, fontWeight: '500', color: '#534AB7', letterSpacing: 1 },
-  dInput: { backgroundColor: '#fdf0f2', borderColor: '#d4c8f0' },
+  diamondTitle: { fontSize: 10, fontWeight: '500', color: '#550a19', letterSpacing: 1 },
+  dInput: { backgroundColor: '#fdf0f2', borderColor: '#ece0e3' },
   certRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   toggle: { width: 36, height: 20, borderRadius: 10, position: 'relative' },
   toggleKnob: { position: 'absolute', top: 2, width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff' },
   toggleLabel: { fontSize: 12, fontWeight: '500' },
-  certBox: { backgroundColor: '#fdf8ff', borderRadius: 10, borderWidth: 0.5, borderColor: '#d4c8f0', padding: 10, marginBottom: 8 },
-  certLabRow: { flexDirection: 'row', borderRadius: 8, overflow: 'hidden', borderWidth: 0.5, borderColor: '#d4c8f0', marginBottom: 8 },
+  certBox: { backgroundColor: '#fdfbfb', borderRadius: 10, borderWidth: 0.5, borderColor: '#ece0e3', padding: 10, marginBottom: 8 },
+  certLabRow: { flexDirection: 'row', borderRadius: 8, overflow: 'hidden', borderWidth: 0.5, borderColor: '#ece0e3', marginBottom: 8 },
   certLabBtn: { flex: 1, paddingVertical: 9, alignItems: 'center' },
   certLabText: { fontSize: 13, fontWeight: '500' },
   removeBtn: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', justifyContent: 'center', alignItems: 'center' },
-  addDiamondBtn: { borderWidth: 0.5, borderStyle: 'dashed', borderColor: '#d4c8f0', borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#f8f4ff' },
-  addDiamondText: { fontSize: 12, color: '#534AB7' },
+  addDiamondBtn: { borderWidth: 0.5, borderStyle: 'dashed', borderColor: '#ece0e3', borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#fdfbfb' },
+  addDiamondText: { fontSize: 12, color: '#550a19' },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
   priceLabel: { fontSize: 13, color: '#806070' },
   priceVal:   { fontSize: 13, fontWeight: '500', color: '#2c1015' },
   totalLabel: { fontSize: 13, fontWeight: '500', color: '#550a19' },
   totalVal:   { fontSize: 16, fontWeight: '500', color: '#550a19' },
-  sellingBox: { backgroundColor: '#f9f4f5', borderRadius: 8, padding: 10, marginTop: 8 },
+  sellingBox: { backgroundColor: '#fdfbfb', borderRadius: 8, padding: 10, marginTop: 8 },
   profitRow:  { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
   profitLabel:{ fontSize: 12, color: '#608050' },
   profitVal:  { fontSize: 12, fontWeight: '500' },
@@ -674,6 +674,6 @@ const baseStyles = {
   modal: { flex: 1, backgroundColor: '#fff', padding: 16 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   modalTitle: { fontSize: 16, fontWeight: '500', color: '#550a19' },
-  modalSearch: { backgroundColor: '#f9f4f5', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10, padding: 10, fontSize: 14, color: '#2c1015', marginBottom: 10 },
+  modalSearch: { backgroundColor: '#fdfbfb', borderWidth: 0.5, borderColor: '#ece0e3', borderRadius: 10, padding: 10, fontSize: 14, color: '#2c1015', marginBottom: 10 },
   stockRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
 };

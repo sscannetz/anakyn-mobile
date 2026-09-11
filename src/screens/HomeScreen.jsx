@@ -17,6 +17,9 @@ import { LOGO_URI } from '../logoBase64';
 import ConnectingBar from '../components/ConnectingBar';
 import { SHELL_BP } from '../components/AppShell';
 import { openDrawer } from '../navRef';
+import {
+  useWide, Panel, TableHead, TableRow, TdNo, TdMain, TdAmt, Empty,
+} from '../components/DataPanel';
 
 const T = {
   th: {
@@ -86,12 +89,22 @@ const POSTATUS_COL   = { pending: ['#fdf0f2','#8c1b2f'], sent: ['#fdf0f2','#8c1b
 const SRVSTATUS_LABEL = { received: 'รับเรื่อง', repairing: 'กำลังซ่อม', qc: 'ตรวจสอบ', notified: 'แจ้งลูกค้า', picked_up: 'รับคืนแล้ว' };
 const SRVSTATUS_COL   = { received: ['#fdf0f2','#8c1b2f'], repairing: ['#fdf0f2','#8c1b2f'], qc: ['#fdf0f2','#8c1b2f'], notified: ['#fdf0f2','#8c1b2f'], picked_up: ['#ffffff','#9b7d86'] };
 
+const SALE_COLS = [
+  { label: 'เลขที่บิล', w: 130 },
+  { label: 'เวลา', w: 60 },
+  { label: 'ลูกค้า' },
+  { label: 'ช่องทาง', w: 120 },
+  { label: 'ยอด', w: 95, rt: true },
+];
+
 export default function HomeScreen({ navigation, route }) {
   const { styles, sc, center, menuItemStyle, menuGridStyle, menuIconStyle, menuEmojiSize } = useScaledStyles(baseStyles);
   const insets     = useSafeAreaInsets();
   const { width }  = useWindowDimensions();
   // จอกว้าง: เมนูอยู่แถบซ้ายแล้ว ไม่ต้องมีตารางเมนูซ้ำในหน้านี้
   const hasSide    = Platform.OS === 'web' && width >= SHELL_BP;
+  // จอกว้างพอจะวางสองคอลัมน์ได้
+  const wideHome   = useWide(1000);
   // role มาจาก 2 ทาง: params (ตอนเพิ่งล็อกอิน) และ storage (ตอนรีเฟรชหน้า/เปิดแอปใหม่)
   // ถ้าอ่านจาก params อย่างเดียว พอกดรีเฟรชจะกลายเป็น staff แล้วเมนูของ admin หายไป
   const [userRole, setUserRole] = useState(route.params?.userRole || '');
@@ -223,6 +236,112 @@ export default function HomeScreen({ navigation, route }) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#550a19" />}
       >
+        {wideHome ? (
+          <>
+            {/* ตัวเลขสรุป 4 ช่อง — ช่องแรกเป็นบล็อกแดงเดียวของหน้า */}
+            <View style={styles.tiles}>
+              <View dataSet={{ hov: 'dark' }} style={[styles.tile, styles.tileLead]}>
+                <Text style={styles.tileLeadLabel}>{t.todayLabel}</Text>
+                <Text style={styles.tileLeadValue}>{loading ? '—' : `฿${fmt(summary?.total_sales || 0)}`}</Text>
+                <Text style={styles.tileLeadSub}>
+                  {loading ? '' : `${summary?.order_count || 0} ${lang === 'th' ? 'บิล' : 'orders'}`}
+                </Text>
+              </View>
+              <View dataSet={{ hov: 'card' }} style={styles.tile}>
+                <Text style={styles.tileLabel}>{t.profitLabel} ({t.profitSub})</Text>
+                <Text style={styles.tileValue}>{loading ? '—' : `฿${fmt(summary?.estimated_profit || 0)}`}</Text>
+                <Text style={styles.tileSub}>
+                  {loading ? '' : `${t.profitSub2} ฿${fmt(summary?.profit_incl_vat ?? summary?.estimated_profit ?? 0)}`}
+                </Text>
+              </View>
+              <TouchableOpacity dataSet={{ hov: 'card' }} onPress={() => navigation.navigate('Inventory')} style={styles.tile}>
+                <Text style={styles.tileLabel}>{t.stockLabel}</Text>
+                <Text style={styles.tileValue}>{loading ? '—' : String(summary?.stock_count || 0)}</Text>
+                <Text style={styles.tileSub}>{loading ? '' : `${fmt(summary?.total_pieces || 0)} ${t.allSub}`}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity dataSet={{ hov: 'card' }} onPress={() => navigation.navigate('ServiceOrder')} style={styles.tile}>
+                <Text style={styles.tileLabel}>{t.pendingLabel}</Text>
+                <Text style={[styles.tileValue, { color: '#550a19' }]}>
+                  {loading ? '—' : pendingPOs.length + pendingSrvs.length}
+                </Text>
+                <Text style={styles.tileSub}>PO {pendingPOs.length} · {t.srvTitle} {pendingSrvs.length}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* ทางลัด */}
+            <View style={styles.quickRow}>
+              {[
+                ['บันทึกขายใหม่',       'plus',            'Sale'],
+                ['เพิ่มสินค้าเข้าสต๊อก', 'diamond-outline', 'Stock'],
+                ['ปริ้นป้ายสินค้า',     'printer-outline', 'Inventory'],
+                ['ออกใบเสร็จ',         'cash-multiple',   'Receipt'],
+              ].map(([label, icon, screen], i) => (
+                <TouchableOpacity dataSet={{ hov: 'btn' }}
+                  key={screen}
+                  onPress={() => navigation.navigate(screen)}
+                  style={[styles.quickBtn, i === 0 && styles.quickBtnPri]}
+                >
+                  <MaterialCommunityIcons name={icon} size={sc(15)} color={i === 0 ? '#fff5f7' : '#550a19'} />
+                  <Text style={[styles.quickText, i === 0 && { color: '#fff5f7' }]}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* สองคอลัมน์: ตารางขายล่าสุด + แถบงานที่ต้องจัดการ */}
+            <View style={styles.cols}>
+              <View style={styles.colMain}>
+                <Panel title={t.recentTitle}
+                  right={`${recentSales.length} ${lang === 'th' ? 'บิล' : 'orders'}`}>
+                  <TableHead cols={SALE_COLS} />
+                  {!loading && recentSales.length === 0 && <Empty text={t.noSales} />}
+                  {recentSales.map((sale, i) => (
+                    <TableRow key={sale.id} cols={SALE_COLS} last={i === recentSales.length - 1}
+                      onPress={() => openSale(sale)}
+                      cells={[
+                        <TdNo text={sale.sale_no} />,
+                        new Date(sale.sold_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+                        <TdMain text={sale.customer_name || 'ไม่ระบุ'} />,
+                        <TdMain text={payLabel(sale.payment_methods)} />,
+                        <TdAmt text={`฿${fmt(sale.total)}`} />,
+                      ]} />
+                  ))}
+                </Panel>
+              </View>
+
+              <View style={styles.colSide}>
+                <Panel title={t.pendingLabel}
+                  right={`${pendingPOs.length + pendingSrvs.length} ${lang === 'th' ? 'รายการ' : 'items'}`}>
+                  {!loading && pendingPOs.length === 0 && pendingSrvs.length === 0 && <Empty text={t.noPending} />}
+                  {pendingPOs.map(po => (
+                    <TouchableOpacity dataSet={{ hov: 'btn' }} key={po.id}
+                      onPress={() => navigation.navigate('PurchaseOrder')} style={styles.task}>
+                      <View style={[styles.taskStripe, { backgroundColor: '#550a19' }]} />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={styles.taskTitle} numberOfLines={1}>{po.po_no} · {po.supplier_name || 'ไม่ระบุ'}</Text>
+                        <Text style={styles.taskSub} numberOfLines={1}>
+                          {POSTATUS_LABEL[po.status] || po.status} · ฿{fmt(po.total)}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                  {pendingSrvs.map(sv => (
+                    <TouchableOpacity dataSet={{ hov: 'btn' }} key={sv.id}
+                      onPress={() => navigation.navigate('ServiceOrder')} style={styles.task}>
+                      <View style={[styles.taskStripe, { backgroundColor: '#c98a97' }]} />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={styles.taskTitle} numberOfLines={1}>{sv.service_no} · {sv.product_name || '—'}</Text>
+                        <Text style={styles.taskSub} numberOfLines={1}>
+                          {SRVSTATUS_LABEL[sv.status] || sv.status} · {sv.customer_name || 'ไม่ระบุ'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </Panel>
+              </View>
+            </View>
+          </>
+        ) : (
+          <>
         {/* KPI */}
         <View dataSet={{ hov: 'dark' }} style={styles.kpiMain}>
           <Text style={styles.kpiMainLabel}>{t.todayLabel}</Text>
@@ -372,6 +491,8 @@ export default function HomeScreen({ navigation, route }) {
             </TouchableOpacity>
           );
         })}
+          </>
+        )}
 
         <View style={{ height: 20 }} />
       </ScrollView>
@@ -484,6 +605,30 @@ const baseStyles = {
   header: { backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#ece0e3' },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10 },
   // โลโก้ร้าน (เวอร์ชันสีครีม) — สัดส่วนต้นฉบับ 413 × 300
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 14 },
+  tile: {
+    flex: 1, minWidth: 180,
+    backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 12,
+    paddingHorizontal: 15, paddingVertical: 14, gap: 2,
+  },
+  tileLead: { flexGrow: 1.5, backgroundColor: '#550a19', borderColor: '#550a19' },
+  tileLeadLabel: { fontSize: 11, color: '#e0b3bf' },
+  tileLeadValue: { fontSize: 25, fontWeight: '600', color: '#fff5f7', lineHeight: 32 },
+  tileLeadSub:   { fontSize: 11, color: '#f0c8d1' },
+  tileLabel: { fontSize: 11, color: '#9b7d86' },
+  tileValue: { fontSize: 23, fontWeight: '600', color: '#2c1015', lineHeight: 30 },
+  tileSub:   { fontSize: 11, color: '#9b7d86' },
+  cols: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, alignItems: 'flex-start', marginTop: 14 },
+  colMain: { flexGrow: 1.6, flexShrink: 1, flexBasis: 420, minWidth: 0 },
+  colSide: { flexGrow: 1, flexShrink: 1, flexBasis: 300, minWidth: 0, gap: 14 },
+  task: {
+    flexDirection: 'row', alignItems: 'stretch', gap: 11,
+    paddingHorizontal: 15, paddingVertical: 11,
+    borderBottomWidth: 1, borderBottomColor: '#f5edef',
+  },
+  taskStripe: { width: 3, borderRadius: 3 },
+  taskTitle: { fontSize: 12, color: '#2c1015', fontWeight: '500' },
+  taskSub:   { fontSize: 10.5, color: '#9b7d86', marginTop: 1 },
   quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   quickBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 7,

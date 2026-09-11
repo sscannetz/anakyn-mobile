@@ -10,6 +10,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import ConnectingBar from '../components/ConnectingBar';
+import {
+  useWide, Toolbar, SearchBox, Chip, PrimaryButton, Panel,
+  TableHead, TableRow, TdNo, TdMain, TdAmt, Pill, Empty,
+} from '../components/DataPanel';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { printReceipt, saveReceipt } from '../print';
@@ -31,10 +35,25 @@ const payLabel = (key, lang) => {
   return o ? (lang === 'th' ? o.th : o.en) : (key || '—');
 };
 
+const FILTERS = [
+  { key: 'all', th: 'ทั้งหมด', en: 'All' },
+];
+const TONE = {};
+const COLS = [
+  { label: 'เลขที่', w: 125 },
+  { label: 'บิลที่อ้างถึง', w: 125 },
+  { label: 'ลูกค้า' },
+  { label: 'ช่องทาง', w: 105 },
+  { label: 'วันที่', w: 95 },
+  { label: 'ยอด', w: 95, rt: true },
+];
+
 export default function ReceiptScreen({ navigation, route }) {
   const { styles: s, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang]         = useState('th');
+  const [q, setQ] = useState('');
+  const [filter, setFilter] = useState('all');
   const [receipts, setReceipts] = useState([]);
   const [sales, setSales]       = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -86,44 +105,64 @@ export default function ReceiptScreen({ navigation, route }) {
     setConfirmDel(false);
   };
 
+  const wide = useWide();
+  const openRc = (rc) => {
+    setConfirmDel(false);
+    setSelRc(rc);
+    api.getReceipt(rc.id).then(full => setSelRc(prev => prev && prev.id === rc.id ? { ...prev, ...full } : prev)).catch(() => {});
+  };
+  const needle = q.trim().toLowerCase();
+  const shown = receipts.filter(v => {
+    if (!needle) return true;
+    return `${v.receipt_no} ${v.sale_no || ''} ${v.customer_name || ''}`.toLowerCase().includes(needle);
+  });
   return (
     <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
       <Header title={lang === 'th' ? 'ใบเสร็จรับเงิน' : 'Receipt'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading} lang={lang} />
-
-      {/* แถวเครื่องมือ — จำนวนรายการ และปุ่มสร้างใหม่ (ย้ายมาจากมุมแถบบน) */}
-      <View style={s.toolbar}>
-        <Text style={s.toolbarCount}>
-          {receipts.length} {lang === 'th' ? 'ใบ' : 'receipts'}
-        </Text>
-        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(true)} style={s.primaryBtn}>
-          <MaterialCommunityIcons name="plus" size={sc(15)} color="#fff5f7" />
-          <Text style={s.primaryBtnText}>{lang === 'th' ? 'ออกใบเสร็จ' : 'New receipt'}</Text>
-        </TouchableOpacity>
-      </View>
       <ScrollView contentContainerStyle={s.content}>
-        <Text style={s.listTitle}>{lang === 'th' ? 'ใบเสร็จทั้งหมด' : 'All Receipts'}</Text>
-        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
-        {!loading && receipts.length === 0 && <Text style={s.emptyText}>{lang === 'th' ? 'ยังไม่มีใบเสร็จ' : 'No receipts yet'}</Text>}
-        {receipts.map(rc => (
-          <TouchableOpacity dataSet={{ hov: 'btn' }} key={rc.id} onPress={() => {
-              setConfirmDel(false);
-              setSelRc(rc);
-              api.getReceipt(rc.id).then(full => setSelRc(prev => prev && prev.id === rc.id ? { ...prev, ...full } : prev)).catch(() => {});
-            }} style={s.card}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.cardNo}>{rc.receipt_no}</Text>
-              <Text style={s.cardSub}>{rc.customer_name || 'ไม่ระบุ'} · {new Date(rc.issued_at).toLocaleDateString('th-TH')}</Text>
-              {!!rc.sale_no && <Text style={s.cardSale}>{lang === 'th' ? 'การขาย' : 'Sale'}: {rc.sale_no}{rc.total != null ? ` · ฿${fmt(rc.total)}` : ''}</Text>}
-            </View>
-            <View style={{ alignItems: 'flex-end', gap: 4 }}>
-              <Text style={s.cardAmt}>฿{fmt(rc.amount)}</Text>
-              <View style={s.payBadge}>
-                <Text style={s.payBadgeText}>{payLabel(rc.payment_method, lang)}</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
+        <Toolbar>
+          <SearchBox value={q} onChangeText={setQ}
+            placeholder={lang === 'th' ? 'ค้นหาเลขที่ใบเสร็จ เลขที่บิล หรือลูกค้า' : 'Search receipt no., sale no. or customer'} />
+          <PrimaryButton label={lang === 'th' ? 'ออกใบเสร็จ' : 'New receipt'} onPress={() => setShowNew(true)} />
+        </Toolbar>
+
+        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20, marginBottom: 12 }} />}
+
+        <Panel title={lang === 'th' ? 'ใบเสร็จทั้งหมด' : 'All receipts'}
+          right={`${shown.length} ${lang === 'th' ? 'ใบ' : 'receipts'}`}>
+          {wide && <TableHead cols={COLS} />}
+          {!loading && shown.length === 0 && <Empty text={lang === 'th' ? 'ยังไม่มีใบเสร็จ' : 'No receipts yet'} />}
+          {shown.map((rc, i) => {
+            const date = new Date(rc.issued_at).toLocaleDateString('th-TH');
+            const pay  = payLabel(rc.payment_method, lang);
+            const last = i === shown.length - 1;
+            return wide ? (
+              <TableRow key={rc.id} cols={COLS} last={last} onPress={() => openRc(rc)}
+                cells={[
+                  <TdNo text={rc.receipt_no} />,
+                  <TdMain text={rc.sale_no || '—'} />,
+                  <TdMain text={rc.customer_name || 'ไม่ระบุ'} />,
+                  <Pill label={pay} tone="done" />,
+                  date,
+                  <TdAmt text={`฿${fmt(rc.amount)}`} />,
+                ]} />
+            ) : (
+              <TouchableOpacity dataSet={{ hov: 'btn' }} key={rc.id} onPress={() => openRc(rc)}
+                style={[s.mrow, last && { borderBottomWidth: 0 }]}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={s.cardNo}>{rc.receipt_no}</Text>
+                  <Text style={s.cardSub}>{rc.customer_name || 'ไม่ระบุ'} · {date}</Text>
+                  {!!rc.sale_no && <Text style={s.cardSale}>{lang === 'th' ? 'การขาย' : 'Sale'}: {rc.sale_no}</Text>}
+                </View>
+                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                  <Text style={s.cardAmt}>฿{fmt(rc.amount)}</Text>
+                  <Pill label={pay} tone="done" />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </Panel>
         <View style={{ height: 20 }} />
       </ScrollView>
 
@@ -224,6 +263,7 @@ const baseStyles = {
   primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
   primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: '#fff5f7' },
   content:    { padding: 14, paddingBottom: 30 },
+  mrow:       { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
   listTitle:  { fontSize: 12, fontWeight: '500', color: '#550a19', marginBottom: 10 },
   emptyText:  { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
   card:       { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },

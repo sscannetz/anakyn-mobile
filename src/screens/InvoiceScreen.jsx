@@ -10,6 +10,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import ConnectingBar from '../components/ConnectingBar';
+import {
+  useWide, Toolbar, SearchBox, Chip, PrimaryButton, Panel,
+  TableHead, TableRow, TdNo, TdMain, TdAmt, Pill, Empty,
+} from '../components/DataPanel';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { printInvoice, saveInvoice } from '../print';
@@ -51,10 +55,26 @@ const STATUS_STYLE = {
   void:   { bg: '#ffffff', col: '#c0a8ae', label: 'Void'   },
 };
 
+const FILTERS = [
+  { key: 'all',    th: 'ทั้งหมด',    en: 'All' },
+  { key: 'issued', th: 'ยังไม่ชำระ', en: 'Unpaid' },
+  { key: 'paid',   th: 'ชำระแล้ว',   en: 'Paid' },
+];
+const TONE = { draft: 'done', issued: 'attn', paid: 'done', void: 'dim' };
+const COLS = [
+  { label: 'เลขที่', w: 125 },
+  { label: 'วันที่', w: 95 },
+  { label: 'ลูกค้า' },
+  { label: 'สถานะ', w: 95 },
+  { label: 'ยอดรวม', w: 100, rt: true },
+];
+
 export default function InvoiceScreen({ navigation }) {
   const { styles, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang] = useState('th');
+  const [q, setQ] = useState('');
+  const [filter, setFilter] = useState('all');
   const t = T[lang];
   const [invoices, setInvoices]   = useState([]);
   const [sales, setSales]         = useState([]);
@@ -87,48 +107,68 @@ export default function InvoiceScreen({ navigation }) {
     finally { setIssuing(false); }
   };
 
+  const wide = useWide();
+  const openInvoice = (inv) => {
+    const b = Number(inv.subtotal ?? inv.tax_base) || 0;
+    setDVatOn(inv.vat_applied !== false);
+    setDVatRate(b > 0 && Number(inv.vat_amount) > 0 ? String(Math.round(Number(inv.vat_amount) / b * 100)) : '7');
+    setSelInvoice(inv);
+    api.getInvoice(inv.id).then(full => setSelInvoice(prev => prev && prev.id === inv.id ? { ...prev, ...full } : prev)).catch(() => {});
+  };
+  const needle = q.trim().toLowerCase();
+  const shown = invoices.filter(v => {
+    if (filter !== 'all' && v.status !== filter) return false;
+    if (!needle) return true;
+    return `${v.invoice_no} ${v.customer_name || ''}`.toLowerCase().includes(needle);
+  });
   return (
     <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
       <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading} lang={lang} />
-
-      {/* แถวเครื่องมือ — จำนวนรายการ และปุ่มสร้างใหม่ (ย้ายมาจากมุมแถบบน) */}
-      <View style={styles.toolbar}>
-        <Text style={styles.toolbarCount}>
-          {invoices.length} {lang === 'th' ? 'ใบ' : 'invoices'}
-        </Text>
-        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(true)} style={styles.primaryBtn}>
-          <MaterialCommunityIcons name="plus" size={sc(15)} color="#fff5f7" />
-          <Text style={styles.primaryBtnText}>{lang === 'th' ? 'ออกใบกำกับภาษี' : 'New invoice'}</Text>
-        </TouchableOpacity>
-      </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.listTitle}>{t.listTitle}</Text>
-        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
-        {!loading && invoices.length === 0 && <Text style={styles.emptyText}>{t.noInvoices}</Text>}
-        {invoices.map(inv => {
-          const st = STATUS_STYLE[inv.status] || STATUS_STYLE.draft;
-          return (
-            <TouchableOpacity dataSet={{ hov: 'btn' }} key={inv.id} onPress={() => {
-                const b = Number(inv.subtotal ?? inv.tax_base) || 0;
-                setDVatOn(inv.vat_applied !== false);
-                setDVatRate(b > 0 && Number(inv.vat_amount) > 0 ? String(Math.round(Number(inv.vat_amount) / b * 100)) : '7');
-                setSelInvoice(inv);
-                api.getInvoice(inv.id).then(full => setSelInvoice(prev => prev && prev.id === inv.id ? { ...prev, ...full } : prev)).catch(() => {});
-              }} style={styles.card}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardNo}>{inv.invoice_no}</Text>
-                <Text style={styles.cardSub}>{inv.customer_name || 'ไม่ระบุ'} · {new Date(inv.issued_at).toLocaleDateString('th-TH')}</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                <Text style={styles.cardAmt}>฿{fmt(inv.grand_total)}</Text>
-                <View style={[styles.badge, { backgroundColor: st.bg }]}>
-                  <Text style={[styles.badgeText, { color: st.col }]}>{st.label}</Text>
+        <Toolbar>
+          <SearchBox value={q} onChangeText={setQ}
+            placeholder={lang === 'th' ? 'ค้นหาเลขที่ใบกำกับ หรือชื่อลูกค้า' : 'Search invoice no. or customer'} />
+          {FILTERS.map(f => (
+            <Chip key={f.key} label={lang === 'th' ? f.th : f.en} on={filter === f.key} onPress={() => setFilter(f.key)} />
+          ))}
+          <PrimaryButton label={lang === 'th' ? 'ออกใบกำกับภาษี' : 'New invoice'} onPress={() => setShowNew(true)} />
+        </Toolbar>
+
+        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20, marginBottom: 12 }} />}
+
+        <Panel title={t.listTitle} right={`${shown.length} ${lang === 'th' ? 'ใบ' : 'invoices'}`}>
+          {wide && <TableHead cols={COLS} />}
+          {!loading && shown.length === 0 && <Empty text={t.noInvoices} />}
+          {shown.map((inv, i) => {
+            const st   = STATUS_STYLE[inv.status] || STATUS_STYLE.draft;
+            const tone = TONE[inv.status] || 'done';
+            const date = inv.issued_at ? new Date(inv.issued_at).toLocaleDateString('th-TH') : '—';
+            const last = i === shown.length - 1;
+            return wide ? (
+              <TableRow key={inv.id} cols={COLS} last={last} onPress={() => openInvoice(inv)}
+                cells={[
+                  <TdNo text={inv.invoice_no} />,
+                  date,
+                  <TdMain text={inv.customer_name || 'ไม่ระบุ'} />,
+                  <Pill label={st.label} tone={tone} />,
+                  <TdAmt text={`฿${fmt(inv.grand_total)}`} />,
+                ]} />
+            ) : (
+              <TouchableOpacity dataSet={{ hov: 'btn' }} key={inv.id} onPress={() => openInvoice(inv)}
+                style={[styles.mrow, last && { borderBottomWidth: 0 }]}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.cardNo}>{inv.invoice_no}</Text>
+                  <Text style={styles.cardSub}>{inv.customer_name || 'ไม่ระบุ'} · {date}</Text>
                 </View>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                  <Text style={styles.cardAmt}>฿{fmt(inv.grand_total)}</Text>
+                  <Pill label={st.label} tone={tone} />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </Panel>
         <View style={{ height: 20 }} />
       </ScrollView>
 
@@ -233,6 +273,7 @@ const baseStyles = {
   primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
   primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: '#fff5f7' },
   content:      { padding: 14, paddingBottom: 30 },
+  mrow:       { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
   listTitle:    { fontSize: 12, fontWeight: '500', color: '#550a19', marginBottom: 10 },
   emptyText:    { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
   card:         { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },

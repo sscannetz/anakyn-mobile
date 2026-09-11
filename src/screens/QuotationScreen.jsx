@@ -10,6 +10,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import ConnectingBar from '../components/ConnectingBar';
+import {
+  useWide, Toolbar, SearchBox, Chip, PrimaryButton, Panel,
+  TableHead, TableRow, TdNo, TdMain, TdAmt, Pill, Empty,
+} from '../components/DataPanel';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { printQuotation, saveQuotation } from '../print';
@@ -34,10 +38,26 @@ const STATUS_LABELS = {
   en: { draft: 'Draft', sent: 'Sent', accepted: 'Accepted', rejected: 'Rejected', expired: 'Expired' },
 };
 
+const FILTERS = [
+  { key: 'all',      th: 'ทั้งหมด',    en: 'All' },
+  { key: 'sent',     th: 'รอตอบกลับ',  en: 'Sent' },
+  { key: 'accepted', th: 'อนุมัติแล้ว', en: 'Accepted' },
+];
+const TONE = { draft: 'done', sent: 'attn', accepted: 'done', rejected: 'dim', expired: 'attn' };
+const COLS = [
+  { label: 'เลขที่', w: 125 },
+  { label: 'วันที่', w: 95 },
+  { label: 'ลูกค้า' },
+  { label: 'สถานะ', w: 105 },
+  { label: 'ยอด', w: 100, rt: true },
+];
+
 export default function QuotationScreen({ navigation }) {
   const { styles: s, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang] = useState('th');
+  const [q, setQ] = useState('');
+  const [filter, setFilter] = useState('all');
   const [quotations, setQuotations] = useState([]);
   const [loading, setLoading]       = useState(true);
   const [showNew, setShowNew]       = useState(false);
@@ -95,46 +115,68 @@ export default function QuotationScreen({ navigation }) {
     } catch (_) {}
   };
 
+  const wide = useWide();
+  const openQt = (qt) => {
+    const b = Number(qt.subtotal) || 0;
+    setDVatOn(qt.vat_applied !== false);
+    setDVatRate(b > 0 && Number(qt.vat_amount) > 0 ? String(Math.round(Number(qt.vat_amount) / b * 100)) : '7');
+    setSelQt(qt);
+  };
+  const needle = q.trim().toLowerCase();
+  const shown = quotations.filter(v => {
+    if (filter !== 'all' && v.status !== filter) return false;
+    if (!needle) return true;
+    return `${v.quotation_no || ''} ${v.quote_no || ''} ${v.customer_name || ''}`.toLowerCase().includes(needle);
+  });
   return (
     <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
       <Header title={lang === 'th' ? 'ใบเสนอราคา' : 'Quotation'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading} lang={lang} />
-
-      {/* แถวเครื่องมือ — จำนวนรายการ และปุ่มสร้างใหม่ (ย้ายมาจากมุมแถบบน) */}
-      <View style={s.toolbar}>
-        <Text style={s.toolbarCount}>
-          {quotations.length} {lang === 'th' ? 'ใบ' : 'quotations'}
-        </Text>
-        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(true)} style={s.primaryBtn}>
-          <MaterialCommunityIcons name="plus" size={sc(15)} color="#fff5f7" />
-          <Text style={s.primaryBtnText}>{lang === 'th' ? 'สร้างใบเสนอราคา' : 'New quotation'}</Text>
-        </TouchableOpacity>
-      </View>
       <ScrollView contentContainerStyle={s.content}>
-        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
-        {!loading && quotations.length === 0 && <Text style={s.emptyText}>{lang === 'th' ? 'ยังไม่มีใบเสนอราคา' : 'No quotations yet'}</Text>}
-        {quotations.map(qt => {
-          const st = STATUS_STYLE[qt.status] || STATUS_STYLE.draft;
-          return (
-            <TouchableOpacity dataSet={{ hov: 'btn' }} key={qt.id} onPress={() => {
-                const b = Number(qt.subtotal) || 0;
-                setDVatOn(qt.vat_applied !== false);
-                setDVatRate(b > 0 && Number(qt.vat_amount) > 0 ? String(Math.round(Number(qt.vat_amount) / b * 100)) : '7');
-                setSelQt(qt);
-              }} style={s.card}>
-              <View style={{ flex: 1 }}>
-                <Text style={s.cardNo}>{qt.quotation_no}</Text>
-                <Text style={s.cardSub}>{qt.customer_name || 'ไม่ระบุ'} · {new Date(qt.created_at || qt.issued_at).toLocaleDateString('th-TH')}</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                <Text style={s.cardAmt}>฿{fmt(qt.grand_total)}</Text>
-                <View style={[s.badge, { backgroundColor: st.bg }]}>
-                  <Text style={[s.badgeText, { color: st.col }]}>{slabs[qt.status] || qt.status}</Text>
+        <Toolbar>
+          <SearchBox value={q} onChangeText={setQ}
+            placeholder={lang === 'th' ? 'ค้นหาเลขที่ใบเสนอราคา หรือชื่อลูกค้า' : 'Search quotation no. or customer'} />
+          {FILTERS.map(f => (
+            <Chip key={f.key} label={lang === 'th' ? f.th : f.en} on={filter === f.key} onPress={() => setFilter(f.key)} />
+          ))}
+          <PrimaryButton label={lang === 'th' ? 'สร้างใบเสนอราคา' : 'New quotation'} onPress={() => setShowNew(true)} />
+        </Toolbar>
+
+        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20, marginBottom: 12 }} />}
+
+        <Panel title={lang === 'th' ? 'ใบเสนอราคาทั้งหมด' : 'All quotations'}
+          right={`${shown.length} ${lang === 'th' ? 'ใบ' : 'quotations'}`}>
+          {wide && <TableHead cols={COLS} />}
+          {!loading && shown.length === 0 && <Empty text={lang === 'th' ? 'ยังไม่มีใบเสนอราคา' : 'No quotations yet'} />}
+          {shown.map((qt, i) => {
+            const tone = TONE[qt.status] || 'done';
+            const date = new Date(qt.created_at || qt.issued_at).toLocaleDateString('th-TH');
+            const label = slabs[qt.status] || qt.status;
+            const last = i === shown.length - 1;
+            return wide ? (
+              <TableRow key={qt.id} cols={COLS} last={last} onPress={() => openQt(qt)}
+                cells={[
+                  <TdNo text={qt.quotation_no || qt.quote_no} />,
+                  date,
+                  <TdMain text={qt.customer_name || 'ไม่ระบุ'} />,
+                  <Pill label={label} tone={tone} />,
+                  <TdAmt text={`฿${fmt(qt.grand_total)}`} />,
+                ]} />
+            ) : (
+              <TouchableOpacity dataSet={{ hov: 'btn' }} key={qt.id} onPress={() => openQt(qt)}
+                style={[s.mrow, last && { borderBottomWidth: 0 }]}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={s.cardNo}>{qt.quotation_no || qt.quote_no}</Text>
+                  <Text style={s.cardSub}>{qt.customer_name || 'ไม่ระบุ'} · {date}</Text>
                 </View>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                  <Text style={s.cardAmt}>฿{fmt(qt.grand_total)}</Text>
+                  <Pill label={label} tone={tone} />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </Panel>
         <View style={{ height: 20 }} />
       </ScrollView>
 
@@ -303,6 +345,7 @@ const baseStyles = {
   primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
   primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: '#fff5f7' },
   content:    { padding: 14, paddingBottom: 30 },
+  mrow:       { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
   emptyText:  { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
   card:       { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
   cardNo:     { fontSize: 12, fontWeight: '500', color: '#550a19' },
