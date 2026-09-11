@@ -102,7 +102,7 @@ export default function App() {
          ต้องมี !important เพราะ react-native-web เขียน background มาเป็นคลาสของตัวเอง */
       [data-hov="nav"] { transition: background-color .13s ease; }
       @media (hover: hover) and (pointer: fine) {
-        [data-hov="nav"]:hover { background-color: #6d1226 !important; cursor: pointer; }
+        [data-hov="nav"]:hover { background-color: #7d2034 !important; cursor: pointer; }
         [data-hov="nav"][data-on="1"]:hover { background-color: #fff5f7 !important; }
       }
 

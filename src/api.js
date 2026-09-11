@@ -2,7 +2,22 @@
 // api.js — ตัวกลางเรียก Backend API
 // แก้ BASE_URL ให้ตรงกับ server ของคุณ
 // ══════════════════════════════════════════════════════
-import { getToken } from './storage';
+import { getToken, clearSession } from './storage';
+import { navRef } from './navRef';
+
+// ── token หมดอายุ → ล้าง session แล้วเด้งกลับหน้าเข้าสู่ระบบ ──
+// ถ้าไม่ทำ ทุกหน้าจะโชว์ 0 หรือ "ยังไม่มีข้อมูล" เงียบ ๆ เหมือนข้อมูลหาย
+// กันเด้งซ้ำด้วย flag เพราะหนึ่งหน้าเรียก API หลายตัวพร้อมกัน
+let kickingOut = false;
+async function kickToLogin() {
+  if (kickingOut) return;
+  kickingOut = true;
+  try { await clearSession(); } catch (_) {}
+  if (navRef.isReady() && navRef.getCurrentRoute()?.name !== 'Login') {
+    navRef.reset({ index: 0, routes: [{ name: 'Login' }] });
+  }
+  setTimeout(() => { kickingOut = false; }, 1500);
+}
 
 // ★ แก้ URL ให้ตรงกับ backend server ของคุณ
 // ถ้ารันบนเครื่องเดียวกัน และใช้ Expo Go:
@@ -26,6 +41,7 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 401 && auth) kickToLogin();
     throw new Error(data.error || `เกิดข้อผิดพลาด (${res.status})`);
   }
   return data;
