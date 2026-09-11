@@ -274,28 +274,24 @@ export default function HomeScreen({ navigation, route }) {
         </View>
         </View>
 
-        {/* MENU GRID — โชว์เฉพาะจอแคบ จอกว้างใช้แถบเมนูซ้ายแทน */}
-        {!hasSide && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t.menuTitle}</Text>
-          <View style={[styles.menuGrid, menuGridStyle]}>
-            {visibleMenus.map(m => (
-              <TouchableOpacity dataSet={{ hov: 'btn' }}
-                key={m.label}
-                onPress={() => m.screen && navigation.navigate(m.screen)}
-                style={[styles.menuItem, menuItemStyle]}
-                activeOpacity={m.screen ? 0.7 : 1}
-              >
-                <View style={[styles.menuIcon, { backgroundColor: m.bg }, menuIconStyle]}>
-                  <Text style={{ fontSize: menuEmojiSize }}>{m.emoji}</Text>
-                </View>
-                <Text style={[styles.menuLabel, { color: m.screen ? '#2c1015' : '#b09090' }]}>{m.label}</Text>
-                <Text style={styles.menuSub}>{m.sub}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        {/* ทางลัด — แทนตารางเมนูเดิม เพราะเมนูย้ายไปอยู่แถบซ้าย (จอกว้าง) และลิ้นชัก (จอแคบ) แล้ว */}
+        <View style={styles.quickRow}>
+          {[
+            ['บันทึกขายใหม่',       'plus',            'Sale'],
+            ['เพิ่มสินค้าเข้าสต๊อก', 'diamond-outline', 'Stock'],
+            ['ปริ้นป้ายสินค้า',     'printer-outline', 'Inventory'],
+            ['ออกใบเสร็จ',         'cash-multiple',   'Receipt'],
+          ].map(([label, icon, screen], i) => (
+            <TouchableOpacity dataSet={{ hov: 'btn' }}
+              key={screen}
+              onPress={() => navigation.navigate(screen)}
+              style={[styles.quickBtn, i === 0 && styles.quickBtnPri]}
+            >
+              <MaterialCommunityIcons name={icon} size={sc(15)} color={i === 0 ? '#fff5f7' : '#550a19'} />
+              <Text style={[styles.quickText, i === 0 && { color: '#fff5f7' }]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
-        )}
 
         {/* RECENT SALES */}
         <Text style={styles.listTitle}>
@@ -488,6 +484,15 @@ const baseStyles = {
   header: { backgroundColor: '#550a19' },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10 },
   // โลโก้ร้าน (เวอร์ชันสีครีม) — สัดส่วนต้นฉบับ 413 × 300
+  quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  quickBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 7,
+    backgroundColor: '#fff',
+    borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10,
+    paddingHorizontal: 13, paddingVertical: 10,
+  },
+  quickBtnPri: { backgroundColor: '#550a19', borderColor: '#550a19' },
+  quickText: { fontSize: 12.5, fontWeight: '500', color: '#2c1015' },
   burgerBtn: {
     width: 32, height: 32, borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.12)',
