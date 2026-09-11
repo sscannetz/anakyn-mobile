@@ -123,8 +123,8 @@ export default function SummaryScreen({ navigation }) {
           <KPICard wide={wide} label={t.vatCollected} value={d.vat_collected} icon="receipt" col="#854F0B" bg="#fff8e1" />
         </View>
 
-        <View style={[s.cols, !wide && { flexDirection: 'column' }]}>
-        <View style={[s.colMain, !wide && { flexBasis: 'auto' }]}>
+        <View style={[s.cols, !wide && s.colsNarrow]}>
+        <View style={[s.colMain, !wide && s.colFull]}>
 
         {/* BAR CHART */}
         <View style={s.sec}>
@@ -171,7 +171,7 @@ export default function SummaryScreen({ navigation }) {
         </View>
 
         </View>
-        <View style={[s.colSide, !wide && { flexBasis: 'auto' }]}>
+        <View style={[s.colSide, !wide && s.colFull]}>
 
         {/* PAYMENT BREAKDOWN */}
         {payEntries.length > 0 && (
@@ -229,6 +229,8 @@ const baseStyles = {
   cols:    { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   colMain: { flexGrow: 1.4, flexShrink: 1, flexBasis: 380, minWidth: 0 },
   colSide: { flexGrow: 1, flexShrink: 1, flexBasis: 300, minWidth: 0 },
+  colsNarrow: { flexDirection: 'column', alignItems: 'stretch', gap: 0 },
+  colFull:    { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: '100%', alignSelf: 'stretch' },
   kpiCardWide: { width: 'auto', flexGrow: 1, flexShrink: 1, flexBasis: 170, minWidth: 150 },
   periodTabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#ece0e3' },
   periodTab:  { flex: 1, paddingVertical: 10, alignItems: 'center' },

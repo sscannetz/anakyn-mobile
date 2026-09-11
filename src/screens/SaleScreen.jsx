@@ -354,8 +354,8 @@ export default function SaleScreen({ navigation, route }) {
         })()}
 
         {/* จอกว้าง = สองคอลัมน์ (ซ้าย: สินค้าในบิล · ขวา: ลูกค้า + สรุปยอด + ชำระเงิน) */}
-        <View style={[s.cols, !wide && { flexDirection: 'column' }]}>
-        <View style={[s.colMain, !wide && { flexBasis: 'auto' }]}>
+        <View style={[s.cols, !wide && s.colsNarrow]}>
+        <View style={[s.colMain, !wide && s.colFull]}>
 
         {/* ADD ITEMS */}
         <Sec>
@@ -407,7 +407,7 @@ export default function SaleScreen({ navigation, route }) {
         </Sec>
 
         </View>
-        <View style={[s.colSide, !wide && { flexBasis: 'auto' }]}>
+        <View style={[s.colSide, !wide && s.colFull]}>
 
         {/* CUSTOMER */}
         <Sec>
@@ -726,6 +726,9 @@ const baseStyles = {
   cols:    { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
   colMain: { flexGrow: 1.55, flexShrink: 1, flexBasis: 420, minWidth: 0 },
   colSide: { flexGrow: 1, flexShrink: 1, flexBasis: 330, minWidth: 0 },
+  // จอแคบ: เรียงลงมาและกว้างเต็มจอ — ไม่งั้น alignItems:'flex-start' จะบีบแต่ละกล่องให้หดตามเนื้อหา
+  colsNarrow: { flexDirection: 'column', alignItems: 'stretch', gap: 0 },
+  colFull:    { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: '100%', alignSelf: 'stretch' },
   errBox: { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 10 },
   errText: { fontSize: 12, color: '#a32d2d' },
   okBox:  { backgroundColor: '#e8f5e9', borderWidth: 0.5, borderColor: '#a8d8b0', borderRadius: 8, padding: 10, marginBottom: 10 },

@@ -718,8 +718,9 @@ const baseStyles = {
   // กล่องครอบ KPI + กำไร — จอกว้างเรียงแถวเดียว จอแคบตัดบรรทัดเองอัตโนมัติ
   // ควบคุมจุดตัดด้วย minWidth ของลูก ไม่ต้องผูก breakpoint ตายตัว
   kpiWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 10 },
-  kpiFlexItem:    { flex: 1, minWidth: 340, marginBottom: 0 },
-  profitFlexItem: { flex: 1, minWidth: 380, marginBottom: 0 },
+  // flexBasis (ไม่ใช่ minWidth) — จอเล็กกว่านี้จะหดลงมาพอดีจอแทนที่จะล้นออกนอกขอบ
+  kpiFlexItem:    { flexGrow: 1, flexShrink: 1, flexBasis: 340, minWidth: 0, marginBottom: 0 },
+  profitFlexItem: { flexGrow: 1, flexShrink: 1, flexBasis: 380, minWidth: 0, marginBottom: 0 },
   kpiRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   kpiCard: { flex: 1, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13 },
   // การ์ดเดี่ยวเต็มความกว้าง — ห้ามใช้ flex:1 ของ kpiCard ไม่งั้นความสูงยุบเป็น 0
