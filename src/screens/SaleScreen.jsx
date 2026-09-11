@@ -315,7 +315,7 @@ export default function SaleScreen({ navigation, route }) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
       <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loadingStock} lang={lang} />
 

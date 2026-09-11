@@ -45,7 +45,7 @@ export default function StockScreen({ navigation }) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
       <Header title={TITLE[lang]} onBack={() => navigation.goBack()} lang={lang}
         onLangToggle={() => setLang(l => (l === 'th' ? 'en' : 'th'))} />
       <ConnectingBar visible={loading} lang={lang} />

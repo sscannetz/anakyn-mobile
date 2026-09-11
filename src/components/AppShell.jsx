@@ -203,7 +203,7 @@ export default function AppShell({ routeName, children }) {
 const S = {
   side: {
     width: SIDE_W,
-    backgroundColor: '#4b0d1c',
+    backgroundColor: '#550a19',
     paddingTop: 16,
     paddingBottom: 12,
   },

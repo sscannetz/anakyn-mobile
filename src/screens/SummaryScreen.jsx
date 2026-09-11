@@ -92,7 +92,7 @@ export default function SummaryScreen({ navigation }) {
   const PAY_LABEL = { cash: lang === 'th' ? 'เงินสด' : 'Cash', qr: lang === 'th' ? 'โอน / QR' : 'Transfer', card: lang === 'th' ? 'บัตรเครดิต' : 'Card', mobile: lang === 'th' ? 'Mobile' : 'Mobile' };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
       <Header title={lang === 'th' ? 'สรุปรายงาน' : 'Summary'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading && firstLoad} lang={lang} />
 
@@ -216,18 +216,18 @@ export default function SummaryScreen({ navigation }) {
 }
 
 const baseStyles = {
-  periodTabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#e8d5d9' },
+  periodTabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#ece0e3' },
   periodTab:  { flex: 1, paddingVertical: 10, alignItems: 'center' },
   periodTabText: { fontSize: 11 },
   content:    { padding: 14, paddingBottom: 30 },
   kpiGrid:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
-  kpiCard:    { width: '48%', backgroundColor: '#fff', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 10 },
+  kpiCard:    { width: '48%', backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13 },
   kpiTop:     { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   kpiLabel:   { fontSize: 10, color: '#a07080', flex: 1 },
   kpiIcon:    { width: 22, height: 22, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
   kpiVal:     { fontSize: 18, fontWeight: '500', color: '#2c1015' },
   kpiSub:     { fontSize: 10, marginTop: 2 },
-  sec:        { backgroundColor: '#fff', borderRadius: 12, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 12, marginBottom: 10 },
+  sec:        { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 10 },
   secTitle:   { fontSize: 11, fontWeight: '500', color: '#550a19', letterSpacing: 1.5, marginBottom: 10 },
   emptyText:  { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 10 },
   barLabel:   { fontSize: 9 },

@@ -69,7 +69,7 @@ export default function App() {
       body { height: auto !important; min-height: 100%; overflow-y: auto !important; }
       /* เต็มความกว้างหน้าจอ — ความอ่านง่ายบนจอใหญ่จัดการด้วย src/responsive.js
          (คูณขนาดฟอนต์/ปุ่มขึ้นตามจอ) แทนการบีบเป็นคอลัมน์แคบเหมือนเดิม */
-      #root { height: auto !important; min-height: 100vh; display: flex; flex-direction: column; background: #f9f4f5; }
+      #root { height: auto !important; min-height: 100vh; display: flex; flex-direction: column; background: #fdfbfb; }
       #root > div { flex: 1 0 auto; width: 100%; }
 
       /* ── ตอนเปิดโมดัล ล็อกไม่ให้หน้าที่อยู่ข้างหลังเลื่อน ──
@@ -102,7 +102,7 @@ export default function App() {
          ต้องมี !important เพราะ react-native-web เขียน background มาเป็นคลาสของตัวเอง */
       [data-hov="nav"] { transition: background-color .13s ease; }
       @media (hover: hover) and (pointer: fine) {
-        [data-hov="nav"]:hover { background-color: #7d2034 !important; cursor: pointer; }
+        [data-hov="nav"]:hover { background-color: #6f1424 !important; cursor: pointer; }
         [data-hov="nav"][data-on="1"]:hover { background-color: #fff5f7 !important; }
       }
 
@@ -144,7 +144,7 @@ export default function App() {
           <AppShell routeName={routeName}>
           <Stack.Navigator
             initialRouteName={initialRoute}
-            screenOptions={{ headerShown: false, cardStyle: { backgroundColor: '#f9f4f5' } }}
+            screenOptions={{ headerShown: false, cardStyle: { backgroundColor: '#fdfbfb' } }}
           >
             <Stack.Screen name="Login"         component={LoginScreen}          />
             <Stack.Screen name="Home"          component={HomeScreen}           />

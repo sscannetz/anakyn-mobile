@@ -20,11 +20,11 @@ export default function Header({ title, onBack, lang, onLangToggle, rightCompone
       <View style={styles.row}>
         {onBack ? (
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onBack} style={styles.backBtn}>
-            <MaterialCommunityIcons name="arrow-left" size={sc(20)} color="#f0d0d8" />
+            <MaterialCommunityIcons name="arrow-left" size={sc(19)} color="#550a19" />
           </TouchableOpacity>
         ) : hasSide ? null : (
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={openDrawer} style={styles.backBtn}>
-            <MaterialCommunityIcons name="menu" size={sc(20)} color="#f0d0d8" />
+            <MaterialCommunityIcons name="menu" size={sc(19)} color="#550a19" />
           </TouchableOpacity>
         )}
 
@@ -33,7 +33,7 @@ export default function Header({ title, onBack, lang, onLangToggle, rightCompone
         <View style={styles.rightGroup}>
           {onLangToggle && (
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onLangToggle} style={styles.langBtn}>
-              <MaterialCommunityIcons name="translate" size={sc(13)} color="#f5e0e5" />
+              <MaterialCommunityIcons name="translate" size={sc(13)} color="#550a19" />
               <Text style={styles.langText}>{lang === 'th' ? 'EN' : 'ไทย'}</Text>
             </TouchableOpacity>
           )}
@@ -46,9 +46,11 @@ export default function Header({ title, onBack, lang, onLangToggle, rightCompone
 
 const baseStyles = {
   container: {
-    backgroundColor: '#550a19',
-    paddingHorizontal: 16,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 18,
     paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ece0e3',
   },
   row: {
     flexDirection: 'row',
@@ -58,8 +60,10 @@ const baseStyles = {
   backBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 9,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#ece0e3',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -79,9 +83,9 @@ const baseStyles = {
   },
   title: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#fff5f7',
+    fontSize: 15.5,
+    fontWeight: '600',
+    color: '#2c1015',
   },
   rightGroup: {
     flexDirection: 'row',
@@ -92,16 +96,16 @@ const baseStyles = {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#ece0e3',
+    borderRadius: 9,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   langText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#f5e0e5',
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#550a19',
   },
 };

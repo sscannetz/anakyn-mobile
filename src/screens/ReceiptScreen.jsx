@@ -87,15 +87,20 @@ export default function ReceiptScreen({ navigation, route }) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
-      <Header title={lang === 'th' ? 'ใบเสร็จรับเงิน' : 'Receipt'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')}
-        rightComponent={
-          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(true)} style={s.iconBtn}>
-            <MaterialCommunityIcons name="plus" size={sc(16)} color="#f5e0e5" />
-          </TouchableOpacity>
-        }
-      />
+    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
+      <Header title={lang === 'th' ? 'ใบเสร็จรับเงิน' : 'Receipt'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading} lang={lang} />
+
+      {/* แถวเครื่องมือ — จำนวนรายการ และปุ่มสร้างใหม่ (ย้ายมาจากมุมแถบบน) */}
+      <View style={s.toolbar}>
+        <Text style={s.toolbarCount}>
+          {receipts.length} {lang === 'th' ? 'ใบ' : 'receipts'}
+        </Text>
+        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(true)} style={s.primaryBtn}>
+          <MaterialCommunityIcons name="plus" size={sc(15)} color="#fff5f7" />
+          <Text style={s.primaryBtnText}>{lang === 'th' ? 'ออกใบเสร็จ' : 'New receipt'}</Text>
+        </TouchableOpacity>
+      </View>
       <ScrollView contentContainerStyle={s.content}>
         <Text style={s.listTitle}>{lang === 'th' ? 'ใบเสร็จทั้งหมด' : 'All Receipts'}</Text>
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
@@ -214,16 +219,20 @@ export default function ReceiptScreen({ navigation, route }) {
 }
 
 const baseStyles = {
+  toolbar:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 14 },
+  toolbarCount: { flex: 1, fontSize: 12, color: '#9b7d86' },
+  primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
+  primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: '#fff5f7' },
   content:    { padding: 14, paddingBottom: 30 },
   listTitle:  { fontSize: 12, fontWeight: '500', color: '#550a19', marginBottom: 10 },
   emptyText:  { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
-  card:       { backgroundColor: '#fff', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 10, marginBottom: 7, flexDirection: 'row', alignItems: 'center' },
+  card:       { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
   cardNo:     { fontSize: 12, fontWeight: '500', color: '#550a19' },
   cardSub:    { fontSize: 11, color: '#a07080', marginTop: 2 },
   cardSale:   { fontSize: 10, color: '#806070', marginTop: 2, fontWeight: '500' },
   cardAmt:    { fontSize: 13, fontWeight: '500', color: '#2c1015' },
-  payBadge:   { borderRadius: 20, paddingHorizontal: 7, paddingVertical: 2, backgroundColor: '#e8f5e9' },
-  payBadgeText: { fontSize: 9, fontWeight: '500', color: '#1a5c28' },
+  payBadge:   { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2.5, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3' },
+  payBadgeText: { fontSize: 9.5, fontWeight: '500', color: '#9b7d86' },
   iconBtn:    { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
   modal:      { flex: 1, backgroundColor: '#fff', padding: 16 },
   modalHeader:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },

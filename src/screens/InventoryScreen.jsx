@@ -182,7 +182,7 @@ export default function InventoryScreen({ navigation }) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
       <Header title={t.title} onBack={() => navigation.goBack()} lang={lang}
         onLangToggle={() => setLang(l => (l === 'th' ? 'en' : 'th'))} />
       <ConnectingBar visible={loading} lang={lang} />
@@ -201,7 +201,7 @@ export default function InventoryScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
         <View style={s.tagHint}>
-          <MaterialCommunityIcons name="information-outline" size={sc(14)} color="#534AB7" />
+          <MaterialCommunityIcons name="information-outline" size={sc(14)} color="#8c1b2f" />
           <Text style={s.tagHintText}>{t.tagHint}</Text>
         </View>
 
@@ -302,7 +302,7 @@ export default function InventoryScreen({ navigation }) {
                   <View style={s.stepper}>
                     <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setCopies(p.id, n - 1)} style={s.stepBtn}
                       hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
-                      <MaterialCommunityIcons name="minus" size={sc(13)} color="#534AB7" />
+                      <MaterialCommunityIcons name="minus" size={sc(13)} color="#8c1b2f" />
                     </TouchableOpacity>
                     <TextInput dataSet={{ hov: 'field' }} style={[s.stepVal, n > 0 && { color: '#534AB7' }]}
                       value={String(n)}
@@ -310,7 +310,7 @@ export default function InventoryScreen({ navigation }) {
                       keyboardType="number-pad" selectTextOnFocus textAlign="center" />
                     <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setCopies(p.id, n + 1)} style={s.stepBtn}
                       hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
-                      <MaterialCommunityIcons name="plus" size={sc(13)} color="#534AB7" />
+                      <MaterialCommunityIcons name="plus" size={sc(13)} color="#8c1b2f" />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -354,7 +354,7 @@ export default function InventoryScreen({ navigation }) {
             <MaterialCommunityIcons name="file-pdf-box" size={sc(15)} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printTags(tagItems)} style={s.tagBarPrint} activeOpacity={0.8}>
-            <MaterialCommunityIcons name="printer" size={sc(15)} color="#534AB7" />
+            <MaterialCommunityIcons name="printer" size={sc(15)} color="#8c1b2f" />
             <Text style={s.tagBarPrintText}>{t.print}</Text>
           </TouchableOpacity>
         </View>
@@ -362,7 +362,7 @@ export default function InventoryScreen({ navigation }) {
 
       {/* โมดัลแก้ไขสินค้า */}
       <Modal visible={!!editing} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEditing(null)}>
-        <View style={{ flex: 1, backgroundColor: '#f9f4f5' }}>
+        <View style={{ flex: 1, backgroundColor: '#fdfbfb' }}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle} numberOfLines={1}>{t.editTitle}</Text>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setEditing(null)}>
@@ -383,12 +383,12 @@ export default function InventoryScreen({ navigation }) {
 
 const baseStyles = {
   content: { padding: 14, paddingBottom: 30 },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 4, marginHorizontal: 14, marginTop: 10 },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 4, marginHorizontal: 14, marginTop: 14 },
   searchInput: { flex: 1, paddingVertical: 9, fontSize: 13, color: '#2c1015' },
-  tagHint: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, backgroundColor: '#f0eeff', borderRadius: 8, padding: 10, marginBottom: 10 },
-  tagHintText: { flex: 1, fontSize: 10.5, color: '#534AB7', lineHeight: 15 },
+  tagHint: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, backgroundColor: '#fdf0f2', borderWidth: 1, borderColor: '#f0d3da', borderRadius: 10, padding: 11, marginBottom: 10 },
+  tagHintText: { flex: 1, fontSize: 10.5, color: '#8c1b2f', lineHeight: 15 },
   toolRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 8 },
-  toolBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, paddingHorizontal: 11, paddingVertical: 7 },
+  toolBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, paddingHorizontal: 13, paddingVertical: 9 },
   toolBtnText: { fontSize: 12, color: '#550a19', fontWeight: '500' },
   tagBulkRow: { flexDirection: 'row', gap: 6, marginBottom: 8, flexWrap: 'wrap' },
   tagBulkBtn: { borderWidth: 0.5, borderColor: '#c8c0f0', borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: '#fff' },
@@ -397,7 +397,7 @@ const baseStyles = {
   errBox: { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 10 },
   errText: { fontSize: 12, color: '#a32d2d' },
   emptyText: { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 24 },
-  card: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 10, marginBottom: 8 },
+  card: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 8 },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   thumb: { width: 44, height: 44, borderRadius: 8, borderWidth: 0.5, borderColor: '#e8d5d9' },
   thumbEmpty: { backgroundColor: '#f9f4f5', justifyContent: 'center', alignItems: 'center' },

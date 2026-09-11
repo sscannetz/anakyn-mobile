@@ -157,7 +157,7 @@ export default function AddUserScreen({ navigation }) {
 
   if (!isAdmin && !loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
+      <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
         <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
         <View style={s.center}>
           <MaterialCommunityIcons name="lock" size={sc(40)} color="#d4a0ac" />
@@ -168,23 +168,28 @@ export default function AddUserScreen({ navigation }) {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f9f4f5', paddingTop: insets.top }}>
-      <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')}
-        rightComponent={
-          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={openNew} style={s.iconBtn}>
-            <MaterialCommunityIcons name="plus" size={sc(16)} color="#f5e0e5" />
-          </TouchableOpacity>
-        }
-      />
+    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
+      <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading} lang={lang} />
+
+      {/* แถวเครื่องมือ — จำนวนรายการ และปุ่มสร้างใหม่ (ย้ายมาจากมุมแถบบน) */}
+      <View style={s.toolbar}>
+        <Text style={s.toolbarCount}>
+          {users.length} {lang === 'th' ? 'คน' : 'users'}
+        </Text>
+        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={openNew} style={s.primaryBtn}>
+          <MaterialCommunityIcons name="plus" size={sc(15)} color="#fff5f7" />
+          <Text style={s.primaryBtnText}>{lang === 'th' ? 'เพิ่มผู้ใช้' : 'Add user'}</Text>
+        </TouchableOpacity>
+      </View>
 
       <ScrollView contentContainerStyle={s.content}>
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
         {!loading && users.length === 0 && <Text style={s.emptyText}>{t.noUsers}</Text>}
         {users.map(u => (
           <TouchableOpacity dataSet={{ hov: 'btn' }} key={u.id} activeOpacity={0.7} onPress={() => openEdit(u)} style={s.card}>
-            <View style={[s.avatar, { backgroundColor: u.role === 'admin' ? '#fdf0f2' : '#e0f0ff' }]}>
-              <Text style={[s.avatarText, { color: u.role === 'admin' ? '#550a19' : '#1a3a60' }]}>
+            <View style={[s.avatar, { backgroundColor: u.role === 'admin' ? '#fdf0f2' : '#f6f2f3' }]}>
+              <Text style={[s.avatarText, { color: u.role === 'admin' ? '#550a19' : '#9b7d86' }]}>
                 {(nameOf(u) || u.email || '?').slice(0, 1).toUpperCase()}
               </Text>
             </View>
@@ -196,8 +201,8 @@ export default function AddUserScreen({ navigation }) {
               <Text style={s.userEmail}>{u.email}</Text>
               {!!u.phone && <Text style={s.userEmail}>{u.phone}</Text>}
               <View style={s.tagRow}>
-                <View style={[s.tag, { backgroundColor: u.role === 'admin' ? '#fdf0f2' : '#e0f0ff' }]}>
-                  <Text style={[s.tagText, { color: u.role === 'admin' ? '#550a19' : '#1a3a60' }]}>{t.roles[u.role] || u.role}</Text>
+                <View style={[s.tag, { backgroundColor: u.role === 'admin' ? '#fdf0f2' : '#f6f2f3' }]}>
+                  <Text style={[s.tagText, { color: u.role === 'admin' ? '#550a19' : '#9b7d86' }]}>{t.roles[u.role] || u.role}</Text>
                 </View>
                 <View style={[s.tag, { backgroundColor: u.is_active === false ? '#f5f5f5' : '#e8f5e9' }]}>
                   <Text style={[s.tagText, { color: u.is_active === false ? '#888' : '#1a5c28' }]}>
@@ -324,6 +329,10 @@ export default function AddUserScreen({ navigation }) {
 }
 
 const baseStyles = {
+  toolbar:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 14 },
+  toolbarCount: { flex: 1, fontSize: 12, color: '#9b7d86' },
+  primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
+  primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: '#fff5f7' },
   content:    { padding: 14, paddingBottom: 30 },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
   adminOnlyText: { fontSize: 14, color: '#a07080', fontWeight: '500' },

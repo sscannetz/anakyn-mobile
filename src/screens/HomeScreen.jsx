@@ -13,7 +13,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { clearSession, getRole } from '../storage';
-import { LOGO_LIGHT_URI } from '../logoBase64';
+import { LOGO_URI } from '../logoBase64';
 import ConnectingBar from '../components/ConnectingBar';
 import { SHELL_BP } from '../components/AppShell';
 import { openDrawer } from '../navRef';
@@ -82,9 +82,9 @@ function payLabel(pm) {
 }
 
 const POSTATUS_LABEL = { pending: 'รอส่ง', sent: 'ส่งแล้ว', received: 'รับแล้ว', cancelled: 'ยกเลิก' };
-const POSTATUS_COL   = { pending: ['#fff8e1','#854F0B'], sent: ['#e0f0ff','#1a3a60'], received: ['#e8f5e9','#1a5c28'], cancelled: ['#f5f5f5','#666'] };
+const POSTATUS_COL   = { pending: ['#fdf0f2','#8c1b2f'], sent: ['#fdf0f2','#8c1b2f'], received: ['#ffffff','#9b7d86'], cancelled: ['#ffffff','#c0a8ae'] };
 const SRVSTATUS_LABEL = { received: 'รับเรื่อง', repairing: 'กำลังซ่อม', qc: 'ตรวจสอบ', notified: 'แจ้งลูกค้า', picked_up: 'รับคืนแล้ว' };
-const SRVSTATUS_COL   = { received: ['#fff8e1','#854F0B'], repairing: ['#e0f0ff','#1a3a60'], qc: ['#f0eeff','#3c3489'], notified: ['#fdf0f2','#7a1c2e'], picked_up: ['#e8f5e9','#1a5c28'] };
+const SRVSTATUS_COL   = { received: ['#fdf0f2','#8c1b2f'], repairing: ['#fdf0f2','#8c1b2f'], qc: ['#fdf0f2','#8c1b2f'], notified: ['#fdf0f2','#8c1b2f'], picked_up: ['#ffffff','#9b7d86'] };
 
 export default function HomeScreen({ navigation, route }) {
   const { styles, sc, center, menuItemStyle, menuGridStyle, menuIconStyle, menuEmojiSize } = useScaledStyles(baseStyles);
@@ -195,13 +195,13 @@ export default function HomeScreen({ navigation, route }) {
         <View style={styles.headerTop}>
           {!hasSide && (
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={openDrawer} style={styles.burgerBtn}>
-              <MaterialCommunityIcons name="menu" size={sc(20)} color="#f0d0d8" />
+              <MaterialCommunityIcons name="menu" size={sc(19)} color="#550a19" />
             </TouchableOpacity>
           )}
-          <Image source={{ uri: LOGO_LIGHT_URI }} style={styles.logoImg} resizeMode="contain" />
+          <Image source={{ uri: LOGO_URI }} style={styles.logoImg} resizeMode="contain" />
           <View style={styles.headerBtns}>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setLang(l => l === 'th' ? 'en' : 'th')} style={styles.headerBtn}>
-              <MaterialCommunityIcons name="translate" size={sc(13)} color="#f5e0e5" />
+              <MaterialCommunityIcons name="translate" size={sc(13)} color="#550a19" />
               <Text style={styles.headerBtnText}>{lang === 'th' ? 'EN' : 'ไทย'}</Text>
             </TouchableOpacity>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleLogout} style={styles.headerBtn}>
@@ -232,8 +232,8 @@ export default function HomeScreen({ navigation, route }) {
         <View style={styles.kpiWrap}>
         <View style={[styles.kpiRow, styles.kpiFlexItem]}>
           {[
-            [t.stockLabel, loading ? '—' : String(summary?.stock_count || 0), t.stockSub, '#534AB7', '#f0eeff', 'diamond-outline'],
-            [t.allLabel,   loading ? '—' : fmt(summary?.total_pieces || 0),   t.allSub,   '#854F0B', '#fff8e1', 'package-variant-closed'],
+            [t.stockLabel, loading ? '—' : String(summary?.stock_count || 0), t.stockSub, '#550a19', '#fdf0f2', 'diamond-outline'],
+            [t.allLabel,   loading ? '—' : fmt(summary?.total_pieces || 0),   t.allSub,   '#550a19', '#fdf0f2', 'package-variant-closed'],
           ].map(([label, val, sub, col, bg, icon]) => (
             <View key={label} dataSet={{ hov: 'card' }} style={styles.kpiCard}>
               <View style={styles.kpiCardTop}>
@@ -252,8 +252,8 @@ export default function HomeScreen({ navigation, route }) {
         <View dataSet={{ hov: 'card' }} style={[styles.profitCard, styles.profitFlexItem]}>
           <View style={styles.kpiCardTop}>
             <Text style={styles.kpiCardLabel}>{t.profitLabel}</Text>
-            <View style={[styles.kpiIcon, { backgroundColor: '#e8f5e9' }]}>
-              <MaterialCommunityIcons name="trending-up" size={sc(13)} color="#1a5c28" />
+            <View style={[styles.kpiIcon, { backgroundColor: '#fdf0f2' }]}>
+              <MaterialCommunityIcons name="trending-up" size={sc(13)} color="#550a19" />
             </View>
           </View>
           <View style={styles.profitRow}>
@@ -265,7 +265,7 @@ export default function HomeScreen({ navigation, route }) {
             </View>
             <View style={styles.profitDivider} />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.kpiCardValue, { color: '#1a5c28' }]}>
+              <Text style={[styles.kpiCardValue, { color: '#550a19' }]}>
                 {loading ? '—' : `฿${fmt(summary?.profit_incl_vat ?? summary?.estimated_profit ?? 0)}`}
               </Text>
               <Text style={styles.kpiCardSub}>{t.profitSub2}</Text>
@@ -318,8 +318,8 @@ export default function HomeScreen({ navigation, route }) {
         </Text>
         <View style={styles.pendingRow}>
           {[
-            { title: t.poTitle,  count: pendingPOs.length,   icon: 'truck-delivery', col: '#1a3a60', bg: '#e0f0ff', screen: 'PurchaseOrder' },
-            { title: t.srvTitle, count: pendingSrvs.length,  icon: 'tools',          col: '#854F0B', bg: '#fff8e1', screen: 'ServiceOrder'  },
+            { title: t.poTitle,  count: pendingPOs.length,   icon: 'truck-delivery', col: '#8c1b2f', bg: '#fdf0f2', screen: 'PurchaseOrder' },
+            { title: t.srvTitle, count: pendingSrvs.length,  icon: 'tools',          col: '#8c1b2f', bg: '#fdf0f2', screen: 'ServiceOrder'  },
           ].map(p => (
             <TouchableOpacity dataSet={{ hov: 'btn' }} key={p.title} onPress={() => navigation.navigate(p.screen)}
               style={[styles.pendingCard, { backgroundColor: p.bg }]}
@@ -481,21 +481,22 @@ export default function HomeScreen({ navigation, route }) {
 
 const baseStyles = {
   container: { flex: 1, backgroundColor: '#f9f4f5' },
-  header: { backgroundColor: '#550a19' },
+  header: { backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#ece0e3' },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10 },
   // โลโก้ร้าน (เวอร์ชันสีครีม) — สัดส่วนต้นฉบับ 413 × 300
   quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   quickBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 7,
     backgroundColor: '#fff',
-    borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10,
+    borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10,
     paddingHorizontal: 13, paddingVertical: 10,
   },
   quickBtnPri: { backgroundColor: '#550a19', borderColor: '#550a19' },
   quickText: { fontSize: 12.5, fontWeight: '500', color: '#2c1015' },
   burgerBtn: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    width: 32, height: 32, borderRadius: 9,
+    backgroundColor: '#ffffff',
+    borderWidth: 1, borderColor: '#ece0e3',
     justifyContent: 'center', alignItems: 'center',
     marginRight: 4,
   },
@@ -503,17 +504,18 @@ const baseStyles = {
   headerBtns: { flexDirection: 'row', gap: 6 },
   headerBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
+    backgroundColor: '#ffffff',
+    borderWidth: 1, borderColor: '#ece0e3',
+    borderRadius: 9, paddingHorizontal: 10, paddingVertical: 5,
   },
-  headerBtnText: { fontSize: 11, color: '#f0d0d8' },
+  headerBtnText: { fontSize: 11.5, fontWeight: '600', color: '#550a19' },
   dateStrip: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#3d0712', paddingHorizontal: 16, paddingVertical: 7,
+    backgroundColor: '#ffffff', borderTopWidth: 1, borderTopColor: '#f5edef',
+    paddingHorizontal: 16, paddingVertical: 7,
   },
-  dateText: { fontSize: 12, color: '#d4a0ac' },
-  dateBold: { fontWeight: '600', color: '#f0d0d8' },
+  dateText: { fontSize: 12, color: '#9b7d86' },
+  dateBold: { fontWeight: '600', color: '#2c1015' },
   scroll: { flex: 1 },
   scrollContent: { padding: 14, paddingBottom: 30 },
   kpiMain: {
@@ -528,17 +530,17 @@ const baseStyles = {
   kpiFlexItem:    { flex: 1, minWidth: 340, marginBottom: 0 },
   profitFlexItem: { flex: 1, minWidth: 380, marginBottom: 0 },
   kpiRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  kpiCard: { flex: 1, backgroundColor: '#fff', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 10 },
+  kpiCard: { flex: 1, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13 },
   // การ์ดเดี่ยวเต็มความกว้าง — ห้ามใช้ flex:1 ของ kpiCard ไม่งั้นความสูงยุบเป็น 0
-  profitCard: { backgroundColor: '#fff', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 10, marginBottom: 10 },
+  profitCard: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 10 },
   profitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 2 },
-  profitDivider: { width: 0.5, alignSelf: 'stretch', backgroundColor: '#e8d5d9' },
+  profitDivider: { width: 1, alignSelf: 'stretch', backgroundColor: '#ece0e3' },
   kpiCardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   kpiCardLabel: { fontSize: 11, color: '#a07080', flex: 1 },
   kpiIcon: { width: 22, height: 22, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
   kpiCardValue: { fontSize: 17, fontWeight: '500', color: '#2c1015' },
   kpiCardSub:   { fontSize: 10, color: '#b09090', marginTop: 2 },
-  section: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 12, marginBottom: 10 },
+  section: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 10 },
   // ไม่ใส่ letterSpacing — ภาษาไทยใส่แล้วสระ/วรรณยุกต์ลอยห่างจากพยัญชนะ ดูไม่เข้าชุดกับ label อื่น
   sectionTitle: { fontSize: 11, fontWeight: '500', color: '#a07080', marginBottom: 10 },
   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 2 },
