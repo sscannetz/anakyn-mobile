@@ -1,14 +1,19 @@
 // ══════════════════════════════════════════════════════
 // Header.jsx — Header component ที่ใช้ทุก screen
 // ══════════════════════════════════════════════════════
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { useScaledStyles } from '../responsive';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { openDrawer } from '../navRef';
+import { SHELL_BP } from './AppShell';
 
 export default function Header({ title, onBack, lang, onLangToggle, rightComponent }) {
   const { styles, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  // จอกว้างมีแถบเมนูค้างอยู่ซ้ายมือแล้ว ไม่ต้องมีปุ่มขีดสามขีดและโลโก้ซ้ำ
+  const hasSide = Platform.OS === 'web' && width >= SHELL_BP;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
@@ -17,11 +22,10 @@ export default function Header({ title, onBack, lang, onLangToggle, rightCompone
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onBack} style={styles.backBtn}>
             <MaterialCommunityIcons name="arrow-left" size={sc(20)} color="#f0d0d8" />
           </TouchableOpacity>
-        ) : (
-          <View style={styles.logoBlock}>
-            <Text style={styles.logoText}>ANAKYN</Text>
-            <Text style={styles.logoSub}>GEMS</Text>
-          </View>
+        ) : hasSide ? null : (
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={openDrawer} style={styles.backBtn}>
+            <MaterialCommunityIcons name="menu" size={sc(20)} color="#f0d0d8" />
+          </TouchableOpacity>
         )}
 
         <Text style={styles.title} numberOfLines={1}>{title}</Text>

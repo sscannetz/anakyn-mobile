@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, ActivityIndicator, Modal, Image,
+  Platform, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -14,6 +15,8 @@ import { useScaledStyles } from '../responsive';
 import { clearSession, getRole } from '../storage';
 import { LOGO_LIGHT_URI } from '../logoBase64';
 import ConnectingBar from '../components/ConnectingBar';
+import { SHELL_BP } from '../components/AppShell';
+import { openDrawer } from '../navRef';
 
 const T = {
   th: {
@@ -86,6 +89,9 @@ const SRVSTATUS_COL   = { received: ['#fff8e1','#854F0B'], repairing: ['#e0f0ff'
 export default function HomeScreen({ navigation, route }) {
   const { styles, sc, center, menuItemStyle, menuGridStyle, menuIconStyle, menuEmojiSize } = useScaledStyles(baseStyles);
   const insets     = useSafeAreaInsets();
+  const { width }  = useWindowDimensions();
+  // จอกว้าง: เมนูอยู่แถบซ้ายแล้ว ไม่ต้องมีตารางเมนูซ้ำในหน้านี้
+  const hasSide    = Platform.OS === 'web' && width >= SHELL_BP;
   // role มาจาก 2 ทาง: params (ตอนเพิ่งล็อกอิน) และ storage (ตอนรีเฟรชหน้า/เปิดแอปใหม่)
   // ถ้าอ่านจาก params อย่างเดียว พอกดรีเฟรชจะกลายเป็น staff แล้วเมนูของ admin หายไป
   const [userRole, setUserRole] = useState(route.params?.userRole || '');
@@ -187,6 +193,11 @@ export default function HomeScreen({ navigation, route }) {
       {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
+          {!hasSide && (
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={openDrawer} style={styles.burgerBtn}>
+              <MaterialCommunityIcons name="menu" size={sc(20)} color="#f0d0d8" />
+            </TouchableOpacity>
+          )}
           <Image source={{ uri: LOGO_LIGHT_URI }} style={styles.logoImg} resizeMode="contain" />
           <View style={styles.headerBtns}>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setLang(l => l === 'th' ? 'en' : 'th')} style={styles.headerBtn}>
@@ -263,7 +274,8 @@ export default function HomeScreen({ navigation, route }) {
         </View>
         </View>
 
-        {/* MENU GRID */}
+        {/* MENU GRID — โชว์เฉพาะจอแคบ จอกว้างใช้แถบเมนูซ้ายแทน */}
+        {!hasSide && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.menuTitle}</Text>
           <View style={[styles.menuGrid, menuGridStyle]}>
@@ -283,6 +295,7 @@ export default function HomeScreen({ navigation, route }) {
             ))}
           </View>
         </View>
+        )}
 
         {/* RECENT SALES */}
         <Text style={styles.listTitle}>
@@ -475,6 +488,12 @@ const baseStyles = {
   header: { backgroundColor: '#550a19' },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10 },
   // โลโก้ร้าน (เวอร์ชันสีครีม) — สัดส่วนต้นฉบับ 413 × 300
+  burgerBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    justifyContent: 'center', alignItems: 'center',
+    marginRight: 4,
+  },
   logoImg: { width: 55, height: 40 },
   headerBtns: { flexDirection: 'row', gap: 6 },
   headerBtn: {

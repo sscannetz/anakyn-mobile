@@ -109,10 +109,10 @@ export default function SaleScreen({ navigation, route }) {
   const [custQuery, setCustQuery]         = useState('');
   const [selCustId, setSelCustId]         = useState(null);
   const [manualCust, setManualCust]       = useState('');   // ชื่อลูกค้าที่พิมพ์เอง (ไม่มีในระบบ)
-  const [vatOn, setVatOn]                 = useState(true);
+  const [vatOn, setVatOn]                 = useState(false);   // ค่าเริ่มต้น: ไม่มี VAT
   const [vipOn, setVipOn]                 = useState(true);
   const [extraDisc, setExtraDisc]         = useState('0');
-  const [selPay, setSelPay]               = useState(['cash', 'qr']);
+  const [selPay, setSelPay]               = useState(['qr']);  // ค่าเริ่มต้น: โอน/QR อย่างเดียว
   const [splitCash, setSplitCash]         = useState('0');
   const [splitQr, setSplitQr]             = useState(null);
   const [saving, setSaving]               = useState(false);

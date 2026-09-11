@@ -493,6 +493,8 @@ const TAG_STYLE = `
   .nm    { font-weight:700; line-height:1.18; overflow:hidden; word-break:break-word;
            display:-webkit-box; -webkit-box-orient:vertical; }
   .pr    { font-weight:800; line-height:1.2; white-space:nowrap; overflow:hidden; }
+  /* "มีใบเซอร์" — อยู่กลางคอลัมน์ ระหว่างชื่อสินค้ากับราคา (space-between จัดให้เอง) */
+  .ct    { font-weight:700; line-height:1.25; white-space:nowrap; overflow:hidden; }
 
   /* ── หน้าสเปก: ANAKYN#xxxx / WG / D: ... (ขนาดฟอนต์คำนวณต่อใบใน buildTags) ── */
   .pnl.b { display:flex; flex-direction:column; justify-content:flex-start; }
@@ -581,6 +583,16 @@ function tagWgLine(p) {
   return 'WG: ' + [p.metal_type || '', w ? `${w.toFixed(2)}g` : ''].filter(Boolean).join(' ');
 }
 
+// สินค้าชิ้นนี้มีใบเซอร์ไหม — ดูที่คอลัมน์ has_certificate ก่อน
+// ถ้าไม่มีค่า (ข้อมูลเก่า) ค่อยไล่ดูรายเม็ดใน diamonds
+function tagHasCert(p) {
+  if (p.has_certificate === true || p.has_certificate === 'true') return true;
+  if (p.has_certificate === false || p.has_certificate === 'false') return false;
+  let ds = p.diamonds;
+  if (typeof ds === 'string') { try { ds = JSON.parse(ds); } catch (_) { ds = []; } }
+  return Array.isArray(ds) && ds.some(d => d && d.hasCert);
+}
+
 // ["D: 1/1.00ct (RD)", "D: 10/0.20ct (RD)", ...] — 1 บรรทัดต่อเพชร 1 กลุ่ม
 // จำนวน / น้ำหนักรวมของกลุ่มนั้น (weight ในฐานข้อมูลเป็นน้ำหนักต่อเม็ด จึงคูณด้วยจำนวน)
 function tagDiamondLines(p) {
@@ -612,8 +624,16 @@ function buildTags(items = []) {
     // ── ฝั่งซ้าย: ชื่อสินค้า (ชิดบน) + ราคา (ชิดล่าง) ในคอลัมน์สูงเท่า QR ──
     const prTxt = baht(p.sale_price);
     const prFs  = fitFs(prTxt, TAG_COL, 2.3, 1.35);
+
+    // "มีใบเซอร์" แทรกกลางคอลัมน์ — กินความสูงไปจากโควตาของชื่อสินค้า
+    const hasCert = tagHasCert(p);
+    const ctTxt   = 'มีใบเซอร์';
+    const ctFs    = hasCert ? fitFs(ctTxt, TAG_COL, 1.6, 1.05) : 0;
+    const ctH     = hasCert ? ctFs * 1.25 + 0.3 : 0;
+
     // ยาวได้ถึง 4 บรรทัด — เกินกว่านั้นค่อยย่อฟอนต์ลง (ไม่ตัดท้ายด้วย …)
-    const nm    = fitWrapped(p.name || '-', TAG_COL, TAG_QR - (prFs * 1.2 + 0.4), 1.75, 1.05, 4);
+    const nmH   = Math.max(1.6, TAG_QR - (prFs * 1.2 + 0.4) - ctH);
+    const nm    = fitWrapped(p.name || '-', TAG_COL, nmH, 1.75, 1.05, 4);
 
     // ── ฝั่งขวา: ANAKYN#xxxx / WG: ... / D: ... ──
     // ย่อฟอนต์ลงเรื่อย ๆ จนทุกบรรทัดใส่ในความสูงที่มี แล้วค่อยหยุด
@@ -633,6 +653,7 @@ function buildTags(items = []) {
         ${qr}
         <div class="acol">
           <div class="nm" style="font-size:${nm.fs}mm; -webkit-line-clamp:${nm.lines}">${esc(p.name || '-')}</div>
+          ${hasCert ? `<div class="ct" style="font-size:${ctFs.toFixed(2)}mm">${ctTxt}</div>` : ''}
           <div class="pr" style="font-size:${prFs.toFixed(2)}mm">${prTxt}</div>
         </div>
       </div>

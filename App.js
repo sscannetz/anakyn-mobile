@@ -2,7 +2,7 @@
 // App.js — Root navigator สำหรับ Anakyn Gems Mobile
 // ══════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
-import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, ActivityIndicator, Platform } from 'react-native';
@@ -10,6 +10,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { getToken } from './src/storage';
 import { getPendingSku, clearPendingSku } from './src/scan';
+import { navRef } from './src/navRef';
+import AppShell from './src/components/AppShell';
 
 import LoginScreen       from './src/screens/LoginScreen';
 import HomeScreen        from './src/screens/HomeScreen';
@@ -25,7 +27,6 @@ import ReceiptScreen     from './src/screens/ReceiptScreen';
 import AddUserScreen     from './src/screens/AddUserScreen';
 
 const Stack = createStackNavigator();
-const navRef = createNavigationContainerRef();
 
 // ── สแกน QR บนป้ายสินค้า → เด้งไปหน้าบันทึกการขายพร้อมสินค้าชิ้นนั้น ──
 // รอจนผู้ใช้อยู่หน้า Home ก่อน (เผื่อยังไม่ได้ล็อกอิน จะได้เด้งหลังล็อกอินเสร็จ)
@@ -40,11 +41,15 @@ function routeScannedSku() {
 
 export default function App() {
   const [initialRoute, setInitialRoute] = useState(null);
+  // ชื่อหน้าที่เปิดอยู่ — AppShell ใช้ไฮไลท์เมนู และซ่อนตัวเองตอนอยู่หน้า Login
+  const [routeName, setRouteName] = useState(null);
 
   useEffect(() => {
     // ตรวจสอบ token ที่เก็บไว้ — ถ้ามีให้ข้ามหน้า Login
     getToken().then(token => {
-      setInitialRoute(token ? 'Home' : 'Login');
+      const first = token ? 'Home' : 'Login';
+      setInitialRoute(first);
+      setRouteName(first);      // กันแถบเมนูกะพริบตอนเปิดหน้าแรก
     });
   }, []);
 
@@ -92,6 +97,15 @@ export default function App() {
       }
       [data-hov="btn"]:active { transform: scale(0.985); }
 
+      /* ── เมนูในแถบซ้าย / ลิ้นชัก ──
+         ใช้สีพื้นตรง ๆ ไม่ใช้ filter เพราะพื้นแดงเข้มถ้าใช้ filter จะยิ่งมืด มองไม่ออกว่าเมาส์อยู่ตรงไหน
+         ต้องมี !important เพราะ react-native-web เขียน background มาเป็นคลาสของตัวเอง */
+      [data-hov="nav"] { transition: background-color .13s ease; }
+      @media (hover: hover) and (pointer: fine) {
+        [data-hov="nav"]:hover { background-color: #6d1226 !important; cursor: pointer; }
+        [data-hov="nav"][data-on="1"]:hover { background-color: #fff5f7 !important; }
+      }
+
       /* ── ช่องกรอกข้อมูล ──
          ใช้ border + เงา ไม่ใช้ filter เพราะ filter จะทำให้ตัวหนังสือที่พิมพ์เข้มตามไปด้วย
          ต้องใส่ !important เพราะ react-native-web เขียนสีขอบมาเป็นคลาสของตัวเอง */
@@ -121,8 +135,13 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <NavigationContainer ref={navRef} onReady={routeScannedSku} onStateChange={routeScannedSku}>
+        <NavigationContainer
+          ref={navRef}
+          onReady={() => { setRouteName(navRef.getCurrentRoute()?.name); routeScannedSku(); }}
+          onStateChange={() => { setRouteName(navRef.getCurrentRoute()?.name); routeScannedSku(); }}
+        >
           <StatusBar style="light" backgroundColor="#550a19" />
+          <AppShell routeName={routeName}>
           <Stack.Navigator
             initialRouteName={initialRoute}
             screenOptions={{ headerShown: false, cardStyle: { backgroundColor: '#f9f4f5' } }}
@@ -140,6 +159,7 @@ export default function App() {
             <Stack.Screen name="Receipt"       component={ReceiptScreen}        />
             <Stack.Screen name="AddUser"       component={AddUserScreen}        />
           </Stack.Navigator>
+          </AppShell>
         </NavigationContainer>
       </SafeAreaProvider>
     </GestureHandlerRootView>
