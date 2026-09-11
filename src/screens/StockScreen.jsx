@@ -57,6 +57,7 @@ export default function StockScreen({ navigation }) {
       <ScrollView contentContainerStyle={[s.content, wide && s.contentWide]} keyboardShouldPersistTaps="handled">
         <ProductForm
           mode="create"
+          wide={wide}
           lang={lang}
           nextSkuNum={nextSku}
           stockCount={stockCount}
@@ -70,5 +71,5 @@ export default function StockScreen({ navigation }) {
 
 const baseStyles = {
   content: { padding: 14, paddingBottom: 30 },
-  contentWide: { maxWidth: 760, width: '100%', alignSelf: 'center', paddingHorizontal: 0, paddingTop: 18 },
+  contentWide: { maxWidth: 1180, width: '100%', alignSelf: 'center', paddingHorizontal: 0, paddingTop: 18 },
 };

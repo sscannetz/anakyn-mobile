@@ -68,6 +68,11 @@ export const T = {
     categories: ['แหวน','สร้อยคอ','ต่างหู','กำไล','จี้','อื่นๆ'],
     selectPh: 'เลือก...',
     search: 'ค้นหา...',
+    tagSection: 'ตัวอย่างป้ายสินค้า',
+    tagSize: '50 × 15 มม.',
+    tagNote: 'บรรทัด "มีใบเซอร์" ขึ้นเองเมื่อสินค้ามีใบรับรอง',
+    tagNamePh: 'ชื่อสินค้า',
+    clearForm: 'ล้างฟอร์ม',
   },
   en: {
     skuSection: 'Product Code (SKU)', skuEditLabel: 'Product Code',
@@ -97,9 +102,16 @@ export const T = {
     needSku: 'Please fill the product code (SKU)',
     categories: ['Ring','Necklace','Earring','Bracelet','Pendant','Other'],
     selectPh: 'Select...',
+    tagSection: 'Tag preview',
+    tagSize: '50 × 15 mm',
+    tagNote: 'The "certificate" line appears by itself when the item has one',
+    tagNamePh: 'Product name',
+    clearForm: 'Clear form',
     search: 'Search...',
   },
 };
+
+import TagPreview from './TagPreview';
 
 const fmt = (n) => {
   const num = Number(n);
@@ -167,7 +179,7 @@ function Toggle({ on, onChange }) {
  */
 export default function ProductForm({
   mode = 'create', lang = 'th', product = null,
-  nextSkuNum = 1, stockCount = 0, onSubmit,
+  nextSkuNum = 1, stockCount = 0, onSubmit, wide = false,
 }) {
   const { styles: s, sc } = useScaledStyles(baseStyles);
   const t = T[lang];
@@ -235,6 +247,23 @@ export default function ProductForm({
   const skuLabel   = `ANAKYN#${String(skuNum).padStart(4, '0')}`;
 
   const updD = (id, k, v) => setDiamonds(ds => ds.map(d => d.id === id ? { ...d, [k]: v } : d));
+
+  // สินค้าสมมติจากค่าที่กรอกอยู่ตอนนี้ — ส่งให้ตัวอย่างป้ายวาดใหม่ทุกครั้งที่พิมพ์
+  const previewProduct = {
+    name: itemName.trim() || t.tagNamePh,
+    sku: isEdit ? (sku || skuLabel) : skuLabel,
+    sale_price: parseFloat(sellingPrice) || 0,
+    metal_type: metalKey,
+    metal_weight_g: wNum || null,
+    diamonds,
+    has_certificate: diamonds.some(d => d.hasCert),
+  };
+
+  const clearForm = () => {
+    setItemName(''); setCatCode(CAT_CODES[0]); setQty('1'); setLaborCost('');
+    setMetalWeight(''); setSellingPrice(''); setDiamonds([newDiamond()]);
+    setPhotoUri(null); setSaveError(''); setSaveSuccess(false);
+  };
 
   const pickPhoto = async (fromCamera) => {
     setPhotoMenuOpen(false);
@@ -337,6 +366,10 @@ export default function ProductForm({
       {!!saveError && <View style={s.errBox}><Text style={s.errText}>{saveError}</Text></View>}
       {saveSuccess && <View style={s.okBox}><Text style={s.okText}>{isEdit ? t.updateSuccess : t.saveSuccess}</Text></View>}
 
+      {/* จอกว้าง = สองคอลัมน์ · ซ้าย ข้อมูลสินค้า · ขวา รูป + ตัวอย่างป้าย + ปุ่มบันทึก */}
+      <View style={[s.cols, !wide && s.colsNarrow]}>
+      <View style={[s.colMain, !wide && s.colFull]}>
+
       {/* SKU */}
       <Sec>
         <SecHead icon="barcode">{isEdit ? t.skuEditLabel : t.skuSection}</SecHead>
@@ -351,29 +384,6 @@ export default function ProductForm({
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setSkuNum(stockCount + 1)} style={s.skuBtn}><Text style={s.skuBtnText}>Reset</Text></TouchableOpacity>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setSkuNum(n => n + 1)} style={[s.skuBtn, s.skuBtnPlus]}><Text style={[s.skuBtnText, { color: '#550a19' }]}>+1</Text></TouchableOpacity>
           </View>
-        )}
-      </Sec>
-
-      {/* PHOTO */}
-      <Sec>
-        <SecHead icon="camera">{t.photoSection}</SecHead>
-        {photoUri ? (
-          <View>
-            <Image source={{ uri: photoUri }} style={s.photo} resizeMode="cover" />
-            <View style={s.photoOverlay}>
-              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setPhotoMenuOpen(true)} style={s.photoBtn}>
-                <MaterialCommunityIcons name="camera" size={sc(14)} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setPhotoUri(null)} style={s.photoBtn}>
-                <MaterialCommunityIcons name="trash-can" size={sc(14)} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setPhotoMenuOpen(true)} style={s.photoPlaceholder}>
-            <MaterialCommunityIcons name="camera" size={sc(24)} color="#c8a0b0" />
-            <Text style={s.photoHint}>{t.photoHint}</Text>
-          </TouchableOpacity>
         )}
       </Sec>
 
@@ -551,12 +561,60 @@ export default function ProductForm({
         </View>
       </Sec>
 
+      </View>
+      <View style={[s.colSide, !wide && s.colFull]}>
+
+      {/* PHOTO */}
+      <Sec>
+        <SecHead icon="camera">{t.photoSection}</SecHead>
+        {photoUri ? (
+          <View>
+            <Image source={{ uri: photoUri }} style={s.photo} resizeMode="cover" />
+            <View style={s.photoOverlay}>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setPhotoMenuOpen(true)} style={s.photoBtn}>
+                <MaterialCommunityIcons name="camera" size={sc(14)} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setPhotoUri(null)} style={s.photoBtn}>
+                <MaterialCommunityIcons name="trash-can" size={sc(14)} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setPhotoMenuOpen(true)} style={s.photoPlaceholder}>
+            <MaterialCommunityIcons name="camera" size={sc(24)} color="#c8a0b0" />
+            <Text style={s.photoHint}>{t.photoHint}</Text>
+          </TouchableOpacity>
+        )}
+      </Sec>
+
+      {/* ตัวอย่างป้ายสินค้า — เปลี่ยนตามที่พิมพ์ทันที */}
+      <Sec>
+        <View style={s.tagHead}>
+          <SecHead icon="tag-outline">{t.tagSection}</SecHead>
+          <Text style={s.tagSize}>{t.tagSize}</Text>
+        </View>
+        <View style={s.tagStage}>
+          <TagPreview product={previewProduct} lang={lang} />
+        </View>
+        <Text style={s.tagNote}>{t.tagNote}</Text>
+      </Sec>
+
       {/* SAVE */}
-      <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleSave} disabled={saving}
-        style={[s.saveBtn, { opacity: saving ? 0.7 : 1 }]}>
-        {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
-        <Text style={s.saveBtnText}>{saving ? t.saving : (isEdit ? t.updateBtn : t.saveBtn(skuLabel))}</Text>
-      </TouchableOpacity>
+      <View style={s.saveRow}>
+        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleSave} disabled={saving}
+          style={[s.saveBtn, { flex: 1, marginBottom: 0, opacity: saving ? 0.7 : 1 }]}>
+          {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
+          <Text style={s.saveBtnText}>{saving ? t.saving : (isEdit ? t.updateBtn : t.saveBtn(skuLabel))}</Text>
+        </TouchableOpacity>
+        {!isEdit && (
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={clearForm} style={s.clearBtn}>
+            <Text style={s.clearBtnText}>{t.clearForm}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      </View>
+      </View>
 
       {/* PHOTO MENU */}
       <Modal visible={photoMenuOpen} transparent animationType="slide" onRequestClose={() => setPhotoMenuOpen(false)}>
@@ -664,6 +722,18 @@ const baseStyles = {
   profitRow:  { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
   profitLabel:{ fontSize: 12, color: '#608050' },
   profitVal:  { fontSize: 12, fontWeight: '500' },
+  cols:       { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  colsNarrow: { flexDirection: 'column', alignItems: 'stretch', gap: 0 },
+  colMain:    { flexGrow: 1.5, flexShrink: 1, flexBasis: 420, minWidth: 0 },
+  colSide:    { flexGrow: 1, flexShrink: 1, flexBasis: 330, minWidth: 0 },
+  colFull:    { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: '100%', alignSelf: 'stretch' },
+  tagHead:    { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  tagSize:    { fontSize: 10.5, color: '#9b7d86' },
+  tagStage:   { backgroundColor: '#fdfbfb', borderWidth: 1, borderColor: '#f2e6e9', borderRadius: 10, padding: 12, alignItems: 'center' },
+  tagNote:    { fontSize: 10.5, color: '#9b7d86', marginTop: 8, lineHeight: 15 },
+  saveRow:    { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  clearBtn:   { justifyContent: 'center', borderWidth: 1, borderColor: '#ece0e3', backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 16 },
+  clearBtnText: { fontSize: 13, fontWeight: '600', color: '#550a19' },
   saveBtn: { backgroundColor: '#550a19', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 },
   saveBtnText: { fontSize: 15, fontWeight: '500', color: '#fff5f7' },
   bottomSheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },

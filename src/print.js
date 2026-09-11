@@ -671,6 +671,24 @@ function buildTags(items = []) {
     <style>${TAG_STYLE}</style></head><body>${tags}</body></html>`;
 }
 
+// ── ข้อมูลป้าย: ใช้ร่วมกับ "ตัวอย่างป้ายสินค้า" บนหน้าจอ (TagPreview.jsx) ──
+//    ตัวอย่างบนจอกับป้ายที่พิมพ์จริงจึงอ่านค่าจากที่เดียวกันเสมอ
+export const TAG_SPEC = {
+  w: TAG_W, h: TAG_BODY_H, foldX: TAG_FOLD_X,
+  padX: TAG_PAD_X, qr: TAG_QR, col: TAG_COL, rcol: TAG_RCOL,
+};
+
+export function tagFields(p = {}) {
+  return {
+    name:    p.name || '-',
+    sku:     p.sku || '',
+    price:   baht(p.sale_price),
+    hasCert: tagHasCert(p),
+    specs:   [tagWgLine(p), ...tagDiamondLines(p)],
+    qrText:  p.qr || tagSaleUrl(p.sku || ''),
+  };
+}
+
 // ══════════ exports: print / save ══════════
 export const printTags = (items) => printHtml(buildTags(items));
 export const saveTags  = (items) => savePdf(buildTags(items));

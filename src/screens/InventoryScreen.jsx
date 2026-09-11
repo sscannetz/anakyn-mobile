@@ -498,7 +498,7 @@ export default function InventoryScreen({ navigation }) {
           </View>
           <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
             {!!editing && (
-              <ProductForm mode="edit" lang={lang} product={editing} onSubmit={handleUpdate} />
+              <ProductForm mode="edit" wide={wide} lang={lang} product={editing} onSubmit={handleUpdate} />
             )}
             <View style={{ height: 20 }} />
           </ScrollView>
