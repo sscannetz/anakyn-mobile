@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import ConnectingBar from '../components/ConnectingBar';
+import { useWide } from '../components/DataPanel';
 import PromptPayModal from '../components/PromptPayModal';
 import QrScanner from '../components/QrScanner';
 import { api } from '../api';
@@ -314,9 +315,12 @@ export default function SaleScreen({ navigation, route }) {
     }
   };
 
+  const wide = useWide(1000);
+  const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
   return (
     <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
-      <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
+      <Header title={t.pageTitle} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loadingStock} lang={lang} />
 
       <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
@@ -348,6 +352,10 @@ export default function SaleScreen({ navigation, route }) {
             </View>
           );
         })()}
+
+        {/* จอกว้าง = สองคอลัมน์ (ซ้าย: สินค้าในบิล · ขวา: ลูกค้า + สรุปยอด + ชำระเงิน) */}
+        <View style={[s.cols, !wide && { flexDirection: 'column' }]}>
+        <View style={[s.colMain, !wide && { flexBasis: 'auto' }]}>
 
         {/* ADD ITEMS */}
         <Sec>
@@ -397,6 +405,9 @@ export default function SaleScreen({ navigation, route }) {
             <Text style={s.addMoreText}>{t.addMore}</Text>
           </TouchableOpacity>
         </Sec>
+
+        </View>
+        <View style={[s.colSide, !wide && { flexBasis: 'auto' }]}>
 
         {/* CUSTOMER */}
         <Sec>
@@ -580,6 +591,9 @@ export default function SaleScreen({ navigation, route }) {
           <Text style={s.confirmBtnText}>{saving ? t.saving : t.confirmSale(fmt(grandTotal))}</Text>
         </TouchableOpacity>
 
+        </View>
+        </View>
+
         <View style={{ height: 20 }} />
       </ScrollView>
 
@@ -709,6 +723,9 @@ export default function SaleScreen({ navigation, route }) {
 const baseStyles = {
   scroll: { flex: 1 },
   content: { padding: 14, paddingBottom: 30 },
+  cols:    { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
+  colMain: { flexGrow: 1.55, flexShrink: 1, flexBasis: 420, minWidth: 0 },
+  colSide: { flexGrow: 1, flexShrink: 1, flexBasis: 330, minWidth: 0 },
   errBox: { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 10 },
   errText: { fontSize: 12, color: '#a32d2d' },
   okBox:  { backgroundColor: '#e8f5e9', borderWidth: 0.5, borderColor: '#a8d8b0', borderRadius: 8, padding: 10, marginBottom: 10 },

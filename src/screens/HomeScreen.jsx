@@ -15,6 +15,7 @@ import { useScaledStyles } from '../responsive';
 import { clearSession, getRole } from '../storage';
 import { LOGO_URI } from '../logoBase64';
 import ConnectingBar from '../components/ConnectingBar';
+import Header from '../components/Header';
 import { SHELL_BP } from '../components/AppShell';
 import { openDrawer } from '../navRef';
 import {
@@ -28,10 +29,16 @@ const T = {
     allLabel: 'สินค้าทั้งหมด', allSub: 'ชิ้น',
     profitLabel: 'กำไรเดือนนี้', profitSub: 'ก่อน VAT', profitSub2: 'รวม VAT',
     menuTitle: 'เมนูทั้งหมด',
+    overviewTitle: 'ภาพรวมวันนี้',
+    lowStockTitle: 'สินค้าใกล้หมด',
+    lowStockSub: (n) => `เหลือ ${n} ชิ้น`,
+    noLowStock: 'สต๊อกยังพอทุกรายการ',
+    seeAll: 'ดูทั้งหมด',
+    seeLess: 'ย่อลง',
     menus: [
       { emoji: '🛍️', label: 'บันทึกขาย',    sub: 'New Sale',       screen: 'Sale',          col: '#550a19', bg: '#fdf0f2' },
-      { emoji: '🏷️', label: 'สต๊อกสินค้า',  sub: 'Stock',          screen: 'Inventory',      col: '#534AB7', bg: '#f0eeff' },
-      { emoji: '💎', label: 'เพิ่มสต๊อกสินค้า', sub: 'Add Stock',   screen: 'Stock',          col: '#534AB7', bg: '#f0eeff' },
+      { emoji: '🏷️', label: 'สต๊อกสินค้า',  sub: 'Stock',          screen: 'Inventory',      col: '#550a19', bg: '#fdf0f2' },
+      { emoji: '💎', label: 'เพิ่มสต๊อกสินค้า', sub: 'Add Stock',   screen: 'Stock',          col: '#550a19', bg: '#fdf0f2' },
       { emoji: '🧾', label: 'Invoice',       sub: 'ใบกำกับภาษี',   screen: 'Invoice',        col: '#1a5c28', bg: '#e8f5e9' },
       { emoji: '📋', label: 'ใบเสนอราคา',   sub: 'Quotation',      screen: 'Quotation',      col: '#1a3a60', bg: '#e0f0ff' },
       { emoji: '🚚', label: 'ใบสั่งซื้อ',   sub: 'Purchase Order', screen: 'PurchaseOrder',  col: '#854F0B', bg: '#fff8e1' },
@@ -52,10 +59,16 @@ const T = {
     allLabel: 'All items', allSub: 'pieces',
     profitLabel: 'Monthly profit', profitSub: 'before VAT', profitSub2: 'incl. VAT',
     menuTitle: 'All modules',
+    overviewTitle: "Today's overview",
+    lowStockTitle: 'Low stock',
+    lowStockSub: (n) => `${n} left`,
+    noLowStock: 'Stock levels are fine',
+    seeAll: 'See all',
+    seeLess: 'Show less',
     menus: [
       { emoji: '🛍️', label: 'New Sale',       sub: 'บันทึกขาย',     screen: 'Sale',          col: '#550a19', bg: '#fdf0f2' },
-      { emoji: '🏷️', label: 'Stock',          sub: 'สต๊อกสินค้า',   screen: 'Inventory',      col: '#534AB7', bg: '#f0eeff' },
-      { emoji: '💎', label: 'Add Stock',      sub: 'เพิ่มสต๊อกสินค้า', screen: 'Stock',       col: '#534AB7', bg: '#f0eeff' },
+      { emoji: '🏷️', label: 'Stock',          sub: 'สต๊อกสินค้า',   screen: 'Inventory',      col: '#550a19', bg: '#fdf0f2' },
+      { emoji: '💎', label: 'Add Stock',      sub: 'เพิ่มสต๊อกสินค้า', screen: 'Stock',       col: '#550a19', bg: '#fdf0f2' },
       { emoji: '🧾', label: 'Invoice',        sub: 'ใบกำกับภาษี',   screen: 'Invoice',        col: '#1a5c28', bg: '#e8f5e9' },
       { emoji: '📋', label: 'Quotation',      sub: 'ใบเสนอราคา',    screen: 'Quotation',      col: '#1a3a60', bg: '#e0f0ff' },
       { emoji: '🚚', label: 'Purchase Order', sub: 'ใบสั่งซื้อ',    screen: 'PurchaseOrder',  col: '#854F0B', bg: '#fff8e1' },
@@ -105,6 +118,8 @@ export default function HomeScreen({ navigation, route }) {
   const hasSide    = Platform.OS === 'web' && width >= SHELL_BP;
   // จอกว้างพอจะวางสองคอลัมน์ได้
   const wideHome   = useWide(1000);
+  // ขายล่าสุด: โชว์ 5 บิลก่อน กด "ดูทั้งหมด" แล้วค่อยขยาย
+  const SALES_PREVIEW = 5;
   // role มาจาก 2 ทาง: params (ตอนเพิ่งล็อกอิน) และ storage (ตอนรีเฟรชหน้า/เปิดแอปใหม่)
   // ถ้าอ่านจาก params อย่างเดียว พอกดรีเฟรชจะกลายเป็น staff แล้วเมนูของ admin หายไป
   const [userRole, setUserRole] = useState(route.params?.userRole || '');
@@ -120,6 +135,8 @@ export default function HomeScreen({ navigation, route }) {
 
   const [summary, setSummary]           = useState(null);
   const [recentSales, setRecentSales]   = useState([]);
+  const [lowStock, setLowStock]         = useState([]);
+  const [showAllSales, setShowAllSales] = useState(false);
   const [pendingPOs, setPendingPOs]     = useState([]);
   const [pendingSrvs, setPendingSrvs]   = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -170,14 +187,22 @@ export default function HomeScreen({ navigation, route }) {
 
   const loadData = useCallback(async () => {
     try {
-      const [sum, sales, pos, services] = await Promise.all([
+      const [sum, sales, pos, services, products] = await Promise.all([
         api.getSummary('today'),
-        api.getSales(3),
+        api.getSales(20),
         api.getPurchaseOrders(),
         api.getServiceOrders(),
+        api.getProducts({ light: 'true' }).catch(() => []),
       ]);
       setSummary(sum);
       setRecentSales(sales);
+      // สินค้าใกล้หมด — เหลือไม่เกิน 2 ชิ้น เรียงจากน้อยไปมาก
+      setLowStock(
+        (Array.isArray(products) ? products : [])
+          .filter(pr => pr.stock_qty != null && Number(pr.stock_qty) <= 2)
+          .sort((a, b) => Number(a.stock_qty) - Number(b.stock_qty))
+          .slice(0, 6)
+      );
       setPendingPOs(pos.filter(p => p.status === 'pending' || p.status === 'sent').slice(0, 2));
       setPendingSrvs(services.filter(s => s.status !== 'picked_up').slice(0, 2));
     } catch (_) {}
@@ -196,37 +221,26 @@ export default function HomeScreen({ navigation, route }) {
   };
 
   const visibleMenus = t.menus.filter(m => !m.adminOnly || isAdmin);
+  const visibleSales = showAllSales ? recentSales : recentSales.slice(0, SALES_PREVIEW);
 
   const todayStr = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', {
     day: 'numeric', month: 'short', year: 'numeric',
   });
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
       {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          {!hasSide && (
-            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={openDrawer} style={styles.burgerBtn}>
-              <MaterialCommunityIcons name="menu" size={sc(19)} color="#550a19" />
-            </TouchableOpacity>
-          )}
-          <Image source={{ uri: LOGO_URI }} style={styles.logoImg} resizeMode="contain" />
-          <View style={styles.headerBtns}>
-            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setLang(l => l === 'th' ? 'en' : 'th')} style={styles.headerBtn}>
-              <MaterialCommunityIcons name="translate" size={sc(13)} color="#550a19" />
-              <Text style={styles.headerBtnText}>{lang === 'th' ? 'EN' : 'ไทย'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleLogout} style={styles.headerBtn}>
-              <Text style={styles.headerBtnText}>{t.logout}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.dateStrip}>
-          <Text style={styles.dateText}>{t.dateLabel} <Text style={styles.dateBold}>{todayStr}</Text></Text>
-        </View>
-      </View>
+      <Header
+        title={t.overviewTitle}
+        subtitle={todayStr}
+        lang={lang}
+        onLangToggle={() => setLang(l => (l === 'th' ? 'en' : 'th'))}
+        rightComponent={
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleLogout} style={styles.logoutBtn}>
+            <Text style={styles.logoutText}>{t.logout}</Text>
+          </TouchableOpacity>
+        }
+      />
 
       <ConnectingBar visible={loading && firstLoad} lang={lang} />
 
@@ -291,11 +305,12 @@ export default function HomeScreen({ navigation, route }) {
             <View style={styles.cols}>
               <View style={styles.colMain}>
                 <Panel title={t.recentTitle}
-                  right={`${recentSales.length} ${lang === 'th' ? 'บิล' : 'orders'}`}>
+                  right={recentSales.length > SALES_PREVIEW ? (showAllSales ? t.seeLess : t.seeAll) : `${recentSales.length} ${lang === 'th' ? 'บิล' : 'orders'}`}
+                  onRightPress={recentSales.length > SALES_PREVIEW ? () => setShowAllSales(v => !v) : undefined}>
                   <TableHead cols={SALE_COLS} />
-                  {!loading && recentSales.length === 0 && <Empty text={t.noSales} />}
-                  {recentSales.map((sale, i) => (
-                    <TableRow key={sale.id} cols={SALE_COLS} last={i === recentSales.length - 1}
+                  {!loading && visibleSales.length === 0 && <Empty text={t.noSales} />}
+                  {visibleSales.map((sale, i) => (
+                    <TableRow key={sale.id} cols={SALE_COLS} last={i === visibleSales.length - 1}
                       onPress={() => openSale(sale)}
                       cells={[
                         <TdNo text={sale.sale_no} />,
@@ -333,6 +348,21 @@ export default function HomeScreen({ navigation, route }) {
                         <Text style={styles.taskSub} numberOfLines={1}>
                           {SRVSTATUS_LABEL[sv.status] || sv.status} · {sv.customer_name || 'ไม่ระบุ'}
                         </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </Panel>
+
+                <Panel title={t.lowStockTitle}
+                  right={`${lowStock.length} ${lang === 'th' ? 'รายการ' : 'items'}`}>
+                  {!loading && lowStock.length === 0 && <Empty text={t.noLowStock} />}
+                  {lowStock.map(pr => (
+                    <TouchableOpacity dataSet={{ hov: 'btn' }} key={pr.id}
+                      onPress={() => navigation.navigate('Inventory')} style={styles.task}>
+                      <View style={[styles.taskStripe, { backgroundColor: Number(pr.stock_qty) <= 1 ? '#550a19' : '#e8c7cf' }]} />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={styles.taskTitle} numberOfLines={1}>{pr.name || pr.sku}</Text>
+                        <Text style={styles.taskSub} numberOfLines={1}>{t.lowStockSub(pr.stock_qty)} · {pr.sku}</Text>
                       </View>
                     </TouchableOpacity>
                   ))}
@@ -419,7 +449,7 @@ export default function HomeScreen({ navigation, route }) {
         {!loading && recentSales.length === 0 && (
           <Text style={styles.emptyText}>{t.noSales}</Text>
         )}
-        {recentSales.map(s => (
+        {visibleSales.map(s => (
           <TouchableOpacity dataSet={{ hov: 'btn' }} key={s.id} onPress={() => openSale(s)} style={styles.listCard}>
             <View style={{ flex: 1 }}>
               <Text style={styles.listCardTitle}>{s.sale_no}</Text>
@@ -430,6 +460,11 @@ export default function HomeScreen({ navigation, route }) {
             <Text style={styles.listCardAmt}>฿{fmt(s.total)}</Text>
           </TouchableOpacity>
         ))}
+        {recentSales.length > SALES_PREVIEW && (
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowAllSales(v => !v)} style={styles.moreBtn}>
+            <Text style={styles.moreText}>{showAllSales ? t.seeLess : t.seeAll}</Text>
+          </TouchableOpacity>
+        )}
 
         {/* PENDING COUNTS */}
         <Text style={styles.listTitle}>
@@ -605,6 +640,17 @@ const baseStyles = {
   header: { backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#ece0e3' },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10 },
   // โลโก้ร้าน (เวอร์ชันสีครีม) — สัดส่วนต้นฉบับ 413 × 300
+  logoutBtn: {
+    borderWidth: 1, borderColor: '#ece0e3', backgroundColor: '#fff',
+    borderRadius: 9, paddingHorizontal: 10, paddingVertical: 5,
+  },
+  logoutText: { fontSize: 11.5, fontWeight: '600', color: '#550a19' },
+  moreBtn: {
+    alignSelf: 'center', marginTop: 4, marginBottom: 4,
+    borderWidth: 1, borderColor: '#ece0e3', backgroundColor: '#fff',
+    borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8,
+  },
+  moreText: { fontSize: 12, fontWeight: '600', color: '#550a19' },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 14 },
   tile: {
     flex: 1, minWidth: 180,

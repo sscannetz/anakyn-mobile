@@ -17,6 +17,9 @@ import { api } from '../api';
 import { getRole } from '../storage';
 import { useScaledStyles } from '../responsive';
 import { printStock, printTags, saveTags } from '../print';
+import {
+  useWide, Toolbar, SearchBox, Chip, Panel, TableHead, TableRow, Empty,
+} from '../components/DataPanel';
 
 const T = {
   th: {
@@ -67,6 +70,7 @@ const fmt = (n) => {
 export default function InventoryScreen({ navigation }) {
   const { styles: s, sc } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
+  const wide   = useWide(1000);
   const [lang, setLang] = useState('th');
   const t = T[lang];
 
@@ -152,6 +156,16 @@ export default function InventoryScreen({ navigation }) {
 
   const catLabel = (code) => FORM_T[lang].categories[CAT_CODES.indexOf(code)] || '—';
 
+  // คอลัมน์ของตาราง (ใช้เฉพาะจอกว้าง)
+  const INV_COLS = [
+    { label: lang === 'th' ? 'สินค้า' : 'PRODUCT' },
+    { label: lang === 'th' ? 'ประเภท' : 'CATEGORY', w: 108 },
+    { label: t.stock, w: 118 },
+    { label: lang === 'th' ? 'ราคาขาย' : 'PRICE', w: 92, rt: true },
+    { label: lang === 'th' ? 'ป้ายที่จะปริ้น' : 'TAGS', w: 108 },
+    { label: '', w: isAdmin ? 178 : 92, rt: true },
+  ];
+
   const handleUpdate = async (payload) => {
     const saved = await api.updateProduct(editing.id, payload);
     setList(prev => prev.map(x => (x.id === saved.id ? { ...x, ...saved } : x)));
@@ -181,13 +195,16 @@ export default function InventoryScreen({ navigation }) {
     }
   };
 
+  const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
   return (
     <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
-      <Header title={t.title} onBack={() => navigation.goBack()} lang={lang}
+      <Header title={t.title} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang}
         onLangToggle={() => setLang(l => (l === 'th' ? 'en' : 'th'))} />
       <ConnectingBar visible={loading} lang={lang} />
 
-      {/* ค้นหา */}
+      {/* ค้นหา — จอแคบเท่านั้น */}
+      {!wide && (
       <View style={s.searchWrap}>
         <MaterialCommunityIcons name="magnify" size={sc(18)} color="#a07080" />
         <TextInput dataSet={{ hov: 'field' }} style={s.searchInput} value={query} onChangeText={setQuery}
@@ -198,6 +215,7 @@ export default function InventoryScreen({ navigation }) {
           </TouchableOpacity>
         )}
       </View>
+      )}
 
       <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
         <View style={s.tagHint}>
@@ -205,7 +223,25 @@ export default function InventoryScreen({ navigation }) {
           <Text style={s.tagHintText}>{t.tagHint}</Text>
         </View>
 
-        {/* เครื่องมือ */}
+        {wide && (
+          <Toolbar>
+            <SearchBox value={query} onChangeText={setQuery} placeholder={t.searchPh} />
+            <Chip label={t.selectAll} onPress={() => { const a = { ...tagSel }; filtered.forEach(pr => { a[pr.id] = 1; }); setTagSel(a); }} />
+            <Chip label={t.matchQty} onPress={() => {
+              const a = { ...tagSel };
+              filtered.forEach(pr => { const q = parseInt(pr.stock_qty, 10) || 0; if (q > 0) a[pr.id] = Math.min(99, q); });
+              setTagSel(a);
+            }} />
+            <Chip label={t.clearAll} onPress={() => setTagSel({})} />
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printStock(list)} style={s.toolBtnRight}>
+              <MaterialCommunityIcons name="printer" size={sc(15)} color="#550a19" />
+              <Text style={s.toolBtnText}>{t.printList}</Text>
+            </TouchableOpacity>
+          </Toolbar>
+        )}
+
+        {/* เครื่องมือ — จอแคบ */}
+        {!wide && (<>
         <View style={s.toolRow}>
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printStock(list)} style={s.toolBtn}>
             <MaterialCommunityIcons name="printer" size={sc(15)} color="#550a19" />
@@ -230,18 +266,109 @@ export default function InventoryScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <Text style={s.countText}>
-          {query.trim() ? t.found(filtered.length, list.length) : t.total(list.length)}
-        </Text>
+        </>)}
+
+        {!wide && (
+          <Text style={s.countText}>
+            {query.trim() ? t.found(filtered.length, list.length) : t.total(list.length)}
+          </Text>
+        )}
 
         {!!loadErr && <View style={s.errBox}><Text style={s.errText}>{loadErr}</Text></View>}
         {!!delErr  && <View style={s.errBox}><Text style={s.errText}>{delErr}</Text></View>}
         {!!qtyErr  && <View style={s.errBox}><Text style={s.errText}>{qtyErr}</Text></View>}
         {loading   && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
-        {!loading && list.length === 0 && <Text style={s.emptyText}>{t.empty}</Text>}
-        {!loading && list.length > 0 && filtered.length === 0 && <Text style={s.emptyText}>{t.noMatch}</Text>}
+        {!wide && !loading && list.length === 0 && <Text style={s.emptyText}>{t.empty}</Text>}
+        {!wide && !loading && list.length > 0 && filtered.length === 0 && <Text style={s.emptyText}>{t.noMatch}</Text>}
 
-        {filtered.map(p => {
+        {wide && !loading && (
+          <Panel
+            title={t.title}
+            right={query.trim() ? t.found(filtered.length, list.length) : t.total(list.length)}>
+            <TableHead cols={INV_COLS} />
+            {filtered.length === 0 && <Empty text={list.length === 0 ? t.empty : t.noMatch} />}
+            {filtered.map((p, idx) => {
+              const n     = tagSel[p.id] || 0;
+              const qty   = parseInt(p.stock_qty, 10) || 0;
+              const armed = delArm === p.id;
+              return (
+                <TableRow key={p.id} cols={INV_COLS} last={idx === filtered.length - 1} cells={[
+                  <View style={s.rowMain}>
+                    {p.photo_url
+                      ? <Image source={{ uri: p.photo_url }} style={s.thumbSm} resizeMode="cover" />
+                      : <View style={[s.thumbSm, s.thumbEmpty]}>
+                          <MaterialCommunityIcons name="diamond-stone" size={sc(14)} color="#c8a0b0" />
+                        </View>}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={s.rowName} numberOfLines={1}>{p.name}</Text>
+                      <Text style={s.rowSku} numberOfLines={1}>
+                        {p.sku}{p.is_available === false ? ` · ${t.off}` : ''}
+                      </Text>
+                    </View>
+                  </View>,
+
+                  <Text style={s.rowCat} numberOfLines={1}>{catLabel(p.category)}</Text>,
+
+                  <View style={s.qtyRow}>
+                    <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => bumpQty(p, -1)} disabled={qty <= 0}
+                      style={[s.qtyBtn, qty <= 0 && { opacity: 0.35 }]}>
+                      <MaterialCommunityIcons name="minus" size={sc(13)} color="#550a19" />
+                    </TouchableOpacity>
+                    <View style={s.qtyValWrap}>
+                      <TextInput dataSet={{ hov: 'field' }}
+                        style={[s.qtyVal, qty === 0 && { color: '#c62828' }]}
+                        value={qtyEdit[p.id] ?? String(qty)}
+                        onChangeText={(v) => {
+                          const clean = v.replace(/[^0-9]/g, '').slice(0, 4);
+                          setQtyEdit(e => ({ ...e, [p.id]: clean }));
+                          if (clean !== '') setQtyAbs(p, clean);
+                        }}
+                        onBlur={() => setQtyEdit(e => { const x = { ...e }; delete x[p.id]; return x; })}
+                        keyboardType="number-pad" selectTextOnFocus textAlign="center" />
+                      {qtySaving[p.id] && <View style={s.qtyDot} />}
+                    </View>
+                    <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => bumpQty(p, 1)} style={s.qtyBtn}>
+                      <MaterialCommunityIcons name="plus" size={sc(13)} color="#550a19" />
+                    </TouchableOpacity>
+                  </View>,
+
+                  <Text style={s.rowPrice}>฿{fmt(p.sale_price)}</Text>,
+
+                  <View style={s.stepper}>
+                    <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setCopies(p.id, n - 1)} style={s.stepBtn}>
+                      <MaterialCommunityIcons name="minus" size={sc(13)} color="#8c1b2f" />
+                    </TouchableOpacity>
+                    <TextInput dataSet={{ hov: 'field' }} style={[s.stepVal, n > 0 && { color: '#550a19' }]}
+                      value={String(n)}
+                      onChangeText={(v) => setCopies(p.id, parseInt(v.replace(/[^0-9]/g, '').slice(0, 2), 10) || 0)}
+                      keyboardType="number-pad" selectTextOnFocus textAlign="center" />
+                    <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setCopies(p.id, n + 1)} style={s.stepBtn}>
+                      <MaterialCommunityIcons name="plus" size={sc(13)} color="#8c1b2f" />
+                    </TouchableOpacity>
+                  </View>,
+
+                  <View style={s.rowActs}>
+                    <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setEditing(p)} style={s.editBtn}>
+                      <MaterialCommunityIcons name="pencil" size={sc(14)} color="#550a19" />
+                      <Text style={s.editBtnText}>{t.edit}</Text>
+                    </TouchableOpacity>
+                    {isAdmin && (
+                      <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => handleDelete(p)} disabled={delBusy === p.id}
+                        style={[s.delBtn, armed && s.delBtnArmed]}>
+                        {delBusy === p.id
+                          ? <ActivityIndicator size="small" color="#a32d2d" />
+                          : <MaterialCommunityIcons name="trash-can-outline" size={sc(14)} color={armed ? '#fff' : '#a32d2d'} />}
+                        <Text style={[s.delBtnText, armed && { color: '#fff' }]}>{armed ? t.delConfirm : t.del}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>,
+                ]} />
+              );
+            })}
+          </Panel>
+        )}
+
+        {!wide && filtered.map(p => {
           const n   = tagSel[p.id] || 0;
           const qty = parseInt(p.stock_qty, 10) || 0;
           const armed = delArm === p.id;
@@ -298,13 +425,13 @@ export default function InventoryScreen({ navigation }) {
 
                 {/* จำนวนป้ายที่จะพิมพ์ */}
                 <View style={s.ctrlGroup}>
-                  <Text style={[s.ctrlLabel, { color: '#534AB7' }]}>{t.tag}</Text>
+                  <Text style={[s.ctrlLabel, { color: '#550a19' }]}>{t.tag}</Text>
                   <View style={s.stepper}>
                     <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setCopies(p.id, n - 1)} style={s.stepBtn}
                       hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
                       <MaterialCommunityIcons name="minus" size={sc(13)} color="#8c1b2f" />
                     </TouchableOpacity>
-                    <TextInput dataSet={{ hov: 'field' }} style={[s.stepVal, n > 0 && { color: '#534AB7' }]}
+                    <TextInput dataSet={{ hov: 'field' }} style={[s.stepVal, n > 0 && { color: '#550a19' }]}
                       value={String(n)}
                       onChangeText={(v) => setCopies(p.id, parseInt(v.replace(/[^0-9]/g, '').slice(0, 2), 10) || 0)}
                       keyboardType="number-pad" selectTextOnFocus textAlign="center" />
@@ -391,12 +518,20 @@ const baseStyles = {
   toolBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, paddingHorizontal: 13, paddingVertical: 9 },
   toolBtnText: { fontSize: 12, color: '#550a19', fontWeight: '500' },
   tagBulkRow: { flexDirection: 'row', gap: 6, marginBottom: 8, flexWrap: 'wrap' },
-  tagBulkBtn: { borderWidth: 0.5, borderColor: '#c8c0f0', borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: '#fff' },
-  tagBulkText: { fontSize: 10.5, color: '#534AB7', fontWeight: '500' },
+  tagBulkBtn: { borderWidth: 0.5, borderColor: '#ece0e3', borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: '#fff' },
+  tagBulkText: { fontSize: 10.5, color: '#550a19', fontWeight: '500' },
   countText: { fontSize: 11, color: '#a07080', marginBottom: 8 },
   errBox: { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 10 },
   errText: { fontSize: 12, color: '#a32d2d' },
   emptyText: { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 24 },
+  toolBtnRight: { flexDirection: 'row', alignItems: 'center', gap: 7, marginLeft: 'auto', backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, paddingHorizontal: 13, paddingVertical: 9 },
+  rowMain: { flexDirection: 'row', alignItems: 'center', gap: 9, minWidth: 0 },
+  thumbSm: { width: 34, height: 34, borderRadius: 7, borderWidth: 0.5, borderColor: '#e8d5d9' },
+  rowName: { fontSize: 12.5, color: '#2c1015' },
+  rowSku:  { fontSize: 10, color: '#9b7d86', marginTop: 1 },
+  rowCat:  { fontSize: 11.5, color: '#806070' },
+  rowPrice:{ fontSize: 12.5, fontWeight: '600', color: '#2c1015', textAlign: 'right' },
+  rowActs: { flexDirection: 'row', gap: 6, justifyContent: 'flex-end' },
   card: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 8 },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   thumb: { width: 44, height: 44, borderRadius: 8, borderWidth: 0.5, borderColor: '#e8d5d9' },
@@ -416,21 +551,21 @@ const baseStyles = {
   qtyValWrap: { alignItems: 'center', justifyContent: 'center' },
   qtyVal: { minWidth: 34, paddingVertical: 4, fontSize: 12.5, fontWeight: '700', color: '#2c1015', textAlign: 'center' },
   qtyDot: { position: 'absolute', top: -1, right: -1, width: 5, height: 5, borderRadius: 3, backgroundColor: '#e0a020' },
-  stepper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f6f5ff', borderRadius: 8, borderWidth: 0.5, borderColor: '#ddd8f5' },
+  stepper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fdf0f2', borderRadius: 8, borderWidth: 0.5, borderColor: '#f0d3da' },
   stepBtn: { paddingHorizontal: 7, paddingVertical: 5 },
-  stepVal: { minWidth: 32, paddingVertical: 4, textAlign: 'center', fontSize: 12.5, fontWeight: '700', color: '#8a80b8' },
+  stepVal: { minWidth: 32, paddingVertical: 4, textAlign: 'center', fontSize: 12.5, fontWeight: '700', color: '#9b7d86' },
   editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
   editBtnText: { fontSize: 11.5, color: '#550a19', fontWeight: '500' },
   delBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
   delBtnArmed: { backgroundColor: '#a32d2d', borderColor: '#a32d2d' },
   delBtnText: { fontSize: 11.5, color: '#a32d2d', fontWeight: '500' },
-  tagBar: { position: 'absolute', left: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#534AB7', borderRadius: 14, paddingLeft: 14, paddingRight: 8, paddingVertical: 8, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  tagBar: { position: 'absolute', left: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#550a19', borderRadius: 14, paddingLeft: 14, paddingRight: 8, paddingVertical: 8, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   tagBarInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   tagBarText: { fontSize: 13, fontWeight: '600', color: '#fff' },
   tagBarIcon: { padding: 4 },
   tagBarPdf: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 },
   tagBarPrint: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  tagBarPrintText: { fontSize: 13, fontWeight: '700', color: '#534AB7' },
+  tagBarPrintText: { fontSize: 13, fontWeight: '700', color: '#550a19' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#e8d5d9', paddingHorizontal: 16, paddingVertical: 14 },
   modalTitle: { flex: 1, fontSize: 16, fontWeight: '500', color: '#550a19' },
 };

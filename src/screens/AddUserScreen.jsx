@@ -16,6 +16,9 @@ import ConnectingBar from '../components/ConnectingBar';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { getRole } from '../storage';
+import {
+  useWide, Toolbar, SearchBox, Panel, TableHead, TableRow, TdMain, Pill, Empty, PrimaryButton,
+} from '../components/DataPanel';
 
 const T = {
   th: {
@@ -57,6 +60,8 @@ const nameOf = (u) => u?.full_name || u?.name || '';
 export default function AddUserScreen({ navigation }) {
   const { styles: s, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
+  const wide   = useWide(1000);
+  const [q, setQ]             = useState('');
   const [lang, setLang]       = useState('th');
   const [users, setUsers]     = useState([]);
   const [loading, setLoading] = useState(true);
@@ -155,10 +160,28 @@ export default function AddUserScreen({ navigation }) {
     }
   };
 
+  const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  // คอลัมน์ของตาราง (จอกว้าง) + ค้นหา
+  const USER_COLS = [
+    { label: lang === 'th' ? 'ผู้ใช้' : 'USER' },
+    { label: t.email, w: 210 },
+    { label: t.phone, w: 116 },
+    { label: t.role, w: 116 },
+    { label: t.status, w: 92 },
+    { label: '', w: 78, rt: true },
+  ];
+  const shownUsers = (() => {
+    const k = q.trim().toLowerCase();
+    if (!k) return users;
+    return users.filter(u => [nameOf(u), u.nickname, u.email, u.phone]
+      .some(v => String(v || '').toLowerCase().includes(k)));
+  })();
+
   if (!isAdmin && !loading) {
     return (
       <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
-        <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
+        <Header title={t.pageTitle} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
         <View style={s.center}>
           <MaterialCommunityIcons name="lock" size={sc(40)} color="#d4a0ac" />
           <Text style={s.adminOnlyText}>{t.adminOnly}</Text>
@@ -167,26 +190,70 @@ export default function AddUserScreen({ navigation }) {
     );
   }
 
+
   return (
     <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
-      <Header title={t.pageTitle} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
+      <Header title={t.pageTitle} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading} lang={lang} />
 
       {/* แถวเครื่องมือ — จำนวนรายการ และปุ่มสร้างใหม่ (ย้ายมาจากมุมแถบบน) */}
-      <View style={s.toolbar}>
-        <Text style={s.toolbarCount}>
-          {users.length} {lang === 'th' ? 'คน' : 'users'}
-        </Text>
-        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={openNew} style={s.primaryBtn}>
-          <MaterialCommunityIcons name="plus" size={sc(15)} color="#fff5f7" />
-          <Text style={s.primaryBtnText}>{lang === 'th' ? 'เพิ่มผู้ใช้' : 'Add user'}</Text>
-        </TouchableOpacity>
-      </View>
+      {!wide && (
+        <View style={s.toolbar}>
+          <Text style={s.toolbarCount}>
+            {users.length} {lang === 'th' ? 'คน' : 'users'}
+          </Text>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={openNew} style={s.primaryBtn}>
+            <MaterialCommunityIcons name="plus" size={sc(15)} color="#fff5f7" />
+            <Text style={s.primaryBtnText}>{lang === 'th' ? 'เพิ่มผู้ใช้' : 'Add user'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={s.content}>
+        {wide && (
+          <Toolbar>
+            <SearchBox value={q} onChangeText={setQ}
+              placeholder={lang === 'th' ? 'ค้นหาชื่อ / อีเมล / เบอร์โทร' : 'Search name / email / phone'} />
+            <PrimaryButton label={lang === 'th' ? 'เพิ่มผู้ใช้' : 'Add user'} onPress={openNew} />
+          </Toolbar>
+        )}
+
+        {wide && !loading && (
+          <Panel title={t.pageTitle} right={`${shownUsers.length} ${lang === 'th' ? 'คน' : 'users'}`}>
+            <TableHead cols={USER_COLS} />
+            {shownUsers.length === 0 && <Empty text={t.noUsers} />}
+            {shownUsers.map((u, i) => (
+              <TableRow key={u.id} cols={USER_COLS} last={i === shownUsers.length - 1}
+                onPress={() => openEdit(u)} cells={[
+                  <View style={s.rowMain}>
+                    <View style={[s.avatarSm, { backgroundColor: u.role === 'admin' ? '#fdf0f2' : '#f6f2f3' }]}>
+                      <Text style={[s.avatarSmText, { color: u.role === 'admin' ? '#550a19' : '#9b7d86' }]}>
+                        {(nameOf(u) || u.email || '?').slice(0, 1).toUpperCase()}
+                      </Text>
+                    </View>
+                    <TdMain text={nameOf(u) || '—'} sub={u.nickname || undefined} />
+                  </View>,
+                  <Text style={s.cellSub} numberOfLines={1}>{u.email}</Text>,
+                  <Text style={s.cellSub} numberOfLines={1}>{u.phone || '—'}</Text>,
+                  <Pill label={t.roles[u.role] || u.role} tone={u.role === 'admin' ? 'attn' : 'done'} />,
+                  <Pill label={u.is_active === false ? t.statusInactive : t.statusActive}
+                    tone={u.is_active === false ? 'dim' : 'done'} />,
+                  <View style={s.rowActs}>
+                    <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => openEdit(u)} style={s.actBtn}>
+                      <MaterialCommunityIcons name="pencil-outline" size={sc(17)} color="#550a19" />
+                    </TouchableOpacity>
+                    <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setDelError(''); setDelTarget(u); }} style={s.actBtn}>
+                      <MaterialCommunityIcons name="trash-can-outline" size={sc(17)} color="#c0a0a8" />
+                    </TouchableOpacity>
+                  </View>,
+                ]} />
+            ))}
+          </Panel>
+        )}
+
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
         {!loading && users.length === 0 && <Text style={s.emptyText}>{t.noUsers}</Text>}
-        {users.map(u => (
+        {!wide && users.map(u => (
           <TouchableOpacity dataSet={{ hov: 'btn' }} key={u.id} activeOpacity={0.7} onPress={() => openEdit(u)} style={s.card}>
             <View style={[s.avatar, { backgroundColor: u.role === 'admin' ? '#fdf0f2' : '#f6f2f3' }]}>
               <Text style={[s.avatarText, { color: u.role === 'admin' ? '#550a19' : '#9b7d86' }]}>
@@ -338,6 +405,11 @@ const baseStyles = {
   adminOnlyText: { fontSize: 14, color: '#a07080', fontWeight: '500' },
   emptyText:  { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
   card:       { backgroundColor: '#fff', borderRadius: 12, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 12, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  rowMain:    { flexDirection: 'row', alignItems: 'center', gap: 9, minWidth: 0 },
+  avatarSm:   { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  avatarSmText: { fontSize: 13, fontWeight: '600' },
+  cellSub:    { fontSize: 11.5, color: '#806070' },
+  rowActs:    { flexDirection: 'row', gap: 2, justifyContent: 'flex-end' },
   avatar:     { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
   avatarText: { fontSize: 16, fontWeight: '500' },
   userName:   { fontSize: 13, fontWeight: '500', color: '#2c1015' },

@@ -12,6 +12,7 @@ import ConnectingBar from '../components/ConnectingBar';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { printSummary } from '../print';
+import { useWide, Chip } from '../components/DataPanel';
 
 const T = {
   th: {
@@ -45,10 +46,10 @@ const T = {
 const fmt    = (n) => { const x = Number(n); return Math.round(Number.isFinite(x) ? x : 0).toLocaleString('th-TH'); };
 const fmtCp  = (n) => { n = Number(n); if (!Number.isFinite(n)) n = 0; return n >= 1000000 ? `${(n/1000000).toFixed(1)}M` : n >= 1000 ? `${(n/1000).toFixed(0)}k` : String(Math.round(n)); };
 
-function KPICard({ label, value, sub, icon, col, bg, subUp }) {
+function KPICard({ label, value, sub, icon, col, bg, subUp, wide }) {
   const { styles: s, sc, center } = useScaledStyles(baseStyles);
   return (
-    <View style={s.kpiCard}>
+    <View style={[s.kpiCard, wide && s.kpiCardWide]}>
       <View style={s.kpiTop}>
         <Text style={s.kpiLabel}>{label}</Text>
         <View style={[s.kpiIcon, { backgroundColor: bg }]}>
@@ -68,6 +69,7 @@ function KPICard({ label, value, sub, icon, col, bg, subUp }) {
 export default function SummaryScreen({ navigation }) {
   const { styles: s, sc, center } = useScaledStyles(baseStyles);
   const insets  = useSafeAreaInsets();
+  const wide    = useWide(1000);
   const [lang, setLang]   = useState('th');
   const [period, setPeriod] = useState(2);
   const [summary, setSummary] = useState(null);
@@ -91,39 +93,38 @@ export default function SummaryScreen({ navigation }) {
   const PAY_COL = { cash: '#2e7d32', qr: '#1a3a60', card: '#550a19', mobile: '#854F0B' };
   const PAY_LABEL = { cash: lang === 'th' ? 'เงินสด' : 'Cash', qr: lang === 'th' ? 'โอน / QR' : 'Transfer', card: lang === 'th' ? 'บัตรเครดิต' : 'Card', mobile: lang === 'th' ? 'Mobile' : 'Mobile' };
 
+  const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
   return (
     <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
-      <Header title={lang === 'th' ? 'สรุปรายงาน' : 'Summary'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
+      <Header title={lang === 'th' ? 'สรุปรายงาน' : 'Summary'} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading && firstLoad} lang={lang} />
 
-      {/* PERIOD TABS */}
-      <View style={s.periodTabs}>
+      {/* ช่วงเวลา (ชิป) + ส่งออกเป็นไฟล์ */}
+      <View style={s.bar}>
         {t.periods.map((p, i) => (
-          <TouchableOpacity dataSet={{ hov: 'btn' }} key={p} onPress={() => setPeriod(i)}
-            style={[s.periodTab, { borderBottomWidth: period === i ? 2 : 0, borderBottomColor: '#550a19' }]}>
-            <Text style={[s.periodTabText, { color: period === i ? '#550a19' : '#a07080', fontWeight: period === i ? '500' : '400' }]}>{p}</Text>
-          </TouchableOpacity>
+          <Chip key={p} label={p} on={period === i} onPress={() => setPeriod(i)} />
         ))}
+        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printSummary(d, t.periods[period])} style={s.exportBtn}>
+          <MaterialCommunityIcons name="tray-arrow-down" size={sc(15)} color="#550a19" />
+          <Text style={s.exportText}>{lang === 'th' ? 'ส่งออกเป็นไฟล์' : 'Export'}</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
 
-        {!loading && (
-          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printSummary(d, t.periods[period])}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-end', backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, paddingHorizontal: 11, paddingVertical: 7, marginBottom: 10 }}>
-            <MaterialCommunityIcons name="printer" size={sc(15)} color="#550a19" />
-            <Text style={{ fontSize: 12, color: '#550a19', fontWeight: '500' }}>{lang === 'th' ? 'ปริ้น / บันทึก PDF' : 'Print / Save PDF'}</Text>
-          </TouchableOpacity>
-        )}
 
         {/* KPI GRID */}
         <View style={s.kpiGrid}>
-          <KPICard label={t.revenue} value={d.total_sales} icon="currency-usd" col="#550a19" bg="#fdf0f2" />
-          <KPICard label={t.orders} value={d.order_count} icon="cart" col="#2e7d32" bg="#e8f5e9" />
-          <KPICard label={t.profit} value={d.estimated_profit} sub={`${margin}% ${t.profitMargin}`} subUp={d.estimated_profit >= 0} icon="trending-up" col="#1a3a60" bg="#e0f0ff" />
-          <KPICard label={t.vatCollected} value={d.vat_collected} icon="receipt" col="#854F0B" bg="#fff8e1" />
+          <KPICard wide={wide} label={t.revenue} value={d.total_sales} icon="currency-usd" col="#550a19" bg="#fdf0f2" />
+          <KPICard wide={wide} label={t.orders} value={d.order_count} icon="cart" col="#2e7d32" bg="#e8f5e9" />
+          <KPICard wide={wide} label={t.profit} value={d.estimated_profit} sub={`${margin}% ${t.profitMargin}`} subUp={d.estimated_profit >= 0} icon="trending-up" col="#1a3a60" bg="#e0f0ff" />
+          <KPICard wide={wide} label={t.vatCollected} value={d.vat_collected} icon="receipt" col="#854F0B" bg="#fff8e1" />
         </View>
+
+        <View style={[s.cols, !wide && { flexDirection: 'column' }]}>
+        <View style={[s.colMain, !wide && { flexBasis: 'auto' }]}>
 
         {/* BAR CHART */}
         <View style={s.sec}>
@@ -169,6 +170,9 @@ export default function SummaryScreen({ navigation }) {
           }
         </View>
 
+        </View>
+        <View style={[s.colSide, !wide && { flexBasis: 'auto' }]}>
+
         {/* PAYMENT BREAKDOWN */}
         {payEntries.length > 0 && (
           <View style={s.sec}>
@@ -198,7 +202,7 @@ export default function SummaryScreen({ navigation }) {
             {[
               [t.pendingPO,  d.pending_po,        'truck-delivery', '#1a3a60', '#e0f0ff'],
               [t.pendingSrv, d.pending_service,    'tools',          '#854F0B', '#fff8e1'],
-              [t.pendingQt,  d.pending_quotation,  'file-document',  '#534AB7', '#f0eeff'],
+              [t.pendingQt,  d.pending_quotation,  'file-document',  '#550a19', '#fdf0f2'],
             ].map(([label, count, icon, col, bg]) => (
               <View key={label} style={[s.pendingCard, { backgroundColor: bg }]}>
                 <MaterialCommunityIcons name={icon} size={sc(18)} color={col} />
@@ -209,6 +213,9 @@ export default function SummaryScreen({ navigation }) {
           </View>
         </View>
 
+        </View>
+        </View>
+
         <View style={{ height: 20 }} />
       </ScrollView>
     </View>
@@ -216,6 +223,13 @@ export default function SummaryScreen({ navigation }) {
 }
 
 const baseStyles = {
+  bar: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#ece0e3', paddingHorizontal: 14, paddingVertical: 11 },
+  exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 'auto', backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
+  exportText: { fontSize: 12, color: '#550a19', fontWeight: '600' },
+  cols:    { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  colMain: { flexGrow: 1.4, flexShrink: 1, flexBasis: 380, minWidth: 0 },
+  colSide: { flexGrow: 1, flexShrink: 1, flexBasis: 300, minWidth: 0 },
+  kpiCardWide: { width: 'auto', flexGrow: 1, flexShrink: 1, flexBasis: 170, minWidth: 150 },
   periodTabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#ece0e3' },
   periodTab:  { flex: 1, paddingVertical: 10, alignItems: 'center' },
   periodTabText: { fontSize: 11 },

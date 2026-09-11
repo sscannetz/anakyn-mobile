@@ -77,13 +77,17 @@ export function Pill({ label, tone = 'done' }) {
   return <View style={[S.pill, st]}><Text style={[S.pillText, tx]}>{label}</Text></View>;
 }
 
-export function Panel({ title, right, children, style }) {
+export function Panel({ title, right, onRightPress, children, style }) {
   return (
     <View style={[S.panel, style]}>
       {(title != null || right != null) && (
         <View style={S.panelHead}>
           {title != null && <Text style={S.panelTitle}>{title}</Text>}
-          {right != null && <Text style={S.panelRight}>{right}</Text>}
+          {right != null && (onRightPress
+            ? <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onRightPress}>
+                <Text style={[S.panelRight, { color: C.primary }]}>{right}</Text>
+              </TouchableOpacity>
+            : <Text style={S.panelRight}>{right}</Text>)}
         </View>
       )}
       {children}

@@ -8,7 +8,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { openDrawer } from '../navRef';
 import { SHELL_BP } from './AppShell';
 
-export default function Header({ title, onBack, lang, onLangToggle, rightComponent }) {
+export default function Header({ title, subtitle, onBack, lang, onLangToggle, rightComponent }) {
   const { styles, sc, center } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -28,7 +28,10 @@ export default function Header({ title, onBack, lang, onLangToggle, rightCompone
           </TouchableOpacity>
         )}
 
-        <Text style={styles.title} numberOfLines={1}>{title}</Text>
+        <View style={styles.titleWrap}>
+          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          {!!subtitle && <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>}
+        </View>
 
         <View style={styles.rightGroup}>
           {onLangToggle && (
@@ -81,12 +84,9 @@ const baseStyles = {
     color: '#d4a0ac',
     letterSpacing: 3,
   },
-  title: {
-    flex: 1,
-    fontSize: 15.5,
-    fontWeight: '600',
-    color: '#2c1015',
-  },
+  titleWrap: { flex: 1, flexDirection: 'row', alignItems: 'baseline', gap: 10, minWidth: 0 },
+  title: { fontSize: 15.5, fontWeight: '600', color: '#2c1015' },
+  subtitle: { fontSize: 11.5, color: '#9b7d86', flexShrink: 1 },
   rightGroup: {
     flexDirection: 'row',
     alignItems: 'center',

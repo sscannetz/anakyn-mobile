@@ -132,9 +132,11 @@ export default function ServiceOrderScreen({ navigation }) {
     if (!needle) return true;
     return `${v.service_no} ${v.customer_name || ''} ${v.product_name || ''}`.toLowerCase().includes(needle);
   });
+  const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
   return (
     <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
-      <Header title={lang === 'th' ? 'ใบสั่งซ่อม' : 'Service Order'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
+      <Header title={lang === 'th' ? 'ใบสั่งซ่อม' : 'Service Order'} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading} lang={lang} />
       <ScrollView contentContainerStyle={s.content}>
         <Toolbar>

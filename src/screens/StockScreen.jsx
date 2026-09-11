@@ -11,12 +11,14 @@ import ConnectingBar from '../components/ConnectingBar';
 import ProductForm from '../components/ProductForm';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
+import { useWide } from '../components/DataPanel';
 
 const TITLE = { th: 'เพิ่มสต๊อกสินค้า', en: 'Add Stock' };
 
 export default function StockScreen({ navigation }) {
   const { styles: s } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
+  const wide   = useWide(1000);
   const [lang, setLang] = useState('th');
 
   // ใช้แค่จำนวนสินค้าที่มีอยู่ เพื่อตั้งเลข SKU ถัดไป
@@ -44,13 +46,15 @@ export default function StockScreen({ navigation }) {
     return saved;
   };
 
+  const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
   return (
     <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
-      <Header title={TITLE[lang]} onBack={() => navigation.goBack()} lang={lang}
+      <Header title={TITLE[lang]} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang}
         onLangToggle={() => setLang(l => (l === 'th' ? 'en' : 'th'))} />
       <ConnectingBar visible={loading} lang={lang} />
 
-      <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[s.content, wide && s.contentWide]} keyboardShouldPersistTaps="handled">
         <ProductForm
           mode="create"
           lang={lang}
@@ -66,4 +70,5 @@ export default function StockScreen({ navigation }) {
 
 const baseStyles = {
   content: { padding: 14, paddingBottom: 30 },
+  contentWide: { maxWidth: 760, width: '100%', alignSelf: 'center', paddingHorizontal: 0, paddingTop: 18 },
 };

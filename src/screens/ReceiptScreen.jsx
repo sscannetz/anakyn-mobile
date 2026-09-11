@@ -116,9 +116,11 @@ export default function ReceiptScreen({ navigation, route }) {
     if (!needle) return true;
     return `${v.receipt_no} ${v.sale_no || ''} ${v.customer_name || ''}`.toLowerCase().includes(needle);
   });
+  const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
   return (
     <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
-      <Header title={lang === 'th' ? 'ใบเสร็จรับเงิน' : 'Receipt'} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
+      <Header title={lang === 'th' ? 'ใบเสร็จรับเงิน' : 'Receipt'} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading} lang={lang} />
       <ScrollView contentContainerStyle={s.content}>
         <Toolbar>
