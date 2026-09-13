@@ -35,7 +35,7 @@ const MENUS = [
   { key: 'Invoice',       icon: 'receipt',                label: 'Invoice' },
   { key: 'Quotation',     icon: 'file-document-outline',  label: 'ใบเสนอราคา' },
   { key: 'PurchaseOrder', icon: 'truck-outline',          label: 'ใบสั่งซื้อ' },
-  { key: 'ServiceOrder',  icon: 'wrench-outline',         label: 'ใบสั่งซ่อม' },
+  { key: 'ServiceOrder',  icon: 'hammer-wrench',         label: 'ใบสั่งทำ' },
   { key: 'Receipt',       icon: 'cash-multiple',          label: 'ใบเสร็จรับเงิน' },
   { grp: 'อื่น ๆ' },
   { key: 'Summary',       icon: 'chart-box-outline',      label: 'สรุปรายงาน' },

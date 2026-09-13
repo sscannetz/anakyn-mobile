@@ -42,13 +42,13 @@ const T = {
       { emoji: '🧾', label: 'Invoice',       sub: 'ใบกำกับภาษี',   screen: 'Invoice',        col: '#1a5c28', bg: '#e8f5e9' },
       { emoji: '📋', label: 'ใบเสนอราคา',   sub: 'Quotation',      screen: 'Quotation',      col: '#1a3a60', bg: '#e0f0ff' },
       { emoji: '🚚', label: 'ใบสั่งซื้อ',   sub: 'Purchase Order', screen: 'PurchaseOrder',  col: '#854F0B', bg: '#fff8e1' },
-      { emoji: '🔧', label: 'ใบสั่งซ่อม',   sub: 'Service Order',  screen: 'ServiceOrder',   col: '#7a1c2e', bg: '#fdf0f2' },
+      { emoji: '⚒️', label: 'ใบสั่งทำ',   sub: 'Work Order',  screen: 'ServiceOrder',   col: '#7a1c2e', bg: '#fdf0f2' },
       { emoji: '📊', label: 'สรุปรายงาน',   sub: 'Summary',        screen: 'Summary',        col: '#2e7d32', bg: '#e8f5e9' },
       { emoji: '💵', label: 'ใบเสร็จรับเงิน', sub: 'Receipt',       screen: 'Receipt',        col: '#00695c', bg: '#e0f2f1' },
       { emoji: '👤', label: 'จัดการผู้ใช้', sub: 'Users',          screen: 'AddUser',        col: '#550a19', bg: '#fdf0f2', adminOnly: true },
     ],
     recentTitle: 'ขายล่าสุด',
-    poTitle: 'PO ค้างอยู่', srvTitle: 'งานซ่อมค้าง',
+    poTitle: 'PO ค้างอยู่', srvTitle: 'งานสั่งทำค้าง',
     pendingLabel: 'รายการค้างอยู่',
     noSales: 'ยังไม่มีการขายวันนี้', noPending: 'ไม่มีรายการค้าง',
     due: 'นัดรับ', logout: 'ออกจากระบบ',
@@ -72,7 +72,7 @@ const T = {
       { emoji: '🧾', label: 'Invoice',        sub: 'ใบกำกับภาษี',   screen: 'Invoice',        col: '#1a5c28', bg: '#e8f5e9' },
       { emoji: '📋', label: 'Quotation',      sub: 'ใบเสนอราคา',    screen: 'Quotation',      col: '#1a3a60', bg: '#e0f0ff' },
       { emoji: '🚚', label: 'Purchase Order', sub: 'ใบสั่งซื้อ',    screen: 'PurchaseOrder',  col: '#854F0B', bg: '#fff8e1' },
-      { emoji: '🔧', label: 'Service Order',  sub: 'ใบสั่งซ่อม',    screen: 'ServiceOrder',   col: '#7a1c2e', bg: '#fdf0f2' },
+      { emoji: '⚒️', label: 'Work Order',  sub: 'ใบสั่งทำ',    screen: 'ServiceOrder',   col: '#7a1c2e', bg: '#fdf0f2' },
       { emoji: '📊', label: 'Summary',        sub: 'สรุปรายงาน',    screen: 'Summary',        col: '#2e7d32', bg: '#e8f5e9' },
       { emoji: '💵', label: 'Receipt',        sub: 'ใบเสร็จรับเงิน', screen: 'Receipt',       col: '#00695c', bg: '#e0f2f1' },
       { emoji: '👤', label: 'Add User',       sub: 'จัดการผู้ใช้',  screen: 'AddUser',        col: '#550a19', bg: '#fdf0f2', adminOnly: true },
@@ -99,7 +99,7 @@ function payLabel(pm) {
 
 const POSTATUS_LABEL = { pending: 'รอส่ง', sent: 'ส่งแล้ว', received: 'รับแล้ว', cancelled: 'ยกเลิก' };
 const POSTATUS_COL   = { pending: ['#fdf0f2','#8c1b2f'], sent: ['#fdf0f2','#8c1b2f'], received: ['#ffffff','#9b7d86'], cancelled: ['#ffffff','#c0a8ae'] };
-const SRVSTATUS_LABEL = { received: 'รับเรื่อง', repairing: 'กำลังซ่อม', qc: 'ตรวจสอบ', notified: 'แจ้งลูกค้า', picked_up: 'รับคืนแล้ว' };
+const SRVSTATUS_LABEL = { received: 'รับเรื่อง', repairing: 'กำลังผลิต', qc: 'ตรวจสอบ', notified: 'แจ้งลูกค้า', picked_up: 'รับคืนแล้ว' };
 const SRVSTATUS_COL   = { received: ['#fdf0f2','#8c1b2f'], repairing: ['#fdf0f2','#8c1b2f'], qc: ['#fdf0f2','#8c1b2f'], notified: ['#fdf0f2','#8c1b2f'], picked_up: ['#ffffff','#9b7d86'] };
 
 const SALE_COLS = [

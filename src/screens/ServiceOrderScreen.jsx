@@ -29,8 +29,8 @@ const STATUS_STYLE = {
 };
 
 const STATUS_LABELS = {
-  th: { received: 'รับเรื่อง', repairing: 'กำลังซ่อม', qc: 'ตรวจสอบ', notified: 'แจ้งลูกค้า', picked_up: 'รับคืนแล้ว' },
-  en: { received: 'Received', repairing: 'Repairing', qc: 'QC', notified: 'Notified', picked_up: 'Picked up' },
+  th: { received: 'รับเรื่อง', repairing: 'กำลังผลิต', qc: 'ตรวจงาน', notified: 'แจ้งลูกค้า', picked_up: 'ส่งมอบแล้ว' },
+  en: { received: 'Received', repairing: 'In production', qc: 'QC', notified: 'Notified', picked_up: 'Delivered' },
 };
 
 const fmt = (n) => {
@@ -41,15 +41,15 @@ const fmt = (n) => {
 const FILTERS = [
   { key: 'all',       th: 'ทั้งหมด',    en: 'All' },
   { key: 'open',      th: 'ค้างอยู่',    en: 'Open' },
-  { key: 'picked_up', th: 'รับคืนแล้ว', en: 'Picked up' },
+  { key: 'picked_up', th: 'ส่งมอบแล้ว', en: 'Delivered' },
 ];
 const TONE = { received: 'attn', repairing: 'attn', qc: 'attn', notified: 'attn', picked_up: 'done' };
 const COLS = [
   { label: 'เลขที่', w: 125 },
   { label: 'ลูกค้า', w: 150 },
-  { label: 'งานที่รับ' },
+  { label: 'งานที่สั่งทำ' },
   { label: 'สถานะ', w: 105 },
-  { label: 'ค่าซ่อม', w: 90, rt: true },
+  { label: 'ค่างาน', w: 90, rt: true },
 ];
 
 export default function ServiceOrderScreen({ navigation }) {
@@ -136,24 +136,24 @@ export default function ServiceOrderScreen({ navigation }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
-      <Header title={lang === 'th' ? 'ใบสั่งซ่อม' : 'Service Order'} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
+      <Header title={lang === 'th' ? 'ใบสั่งทำ' : 'Work Order'} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading} lang={lang} />
       <ScrollView contentContainerStyle={s.content}>
         <Toolbar>
           <SearchBox value={q} onChangeText={setQ}
-            placeholder={lang === 'th' ? 'ค้นหาเลขที่งานซ่อม ลูกค้า หรือสินค้า' : 'Search job no., customer or item'} />
+            placeholder={lang === 'th' ? 'ค้นหาเลขที่งานสั่งทำ ลูกค้า หรือสินค้า' : 'Search job no., customer or item'} />
           {FILTERS.map(f => (
             <Chip key={f.key} label={lang === 'th' ? f.th : f.en} on={filter === f.key} onPress={() => setFilter(f.key)} />
           ))}
-          <PrimaryButton label={lang === 'th' ? 'รับงานซ่อมใหม่' : 'New service'} onPress={() => setShowNew(true)} />
+          <PrimaryButton label={lang === 'th' ? 'เปิดงานสั่งทำใหม่' : 'New work order'} onPress={() => setShowNew(true)} />
         </Toolbar>
 
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20, marginBottom: 12 }} />}
 
-        <Panel title={lang === 'th' ? 'ใบสั่งซ่อมทั้งหมด' : 'All service orders'}
+        <Panel title={lang === 'th' ? 'ใบสั่งทำทั้งหมด' : 'All work orders'}
           right={`${shown.length} ${lang === 'th' ? 'งาน' : 'jobs'}`}>
           {wide && <TableHead cols={COLS} />}
-          {!loading && shown.length === 0 && <Empty text={lang === 'th' ? 'ยังไม่มีใบสั่งซ่อม' : 'No service orders yet'} />}
+          {!loading && shown.length === 0 && <Empty text={lang === 'th' ? 'ยังไม่มีใบสั่งทำ' : 'No service orders yet'} />}
           {shown.map((o, i) => {
             const tone = TONE[o.status] || 'done';
             const label = slabs[o.status] || o.status;
@@ -190,7 +190,7 @@ export default function ServiceOrderScreen({ navigation }) {
       <Modal visible={showNew} animationType="slide" presentationStyle="pageSheet">
         <View style={s.modal}>
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>{lang === 'th' ? 'รับงานซ่อมใหม่' : 'New Service Order'}</Text>
+            <Text style={s.modalTitle}>{lang === 'th' ? 'เปิดงานสั่งทำใหม่' : 'New Work Order'}</Text>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(false)}>
               <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
             </TouchableOpacity>
@@ -201,11 +201,11 @@ export default function ServiceOrderScreen({ navigation }) {
             <TextInput dataSet={{ hov: 'field' }} style={s.input} value={custName} onChangeText={setCustName} placeholderTextColor="#c0a0a8" />
             <Text style={s.fieldLabel}>{lang === 'th' ? 'เบอร์โทร' : 'Phone'}</Text>
             <TextInput dataSet={{ hov: 'field' }} style={s.input} value={custPhone} onChangeText={setCustPhone} keyboardType="phone-pad" />
-            <Text style={s.fieldLabel}>{lang === 'th' ? 'ชื่อสินค้าที่นำมาซ่อม' : 'Product Name'}</Text>
+            <Text style={s.fieldLabel}>{lang === 'th' ? 'ชื่องาน / แบบที่สั่งทำ' : 'Item / Design'}</Text>
             <TextInput dataSet={{ hov: 'field' }} style={s.input} value={prodName} onChangeText={setProdName} placeholderTextColor="#c0a0a8" />
             <Text style={s.fieldLabel}>{lang === 'th' ? 'อาการเสีย / ปัญหา' : 'Issue Description'}</Text>
             <TextInput dataSet={{ hov: 'field' }} style={[s.input, { height: 70, textAlignVertical: 'top' }]} value={issue} onChangeText={setIssue} multiline placeholderTextColor="#c0a0a8" />
-            <Text style={s.fieldLabel}>{lang === 'th' ? 'ค่าซ่อมประมาณ (บาท)' : 'Estimated Cost (THB)'}</Text>
+            <Text style={s.fieldLabel}>{lang === 'th' ? 'ราคาประเมิน (บาท)' : 'Estimated Price (THB)'}</Text>
             <TextInput dataSet={{ hov: 'field' }} style={s.input} value={estimatedCost} onChangeText={setEstimatedCost} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
             <Text style={s.fieldLabel}>{lang === 'th' ? 'วันนัดรับ (YYYY-MM-DD)' : 'Due Date (YYYY-MM-DD)'}</Text>
             <TextInput dataSet={{ hov: 'field' }} style={s.input} value={dueDate} onChangeText={setDueDate} placeholder="2026-01-31" placeholderTextColor="#c0a0a8" />
@@ -230,7 +230,7 @@ export default function ServiceOrderScreen({ navigation }) {
               return (
                 <>
                   <DocWrapper>
-                    <DocHeader badge={lang === 'th' ? 'ใบสั่งซ่อม' : 'SERVICE ORDER'} docNo={selSO.service_no}
+                    <DocHeader badge={lang === 'th' ? 'ใบสั่งทำ' : 'WORK ORDER'} docNo={selSO.service_no}
                       meta={[
                         ['วันที่รับ', new Date(selSO.received_at || selSO.created_at).toLocaleDateString('th-TH')],
                         ['นัดรับ', selSO.pickup_date ? new Date(selSO.pickup_date).toLocaleDateString('th-TH') : '—'],
@@ -240,11 +240,11 @@ export default function ServiceOrderScreen({ navigation }) {
                       buyer={{ label: lang === 'th' ? 'ลูกค้า' : 'CUSTOMER', name: selSO.customer_name || 'ไม่ระบุ', sub: selSO.customer_phone || '—' }}
                     />
                     <Sec>
-                      <InfoRow label={lang === 'th' ? 'สินค้าที่ซ่อม' : 'Item'} value={selSO.product_name} />
-                      {!!selSO.issue_description && <InfoRow label={lang === 'th' ? 'อาการ / ปัญหา' : 'Issue'} value={selSO.issue_description} />}
+                      <InfoRow label={lang === 'th' ? 'งาน / แบบที่สั่งทำ' : 'Item'} value={selSO.product_name} />
+                      {!!selSO.issue_description && <InfoRow label={lang === 'th' ? 'รายละเอียด / แบบที่สั่ง' : 'Issue'} value={selSO.issue_description} />}
                     </Sec>
                     <Sec>
-                      <SL>{lang === 'th' ? 'รายการซ่อม / บริการ' : 'SERVICES'}</SL>
+                      <SL>{lang === 'th' ? 'รายการงานสั่งทำ' : 'SERVICES'}</SL>
                       <ItemHead cols={['รายการ', '', 'ค่าบริการ']} />
                       {(selSO.services || []).map((sv, i) => (
                         <ItemRow key={i} name={sv.name || `บริการที่ ${i + 1}`}
@@ -254,11 +254,11 @@ export default function ServiceOrderScreen({ navigation }) {
                       {(selSO.services || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
                     </Sec>
                     <Sec>
-                      <TRow label={lang === 'th' ? 'ค่าซ่อม' : 'Service cost'} value={fmtBaht(base)} />
+                      <TRow label={lang === 'th' ? 'ค่างาน' : 'Work cost'} value={fmtBaht(base)} />
                       <VatRow enabled={dVatOn} rate={dVatRate} amount={vatAmt} onToggle={setDVatOn} onRate={setDVatRate} lang={lang} />
                     </Sec>
                     <GrandTotal label={lang === 'th' ? 'ยอดรวมทั้งสิ้น' : 'Grand Total'} value={fmtBaht(grand)} />
-                    <DocFooter>ใบสั่งซ่อม · Anakyn Gems Co., Ltd.</DocFooter>
+                    <DocFooter>ใบสั่งทำ · Anakyn Gems Co., Ltd.</DocFooter>
                   </DocWrapper>
                   <Text style={[s.fieldLabel, { marginTop: 16 }]}>{lang === 'th' ? 'อัปเดตสถานะ' : 'Update status'}</Text>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
@@ -278,7 +278,7 @@ export default function ServiceOrderScreen({ navigation }) {
                     <Text style={[s.delBtnText, confirmDel && { color: '#fff' }]}>
                       {confirmDel
                         ? (lang === 'th' ? 'แตะอีกครั้งเพื่อยืนยันลบ' : 'Tap again to confirm')
-                        : (lang === 'th' ? 'ลบใบสั่งซ่อม' : 'Delete')}
+                        : (lang === 'th' ? 'ลบใบสั่งทำ' : 'Delete')}
                     </Text>
                   </TouchableOpacity>
                 </>

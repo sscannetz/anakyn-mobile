@@ -186,6 +186,8 @@ export default function ProductForm({
   const isEdit = mode === 'edit';
 
   const [skuNum, setSkuNum] = useState(nextSkuNum);
+  // เลขที่พิมพ์ค้างอยู่ในช่อง — null = ไม่ได้แก้ ให้โชว์ skuNum ที่รันเอง
+  const [skuEdit, setSkuEdit] = useState(null);
   const [sku, setSku]       = useState('');
   const [photoUri, setPhotoUri]   = useState(null);
   const [photoOrig, setPhotoOrig] = useState(null);   // รูปเดิมจาก database — ใช้เช็คว่าเปลี่ยนรูปหรือยัง
@@ -260,6 +262,7 @@ export default function ProductForm({
   };
 
   const clearForm = () => {
+    setSkuEdit(null);
     setItemName(''); setCatCode(CAT_CODES[0]); setQty('1'); setLaborCost('');
     setMetalWeight(''); setSellingPrice(''); setDiamonds([newDiamond()]);
     setPhotoUri(null); setSaveError(''); setSaveSuccess(false);
@@ -379,10 +382,24 @@ export default function ProductForm({
         ) : (
           <View style={s.skuRow}>
             <View style={s.skuPrefix}><Text style={s.skuPrefixText}>ANAKYN</Text></View>
-            <Text style={s.skuNum}>#{String(skuNum).padStart(4, '0')}</Text>
-            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setSkuNum(n => Math.max(1, n - 1))} style={s.skuBtn}><Text style={s.skuBtnText}>−1</Text></TouchableOpacity>
-            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setSkuNum(stockCount + 1)} style={s.skuBtn}><Text style={s.skuBtnText}>Reset</Text></TouchableOpacity>
-            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setSkuNum(n => n + 1)} style={[s.skuBtn, s.skuBtnPlus]}><Text style={[s.skuBtnText, { color: '#550a19' }]}>+1</Text></TouchableOpacity>
+            <Text style={s.skuHash}>#</Text>
+            <TextInput
+              dataSet={{ hov: 'field' }}
+              style={s.skuNum}
+              value={skuEdit ?? String(skuNum).padStart(4, '0')}
+              onChangeText={(v) => {
+                const clean = v.replace(/[^0-9]/g, '').slice(0, 4);
+                setSkuEdit(clean);
+                if (clean !== '') setSkuNum(Math.max(1, parseInt(clean, 10) || 1));
+              }}
+              onBlur={() => setSkuEdit(null)}
+              keyboardType="number-pad"
+              selectTextOnFocus
+              textAlign="center"
+              maxLength={4} />
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setSkuEdit(null); setSkuNum(n => Math.max(1, n - 1)); }} style={s.skuBtn}><Text style={s.skuBtnText}>−1</Text></TouchableOpacity>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setSkuEdit(null); setSkuNum(stockCount + 1); }} style={s.skuBtn}><Text style={s.skuBtnText}>Reset</Text></TouchableOpacity>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setSkuEdit(null); setSkuNum(n => n + 1); }} style={[s.skuBtn, s.skuBtnPlus]}><Text style={[s.skuBtnText, { color: '#550a19' }]}>+1</Text></TouchableOpacity>
           </View>
         )}
       </Sec>
@@ -680,7 +697,10 @@ const baseStyles = {
   skuRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   skuPrefix: { backgroundColor: '#550a19', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
   skuPrefixText: { fontSize: 12, fontWeight: '500', color: '#f5e0e5' },
-  skuNum: { flex: 1, fontSize: 16, fontWeight: '500', color: '#550a19', textAlign: 'center' },
+  skuHash: { fontSize: 16, fontWeight: '500', color: '#550a19' },
+  // flex:1 → flex-basis 0 ทำให้ <input> ไม่ไปใช้ความกว้าง default ของเบราว์เซอร์
+  skuNum: { flex: 1, minWidth: 0, paddingVertical: 4, paddingHorizontal: 0,
+            fontSize: 16, fontWeight: '500', color: '#550a19', textAlign: 'center' },
   skuBtn: { backgroundColor: '#fdfbfb', borderWidth: 0.5, borderColor: '#ece0e3', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
   skuBtnPlus: { backgroundColor: '#fdf0f2' },
   skuBtnText: { fontSize: 12, color: '#a07080' },

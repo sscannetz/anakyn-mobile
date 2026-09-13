@@ -28,7 +28,10 @@ const STYLE = `
   @page { size: A4; margin: 14mm 13mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Sarabun', -apple-system, 'Helvetica Neue', Arial, sans-serif; color:#2b2226; font-size:12px; line-height:1.5; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .doc { width:100%; max-width:780px; margin:0 auto; }
+  /* สูงอย่างน้อยเกือบเต็มหน้า A4 (269mm − ขอบล่างกันไว้) + เป็น flex column
+     → .signs ใช้ margin-top:auto ดันตัวเองกับ .foot ลงไปอยู่ท้ายหน้าเสมอ
+     เอกสารที่มีไม่กี่รายการจะได้ไม่ลอยค้างกลางหน้า */
+  .doc { width:100%; max-width:780px; margin:0 auto; min-height:252mm; display:flex; flex-direction:column; }
 
   /* ── หัวเอกสาร ── */
   .hd { display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:14px; border-bottom:2.5px solid #550a19; }
@@ -79,7 +82,7 @@ const STYLE = `
   .grand .gl { font-size:12px; color:#550a19; font-weight:600; letter-spacing:.5px; }
   .grand .gv { font-size:19px; font-weight:800; color:#550a19; }
 
-  /* ── กล่องข้อมูล (เช่น สินค้าที่ซ่อม / อาการ) ── */
+  /* ── กล่องข้อมูล (เช่น งาน / แบบที่สั่งทำ / อาการ) ── */
   .fields { border:1px solid #e6d7dc; border-radius:7px; overflow:hidden; }
   .field { display:flex; padding:9px 13px; border-bottom:1px solid #f1e8eb; }
   .field:last-child { border-bottom:none; }
@@ -87,7 +90,7 @@ const STYLE = `
   .field .fv { flex:1; font-size:12px; font-weight:600; color:#2b2226; }
 
   /* ── ช่องเซ็น ── */
-  .signs { display:flex; gap:50px; margin-top:46px; }
+  .signs { display:flex; gap:50px; margin-top:auto; padding-top:46px; }
   .sign { flex:1; text-align:center; }
   .sign-line { border-top:1px dotted #b3a3a9; margin:0 6px; }
   .sign-label { font-size:11px; font-weight:600; color:#5a4f54; margin-top:7px; }
@@ -332,25 +335,25 @@ function buildServiceOrder(so = {}) {
   const rows = (so.services || []).map((sv, i) =>
     `<tr><td class="c">${i + 1}</td><td class="iname">${esc(sv.name || 'บริการ')}</td>
       <td class="r ${sv.is_warranty ? 'muted' : 'price'}">${sv.is_warranty ? 'ประกัน (ฟรี)' : baht(sv.price)}</td></tr>`).join('');
-  const totalRows = [['ค่าซ่อม / บริการ', baht(so.base_cost ?? so.total_cost ?? so.estimated_cost)]];
-  const sections = `<div class="sec"><div class="sl">รายละเอียดงานซ่อม</div>
+  const totalRows = [['ค่างานสั่งทำ', baht(so.base_cost ?? so.total_cost ?? so.estimated_cost)]];
+  const sections = `<div class="sec"><div class="sl">รายละเอียดงานสั่งทำ</div>
       <div class="fields">
-        <div class="field"><div class="fl">สินค้าที่ซ่อม</div><div class="fv">${esc(so.product_name || '—')}</div></div>
-        ${so.issue_description ? `<div class="field"><div class="fl">อาการ / ปัญหา</div><div class="fv">${esc(so.issue_description)}</div></div>` : ''}
+        <div class="field"><div class="fl">งาน / แบบที่สั่งทำ</div><div class="fv">${esc(so.product_name || '—')}</div></div>
+        ${so.issue_description ? `<div class="field"><div class="fl">รายละเอียด / แบบที่สั่ง</div><div class="fv">${esc(so.issue_description)}</div></div>` : ''}
       </div>
     </div>
-    <div class="sec"><div class="sl">รายการซ่อม / บริการ</div>
+    <div class="sec"><div class="sl">รายการงานสั่งทำ</div>
     ${table(
-      [{ label: '#', align: 'c' }, { label: 'รายการ' }, { label: 'ค่าบริการ', align: 'r' }],
+      [{ label: '#', align: 'c' }, { label: 'รายการ' }, { label: 'ค่างาน', align: 'r' }],
       rows
     )}</div>
     ${totals(totalRows, 'ยอดรวมทั้งสิ้น', baht(so.grand_total ?? so.total_cost ?? so.estimated_cost))}`;
   return renderDoc({
-    badge: 'ใบสั่งซ่อม', docNo: so.service_no,
+    badge: 'ใบสั่งทำ', docNo: so.service_no,
     meta: [['วันที่รับ', dateTH(so.received_at || so.created_at)], ['นัดรับ', so.pickup_date ? dateTH(so.pickup_date) : '—']],
     parties: { seller: SELLER, buyer: { label: 'ลูกค้า', name: so.customer_name, sub: so.customer_phone } },
     sections,
-    signatures: [{ label: 'ผู้รับงานซ่อม' }, { label: 'ลูกค้า' }],
+    signatures: [{ label: 'ผู้รับงานสั่งทำ' }, { label: 'ลูกค้า' }],
   });
 }
 
@@ -394,7 +397,7 @@ function buildSummary(d = {}, periodLabel = '') {
     `<tr><td class="c">${i + 1}</td><td class="iname">${esc(it.name)}</td><td class="isub">${esc(it.sku)}</td>
       <td class="c">${num(it.qty)}</td><td class="r price">${baht(it.amount)}</td></tr>`).join('');
   const pending = [
-    ['PO ค้างอยู่', num(d.pending_po)], ['งานซ่อมค้าง', num(d.pending_service)], ['ใบเสนอราคาค้าง', num(d.pending_quotation)],
+    ['PO ค้างอยู่', num(d.pending_po)], ['งานสั่งทำค้าง', num(d.pending_service)], ['ใบเสนอราคาค้าง', num(d.pending_quotation)],
   ].map(([l, v]) => `<div class="field"><div class="fl">${esc(l)}</div><div class="fv">${v}</div></div>`).join('');
   const sections = `<div class="sec"><div class="sl">ตัวชี้วัดหลัก</div><div class="fields">${kpi}</div></div>
     <div class="sec"><div class="sl">สินค้าขายดี</div>
