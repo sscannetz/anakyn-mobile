@@ -48,6 +48,7 @@ const FILTERS = [
   { key: 'delivered', th: 'ส่งมอบแล้ว', en: 'Delivered' },
 ];
 const COLS = [
+  { label: '', w: 30 },
   { label: 'เลขที่', w: 140 },
   { label: 'ช่าง / โรงงาน', w: 150 },
   { label: 'งานที่สั่ง' },
@@ -94,6 +95,9 @@ export default function WorkOrderScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [q, setQ]             = useState('');
   const [filter, setFilter]   = useState('all');
+  // ติ๊กเลือกหลายใบเพื่อสั่งปริ้นทีเดียว — { [id]: true }
+  const [picked, setPicked]   = useState({});
+  const [printing, setPrinting] = useState(false);
 
   // ── ใบใหม่ ──
   const [showNew, setShowNew] = useState(false);
@@ -123,6 +127,23 @@ export default function WorkOrderScreen({ navigation }) {
     setLoading(true);
     try { setOrders(await api.getWorkOrders()); } catch (_) { setOrders([]); }
     setLoading(false);
+  };
+
+  const pickedIds = Object.keys(picked).filter(k => picked[k]);
+  const togglePick = (id) => setPicked(p => ({ ...p, [id]: !p[id] }));
+
+  // ปริ้น/บันทึกหลายใบพร้อมกัน — ต้องโหลดรายการของแต่ละใบมาก่อน
+  // เพราะหน้ารายการมีแค่ยอดรวม ไม่มีรายการงานข้างใน
+  const printPicked = async (asPdf) => {
+    if (pickedIds.length === 0) return;
+    setPrinting(true);
+    try {
+      const full = [];
+      for (const id of pickedIds) {
+        try { full.push(await api.getWorkOrder(id)); } catch (_) {}
+      }
+      if (full.length) (asPdf ? saveWorkOrder : printWorkOrder)(full);
+    } finally { setPrinting(false); }
   };
 
   const upd  = (id, patch) => setItems(list => list.map(it => (it.id === id ? { ...it, ...patch } : it)));
@@ -287,6 +308,26 @@ export default function WorkOrderScreen({ navigation }) {
           <PrimaryButton label={lang === 'th' ? 'เปิดใบสั่งทำใหม่' : 'New work order'} onPress={() => setShowNew(true)} />
         </Toolbar>
 
+        {pickedIds.length > 0 && (
+          <View style={s.pickBar}>
+            <Text style={s.pickCount}>
+              {lang === 'th' ? `เลือกไว้ ${pickedIds.length} ใบ` : `${pickedIds.length} selected`}
+            </Text>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setPicked({})} style={s.pickClear}>
+              <Text style={s.pickClearText}>{lang === 'th' ? 'ล้าง' : 'Clear'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printPicked(false)} disabled={printing} style={s.pickBtn}>
+              {printing ? <ActivityIndicator size="small" color="#550a19" />
+                : <MaterialCommunityIcons name="printer" size={sc(15)} color="#550a19" />}
+              <Text style={s.pickBtnText}>{lang === 'th' ? 'ปริ้นที่เลือก' : 'Print selected'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printPicked(true)} disabled={printing} style={s.pickBtn}>
+              <MaterialCommunityIcons name="file-pdf-box" size={sc(15)} color="#550a19" />
+              <Text style={s.pickBtnText}>{lang === 'th' ? 'PDF ที่เลือก' : 'Save PDF'}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20, marginBottom: 12 }} />}
 
         <Panel title={lang === 'th' ? 'ใบสั่งทำทั้งหมด' : 'All work orders'}
@@ -298,6 +339,12 @@ export default function WorkOrderScreen({ navigation }) {
             const label = slabs[o.status] || o.status;
             return wide ? (
               <TableRow key={o.id} cols={COLS} last={last} onPress={() => openOrder(o)} cells={[
+                <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => togglePick(o.id)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <View style={[s.box, picked[o.id] && s.boxOn]}>
+                    {picked[o.id] && <MaterialCommunityIcons name="check" size={sc(11)} color="#fff" />}
+                  </View>
+                </TouchableOpacity>,
                 <TdNo text={o.work_no} />,
                 <TdMain text={o.workshop || '—'} />,
                 <TdMain text={`${o.item_count || 0} ${lang === 'th' ? 'รายการ' : 'items'} · ${o.total_qty || 0} ${lang === 'th' ? 'ชิ้น' : 'pcs'}`}
@@ -309,6 +356,12 @@ export default function WorkOrderScreen({ navigation }) {
             ) : (
               <TouchableOpacity dataSet={{ hov: 'btn' }} key={o.id} onPress={() => openOrder(o)}
                 style={[s.mrow, last && { borderBottomWidth: 0 }]}>
+                <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => togglePick(o.id)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 6 }}>
+                  <View style={[s.box, picked[o.id] && s.boxOn]}>
+                    {picked[o.id] && <MaterialCommunityIcons name="check" size={sc(11)} color="#fff" />}
+                  </View>
+                </TouchableOpacity>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={s.cardNo}>{o.work_no}</Text>
                   <Text style={s.cardTitle}>{o.workshop || '—'}</Text>
@@ -743,6 +796,14 @@ function InfoLine({ k, v, s }) {
 
 const baseStyles = {
   content: { padding: 14, paddingBottom: 30 },
+  box: { width: 17, height: 17, borderRadius: 4, borderWidth: 1, borderColor: '#d4bcc2', justifyContent: 'center', alignItems: 'center' },
+  boxOn: { backgroundColor: '#550a19', borderColor: '#550a19' },
+  pickBar: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', backgroundColor: '#fdf0f2', borderWidth: 1, borderColor: '#f0d3da', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, marginBottom: 12 },
+  pickCount: { fontSize: 12.5, fontWeight: '600', color: '#550a19', marginRight: 'auto' },
+  pickClear: { paddingHorizontal: 8, paddingVertical: 6 },
+  pickClearText: { fontSize: 12, color: '#9b7d86' },
+  pickBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 8, paddingHorizontal: 11, paddingVertical: 7 },
+  pickBtnText: { fontSize: 12, fontWeight: '600', color: '#550a19' },
   modal: { flex: 1, backgroundColor: '#fdfbfb', padding: 16 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   modalTitle: { fontSize: 16, fontWeight: '600', color: '#550a19' },

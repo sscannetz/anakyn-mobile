@@ -758,6 +758,8 @@ const WO_STYLE = `
   .grow.key b { color:#550a19; }
 
   .bottom-block { margin-top:auto; }
+  /* ใบที่ 2 เป็นต้นไปขึ้นหน้าใหม่ — ใช้ตอนเลือกปริ้นหลายใบพร้อมกัน */
+  .doc + .doc { page-break-before:always; break-before:page; }
   .signs { display:flex; gap:44px; margin-top:46px; }
   .sign { flex:1; text-align:center; }
   .sline { border-top:1px dotted #b3a3a9; margin:0 6px; }
@@ -833,7 +835,7 @@ function woItemBlock(it, idx) {
   </div>`;
 }
 
-function buildWorkOrder(wo = {}) {
+function woDoc(wo = {}) {
   const items = Array.isArray(wo.items) ? wo.items : [];
   const seq = String(wo.work_no || '').split('-').pop() || '';
 
@@ -893,9 +895,15 @@ function buildWorkOrder(wo = {}) {
     </div>
   </div>`;
 
+  return body;
+}
+
+// รับได้ทั้งใบเดียวและหลายใบ — หลายใบจะคั่นหน้าให้อัตโนมัติ
+function buildWorkOrder(input) {
+  const list = Array.isArray(input) ? input : [input || {}];
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>${WO_STYLE}</style></head><body>${body}</body></html>`;
+    <style>${WO_STYLE}</style></head><body>${list.map(woDoc).join('')}</body></html>`;
 }
 
 // ── ข้อมูลป้าย: ใช้ร่วมกับ "ตัวอย่างป้ายสินค้า" บนหน้าจอ (TagPreview.jsx) ──

@@ -65,6 +65,9 @@ export default function QuotationScreen({ navigation }) {
   const [customers, setCustomers]   = useState([]);
   const [selProds, setSelProds]     = useState([]);
   const [selCustId, setSelCustId]   = useState(null);
+  // ชื่อลูกค้าพิมพ์เองได้ ไม่ต้องมีในระบบก่อน — ตอนบันทึกค่อยหาให้ว่ามีอยู่แล้วไหม
+  const [custName, setCustName]     = useState('');
+  const [custPhone, setCustPhone]   = useState('');
   const [notes, setNotes]           = useState('');
   const [vatOn, setVatOn]           = useState(true);
   const [vatRate, setVatRate]       = useState('7');   // อัตรา VAT ตอนสร้าง (ปรับเองได้)
@@ -90,19 +93,33 @@ export default function QuotationScreen({ navigation }) {
   const vatAmt    = vatOn ? Math.round(subtotal * (parseFloat(vatRate) || 0) / 100) : 0;
   const total     = subtotal + vatAmt;
 
+  // คืน customer_id ที่จะใช้: เลือกจากลิสต์ → ใช้เลย · พิมพ์เอง → หาชื่อซ้ำก่อน ไม่เจอค่อยสร้างใหม่
+  const resolveCustomer = async () => {
+    if (selCustId) return selCustId;
+    const name = custName.trim();
+    if (!name) return null;
+    const hit = customers.find(c => (c.full_name || '').trim().toLowerCase() === name.toLowerCase());
+    if (hit) return hit.id;
+    const created = await api.createCustomer({ full_name: name, phone: custPhone.trim() || null });
+    setCustomers(prev => [created, ...prev]);
+    return created.id;
+  };
+
   const handleCreate = async () => {
     if (selProds.length === 0) { setError(lang === 'th' ? 'กรุณาเลือกสินค้า' : 'Please select items'); return; }
     setSaving(true); setError('');
     try {
+      const customerId = await resolveCustomer();
       const qt = await api.createQuotation({
-        customer_id: selCustId,
+        customer_id: customerId,
         items: selProds.map(sp => ({ product_id: sp.id, qty: 1, unit_price: sp.price })),
         vat_enabled: vatOn,
         vat_rate: parseFloat(vatRate) || 7,
         notes,
       });
       setQuotations(prev => [qt, ...prev]);
-      setShowNew(false); setSelProds([]); setNotes(''); setSelCustId(null);
+      setShowNew(false); setSelProds([]); setNotes('');
+      setSelCustId(null); setCustName(''); setCustPhone('');
     } catch (err) { setError(err.message); }
     finally { setSaving(false); }
   };
@@ -194,18 +211,52 @@ export default function QuotationScreen({ navigation }) {
           <ScrollView keyboardShouldPersistTaps="handled">
             {!!error && <View style={s.errBox}><Text style={s.errText}>{error}</Text></View>}
             <Text style={s.fieldLabel}>{lang === 'th' ? 'ลูกค้า' : 'Customer'}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setSelCustId(null)} style={[s.chip, { backgroundColor: !selCustId ? '#550a19' : '#f9f4f5', borderColor: !selCustId ? '#550a19' : '#e8d5d9' }]}>
-                  <Text style={[s.chipText, { color: !selCustId ? '#fff' : '#a07080' }]}>{lang === 'th' ? 'ไม่ระบุ' : 'None'}</Text>
-                </TouchableOpacity>
-                {customers.map(c => (
-                  <TouchableOpacity dataSet={{ hov: 'btn' }} key={c.id} onPress={() => setSelCustId(c.id)} style={[s.chip, { backgroundColor: selCustId === c.id ? '#550a19' : '#f9f4f5', borderColor: selCustId === c.id ? '#550a19' : '#e8d5d9' }]}>
-                    <Text style={[s.chipText, { color: selCustId === c.id ? '#fff' : '#a07080' }]}>{c.full_name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
+            <TextInput dataSet={{ hov: 'field' }} style={s.custInput}
+              value={custName}
+              onChangeText={(v) => { setCustName(v); setSelCustId(null); }}
+              placeholder={lang === 'th' ? 'พิมพ์ชื่อลูกค้า หรือเลือกจากรายชื่อข้างล่าง' : 'Type a name or pick from the list'}
+              placeholderTextColor="#c0a0a8" />
+
+            {/* พิมพ์แล้วยังไม่ตรงกับใคร = ลูกค้าใหม่ ใส่เบอร์ไว้ด้วยจะได้เก็บเข้าระบบเลย */}
+            {!selCustId && !!custName.trim() && (
+              <TextInput dataSet={{ hov: 'field' }} style={s.custInput}
+                value={custPhone} onChangeText={setCustPhone} keyboardType="phone-pad"
+                placeholder={lang === 'th' ? 'เบอร์โทร (ไม่บังคับ)' : 'Phone (optional)'}
+                placeholderTextColor="#c0a0a8" />
+            )}
+
+            {(() => {
+              const k = custName.trim().toLowerCase();
+              const hits = customers.filter(c =>
+                !k || `${c.full_name || ''} ${c.phone || ''}`.toLowerCase().includes(k)).slice(0, 6);
+              const exact = customers.some(c => (c.full_name || '').trim().toLowerCase() === k);
+              return (
+                <View style={{ marginBottom: 12 }}>
+                  {hits.map(c => (
+                    <TouchableOpacity dataSet={{ hov: 'btn' }} key={c.id}
+                      onPress={() => { setSelCustId(c.id); setCustName(c.full_name || ''); setCustPhone(''); }}
+                      style={[s.custRow, selCustId === c.id && s.custRowOn]}>
+                      <MaterialCommunityIcons
+                        name={selCustId === c.id ? 'check-circle' : 'account-outline'}
+                        size={sc(15)} color={selCustId === c.id ? '#550a19' : '#c0a0a8'} />
+                      <Text style={s.custRowName} numberOfLines={1}>{c.full_name}</Text>
+                      {!!c.phone && <Text style={s.custRowSub}>{c.phone}</Text>}
+                    </TouchableOpacity>
+                  ))}
+                  {!!k && !exact && (
+                    <Text style={s.custHint}>
+                      {lang === 'th' ? `ยังไม่มี “${custName.trim()}” ในระบบ — บันทึกแล้วจะเพิ่มให้อัตโนมัติ`
+                                     : `“${custName.trim()}” is new — it will be added on save`}
+                    </Text>
+                  )}
+                  {!k && (
+                    <Text style={s.custHint}>
+                      {lang === 'th' ? 'เว้นว่างไว้ได้ ถ้าไม่ระบุลูกค้า' : 'Leave blank for no customer'}
+                    </Text>
+                  )}
+                </View>
+              );
+            })()}
             <Text style={s.fieldLabel}>{lang === 'th' ? 'สินค้า' : 'Items'}</Text>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowProdPicker(true)} style={s.addItemBtn}>
               <MaterialCommunityIcons name="plus" size={sc(16)} color="#550a19" />
@@ -342,6 +393,12 @@ export default function QuotationScreen({ navigation }) {
 }
 
 const baseStyles = {
+  custInput: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, padding: 10, fontSize: 13, color: '#2c1015', marginBottom: 8 },
+  custRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: 'transparent' },
+  custRowOn: { backgroundColor: '#fdf0f2', borderColor: '#f0d3da' },
+  custRowName: { flex: 1, fontSize: 12.5, color: '#2c1015', minWidth: 0 },
+  custRowSub: { fontSize: 11, color: '#9b7d86' },
+  custHint: { fontSize: 11, color: '#9b7d86', marginTop: 4, marginLeft: 2, lineHeight: 17 },
   toolbar:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 14 },
   toolbarCount: { flex: 1, fontSize: 12, color: '#9b7d86' },
   primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
