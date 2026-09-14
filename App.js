@@ -22,6 +22,7 @@ import InvoiceScreen     from './src/screens/InvoiceScreen';
 import QuotationScreen   from './src/screens/QuotationScreen';
 import PurchaseOrderScreen from './src/screens/PurchaseOrderScreen';
 import ServiceOrderScreen  from './src/screens/ServiceOrderScreen';
+import WorkOrderScreen     from './src/screens/WorkOrderScreen';
 import SummaryScreen     from './src/screens/SummaryScreen';
 import ReceiptScreen     from './src/screens/ReceiptScreen';
 import AddUserScreen     from './src/screens/AddUserScreen';
@@ -155,6 +156,7 @@ export default function App() {
             <Stack.Screen name="Quotation"     component={QuotationScreen}      />
             <Stack.Screen name="PurchaseOrder" component={PurchaseOrderScreen}  />
             <Stack.Screen name="ServiceOrder"  component={ServiceOrderScreen}   />
+            <Stack.Screen name="WorkOrder"     component={WorkOrderScreen}      />
             <Stack.Screen name="Summary"       component={SummaryScreen}        />
             <Stack.Screen name="Receipt"       component={ReceiptScreen}        />
             <Stack.Screen name="AddUser"       component={AddUserScreen}        />

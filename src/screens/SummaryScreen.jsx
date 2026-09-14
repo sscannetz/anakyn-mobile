@@ -24,7 +24,7 @@ const T = {
     topSales: 'สินค้าขายดี', rank: '#', item: 'สินค้า', qty: 'จำนวน', amount: 'ยอด',
     payBreakdown: 'ช่องทางชำระเงิน',
     pendingSection: 'รายการค้างอยู่',
-    pendingPO: 'PO ค้าง', pendingSrv: 'งานสั่งทำค้าง', pendingQt: 'ใบเสนอราคา',
+    pendingPO: 'PO ค้าง', pendingSrv: 'งานซ่อมค้าง', pendingQt: 'ใบเสนอราคา',
     chartTitle: 'ยอดขายรายวัน (7 วันล่าสุด)',
     noData: 'ไม่มีข้อมูล', loading: 'กำลังโหลด...',
   },

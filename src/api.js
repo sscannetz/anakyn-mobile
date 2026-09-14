@@ -110,6 +110,17 @@ export const api = {
     request(`/service-orders/${id}/status`, { method: 'PATCH', body: { status } }),
   deleteServiceOrder: (id) => request(`/service-orders/${id}`, { method: 'DELETE' }),
 
+  // ── Work Orders (ใบสั่งทำ) ──
+  getWorkOrders: () => request('/work-orders'),
+  getWorkOrder: (id) => request(`/work-orders/${id}`),
+  createWorkOrder: (data) => request('/work-orders', { method: 'POST', body: data }),
+  updateWorkOrderStatus: (id, status) =>
+    request(`/work-orders/${id}/status`, { method: 'PATCH', body: { status } }),
+  deleteWorkOrder: (id) => request(`/work-orders/${id}`, { method: 'DELETE' }),
+  // งานที่ทำเสร็จ → สร้างสินค้าเข้าสต๊อก (กดซ้ำได้ ไม่สร้างซ้ำ)
+  workItemToStock: (id, itemId, data) =>
+    request(`/work-orders/${id}/items/${itemId}/to-stock`, { method: 'POST', body: data }),
+
   // ── Receipts (ใบเสร็จรับเงิน) ──
   getReceipts: () => request('/receipts'),
   getReceipt: (id) => request(`/receipts/${id}`),

@@ -82,7 +82,7 @@ const STYLE = `
   .grand .gl { font-size:12px; color:#550a19; font-weight:600; letter-spacing:.5px; }
   .grand .gv { font-size:19px; font-weight:800; color:#550a19; }
 
-  /* ── กล่องข้อมูล (เช่น งาน / แบบที่สั่งทำ / อาการ) ── */
+  /* ── กล่องข้อมูล (เช่น สินค้าที่ซ่อม / อาการ) ── */
   .fields { border:1px solid #e6d7dc; border-radius:7px; overflow:hidden; }
   .field { display:flex; padding:9px 13px; border-bottom:1px solid #f1e8eb; }
   .field:last-child { border-bottom:none; }
@@ -90,7 +90,10 @@ const STYLE = `
   .field .fv { flex:1; font-size:12px; font-weight:600; color:#2b2226; }
 
   /* ── ช่องเซ็น ── */
-  .signs { display:flex; gap:50px; margin-top:auto; padding-top:46px; }
+  /* ทุกอย่างใน .bottom-block ยึดท้ายหน้าเป็นก้อนเดียว
+     ใบสั่งซ่อมใส่ตารางรายการ + ยอดรวมเข้ามาด้วย เอกสารอื่นมีแค่ลายเซ็น */
+  .bottom-block { margin-top:auto; }
+  .signs { display:flex; gap:50px; margin-top:46px; }
   .sign { flex:1; text-align:center; }
   .sign-line { border-top:1px dotted #b3a3a9; margin:0 6px; }
   .sign-label { font-size:11px; font-weight:600; color:#5a4f54; margin-top:7px; }
@@ -117,7 +120,7 @@ function totals(rows, grandLabel, grandValue) {
 }
 
 // ── แม่แบบเอกสาร ──
-function renderDoc({ badge, docNo, meta = [], parties, sections = '', signatures }) {
+function renderDoc({ badge, docNo, meta = [], parties, sections = '', sectionsBottom = '', signatures }) {
   const metaHtml = meta.length
     ? `<div class="meta">${meta.map(([l, v]) => `<div><div class="ml">${esc(l)}</div><div class="mv">${esc(v)}</div></div>`).join('')}</div>`
     : '';
@@ -147,7 +150,7 @@ function renderDoc({ badge, docNo, meta = [], parties, sections = '', signatures
       ${metaHtml}
       ${partiesHtml}
       ${sections}
-      ${signHtml}
+      <div class="bottom-block">${sectionsBottom}${signHtml}</div>
       <div class="foot">เอกสารนี้ออกจากระบบ Anakyn Gems · ${esc(COMPANY.name)} · พิมพ์เมื่อ ${new Date().toLocaleString('th-TH')}</div>
     </div></body></html>`;
 }
@@ -335,25 +338,26 @@ function buildServiceOrder(so = {}) {
   const rows = (so.services || []).map((sv, i) =>
     `<tr><td class="c">${i + 1}</td><td class="iname">${esc(sv.name || 'บริการ')}</td>
       <td class="r ${sv.is_warranty ? 'muted' : 'price'}">${sv.is_warranty ? 'ประกัน (ฟรี)' : baht(sv.price)}</td></tr>`).join('');
-  const totalRows = [['ค่างานสั่งทำ', baht(so.base_cost ?? so.total_cost ?? so.estimated_cost)]];
-  const sections = `<div class="sec"><div class="sl">รายละเอียดงานสั่งทำ</div>
+  const totalRows = [['ค่าซ่อม / บริการ', baht(so.base_cost ?? so.total_cost ?? so.estimated_cost)]];
+  const sections = `<div class="sec"><div class="sl">รายละเอียดงานซ่อม</div>
       <div class="fields">
-        <div class="field"><div class="fl">งาน / แบบที่สั่งทำ</div><div class="fv">${esc(so.product_name || '—')}</div></div>
-        ${so.issue_description ? `<div class="field"><div class="fl">รายละเอียด / แบบที่สั่ง</div><div class="fv">${esc(so.issue_description)}</div></div>` : ''}
+        <div class="field"><div class="fl">สินค้าที่ซ่อม</div><div class="fv">${esc(so.product_name || '—')}</div></div>
+        ${so.issue_description ? `<div class="field"><div class="fl">อาการ / ปัญหา</div><div class="fv">${esc(so.issue_description)}</div></div>` : ''}
       </div>
     </div>
-    <div class="sec"><div class="sl">รายการงานสั่งทำ</div>
+    `;
+  const sectionsBottom = `<div class="sec"><div class="sl">รายการซ่อม / บริการ</div>
     ${table(
-      [{ label: '#', align: 'c' }, { label: 'รายการ' }, { label: 'ค่างาน', align: 'r' }],
+      [{ label: '#', align: 'c' }, { label: 'รายการ' }, { label: 'ค่าบริการ', align: 'r' }],
       rows
     )}</div>
     ${totals(totalRows, 'ยอดรวมทั้งสิ้น', baht(so.grand_total ?? so.total_cost ?? so.estimated_cost))}`;
   return renderDoc({
-    badge: 'ใบสั่งทำ', docNo: so.service_no,
+    badge: 'ใบสั่งซ่อม', docNo: so.service_no,
     meta: [['วันที่รับ', dateTH(so.received_at || so.created_at)], ['นัดรับ', so.pickup_date ? dateTH(so.pickup_date) : '—']],
     parties: { seller: SELLER, buyer: { label: 'ลูกค้า', name: so.customer_name, sub: so.customer_phone } },
-    sections,
-    signatures: [{ label: 'ผู้รับงานสั่งทำ' }, { label: 'ลูกค้า' }],
+    sections, sectionsBottom,
+    signatures: [{ label: 'ผู้รับงานซ่อม' }, { label: 'ลูกค้า' }],
   });
 }
 
@@ -397,7 +401,7 @@ function buildSummary(d = {}, periodLabel = '') {
     `<tr><td class="c">${i + 1}</td><td class="iname">${esc(it.name)}</td><td class="isub">${esc(it.sku)}</td>
       <td class="c">${num(it.qty)}</td><td class="r price">${baht(it.amount)}</td></tr>`).join('');
   const pending = [
-    ['PO ค้างอยู่', num(d.pending_po)], ['งานสั่งทำค้าง', num(d.pending_service)], ['ใบเสนอราคาค้าง', num(d.pending_quotation)],
+    ['PO ค้างอยู่', num(d.pending_po)], ['งานซ่อมค้าง', num(d.pending_service)], ['ใบเสนอราคาค้าง', num(d.pending_quotation)],
   ].map(([l, v]) => `<div class="field"><div class="fl">${esc(l)}</div><div class="fv">${v}</div></div>`).join('');
   const sections = `<div class="sec"><div class="sl">ตัวชี้วัดหลัก</div><div class="fields">${kpi}</div></div>
     <div class="sec"><div class="sl">สินค้าขายดี</div>
@@ -674,6 +678,226 @@ function buildTags(items = []) {
     <style>${TAG_STYLE}</style></head><body>${tags}</body></html>`;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ใบสั่งทำ (Work Order) — เอกสารส่งช่าง A4
+// แยกสไตล์ของตัวเองทั้งชุด ไม่ใช้ STYLE ร่วมกับเอกสารอื่น
+// เพราะหน้าตาเป็นคนละแบบ (หนาแน่นแบบใบสั่งผลิตโรงงาน ไม่ใช่เอกสารการเงิน)
+// ═══════════════════════════════════════════════════════════════
+const WO_METAL_COLOR = { yellow: 'ทองคำ', white: 'ทองคำขาว', pink: 'พิ้งค์โกลด์' };
+
+const WO_STYLE = `
+  @page { size: A4; margin: 12mm 11mm; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Sarabun',-apple-system,'Helvetica Neue',Arial,sans-serif;
+         color:#241016; font-size:11px; line-height:1.55;
+         -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .doc { width:100%; max-width:800px; margin:0 auto; min-height:255mm; display:flex; flex-direction:column; }
+
+  .stripe { display:flex; justify-content:space-between; align-items:baseline;
+            font-size:9.5px; color:#8a7078; padding-bottom:9px; border-bottom:1px solid #d6c6ca; }
+  .stripe .mid { font-size:14px; font-weight:700; color:#550a19; letter-spacing:.08em; }
+
+  .head { display:flex; gap:26px; padding:13px 0 12px; border-bottom:2px solid #550a19; }
+  .kv { flex:1; display:grid; grid-template-columns:86px 1fr; gap:3px 8px; align-content:start; }
+  .kv .k { color:#8a7078; font-size:10px; }
+  .kv .v { font-weight:700; font-size:11px; }
+  .kv .v.flag { color:#b3261e; }
+  .brand { width:210px; text-align:right; }
+  .jobcode { font-size:26px; font-weight:300; letter-spacing:.02em; line-height:1; }
+  .wm  { font-size:15px; letter-spacing:.3em; color:#550a19; margin-top:5px; }
+  .wms { font-size:6.5px; letter-spacing:.6em; color:#550a19; margin-top:3px; }
+  .stamp { display:inline-block; margin-top:6px; border:1px solid #d6c6ca; border-radius:3px;
+           padding:3px 8px; font-size:9px; color:#8a7078; }
+
+  .item { border-bottom:1px solid #d6c6ca; padding:13px 0 0; }
+  .itop { display:flex; gap:20px; align-items:flex-start; }
+  .icol1 { width:150px; flex:0 0 150px; }
+  .icol2 { flex:1; min-width:0; }
+  .icol3 { width:152px; flex:0 0 152px; }
+  .ino { font-size:14px; font-weight:700; color:#550a19; }
+  .icode { font-size:11.5px; font-weight:700; margin-left:8px; }
+  .iname { font-size:10.5px; color:#4c383d; margin-top:2px; line-height:1.45; }
+  .spec { display:grid; grid-template-columns:96px 1fr; gap:2px 8px; font-size:10.5px; }
+  .spec .k { color:#8a7078; }
+  .spec .v { font-weight:700; }
+  .money { display:grid; grid-template-columns:1fr auto; gap:2px 10px; font-size:10.5px; }
+  .money .k { color:#8a7078; }
+  .money .v { text-align:right; font-weight:700; }
+  .money .k.lead { color:#241016; }
+  .money .v.lead { color:#550a19; font-weight:700; font-size:12px; }
+
+  .ibody { display:flex; gap:20px; margin-top:10px; }
+  .photo { width:150px; flex:0 0 150px; height:112px; border:1px dashed #d6c6ca; border-radius:3px;
+           display:flex; align-items:center; justify-content:center; overflow:hidden;
+           color:#bda8ae; font-size:9.5px; text-align:center; }
+  .photo img { width:100%; height:100%; object-fit:cover; display:block; }
+  .irest { flex:1; min-width:0; }
+  .note { display:flex; gap:8px; font-size:10.5px; }
+  .note .k { width:62px; flex:0 0 62px; color:#8a7078; }
+  .note .v { flex:1; color:#b3261e; line-height:1.7; }
+
+  .stones { display:flex; gap:8px; margin-top:10px; font-size:10.5px; }
+  .stones .k { width:62px; flex:0 0 62px; color:#8a7078; }
+  table.st { width:100%; border-collapse:collapse; }
+  table.st th { text-align:left; font-weight:400; font-size:8.5px; letter-spacing:.1em; color:#8a7078;
+                text-transform:uppercase; padding:0 8px 3px 0; border-bottom:1px solid #ece1e3; }
+  table.st th.n, table.st td.n { text-align:right; width:74px; }
+  table.st td { padding:3px 8px 3px 0; border-bottom:1px solid #ece1e3; font-size:10.5px; }
+  table.st tr:last-child td { border-bottom:0; }
+
+  .isum { display:flex; flex-wrap:wrap; gap:4px 18px; justify-content:space-between;
+          margin-top:9px; padding:6px 9px; background:#fdf2f4; font-size:10px; color:#8a7078; }
+  .isum b { color:#241016; }
+  .isum .pure b { color:#550a19; }
+
+  .grand { margin-top:14px; border:2px solid #550a19; }
+  .grow { display:flex; flex-wrap:wrap; gap:2px 22px; padding:9px 12px; font-size:10.5px; color:#8a7078; }
+  .grow + .grow { border-top:1px solid #ece1e3; }
+  .grow b { color:#241016; }
+  .grow.key { background:#fdf2f4; }
+  .grow.key b { color:#550a19; }
+
+  .bottom-block { margin-top:auto; }
+  .signs { display:flex; gap:44px; margin-top:46px; }
+  .sign { flex:1; text-align:center; }
+  .sline { border-top:1px dotted #b3a3a9; margin:0 6px; }
+  .slabel { font-size:10px; font-weight:700; color:#5a4f54; margin-top:6px; }
+  .ssub { font-size:8.5px; color:#b3a3a9; margin-top:3px; }
+  .foot { margin-top:20px; padding-top:10px; border-top:1px solid #ece1e3;
+          text-align:center; font-size:8.5px; color:#b3a3a9; }
+`;
+
+// เพชร 1 กะรัต = 0.2 กรัม — ใช้เลขเดียวกับฝั่ง backend
+const woStoneG = (st) => num(st.carat) * 0.2;
+
+function woItemBlock(it, idx) {
+  const t = it.totals || {};
+  const qty = num(it.qty) || 1;
+  const stones = Array.isArray(it.stones) ? it.stones
+    : (typeof it.stones === 'string' ? (() => { try { return JSON.parse(it.stones); } catch (_) { return []; } })() : []);
+
+  const stoneRows = stones.length
+    ? stones.map((st) => {
+        const desc = [st.shape, st.size_mm ? `${st.size_mm} มม.` : '', st.color, st.clarity,
+                      st.cert_no ? `IGI ${st.cert_no}` : ''].filter(Boolean).join(' · ') || (st.desc || '—');
+        return `<tr><td>${esc(desc)}</td><td class="n">${esc(st.qty || 1)} เม็ด</td>
+          <td class="n">${num(st.carat).toFixed(2)} ct</td><td class="n">${woStoneG(st).toFixed(3)}</td></tr>`;
+      }).join('')
+    : '<tr><td colspan="4" style="color:#b3a3a9">— ไม่มีเพชร —</td></tr>';
+
+  const metal = [it.metal_type || '', WO_METAL_COLOR[it.metal_color] || ''].filter(Boolean).join(' ');
+
+  return `<div class="item">
+    <div class="itop">
+      <div class="icol1">
+        <div><span class="ino">${idx + 1}</span><span class="icode">${esc(it.design_code || '—')}</span></div>
+        <div class="iname">${esc(it.name || 'งานสั่งทำ')}${metal ? `<br/>${esc(metal)}` : ''}</div>
+      </div>
+      <div class="icol2">
+        <div class="spec">
+          <div class="k">น้ำหนัก / ชิ้น</div><div class="v">${num(it.unit_weight_g).toFixed(2)} กรัม</div>
+          <div class="k">จำนวนสั่งทำ</div><div class="v">${qty} ชิ้น</div>
+          <div class="k">เผื่อสูญเสีย</div><div class="v">${num(it.loss_pct)} %</div>
+          <div class="k">ไซซ์</div><div class="v">${esc(it.ring_size || '—')}</div>
+        </div>
+      </div>
+      <div class="icol3">
+        <div class="money">
+          <div class="k">ค่าแรง / ชิ้น</div><div class="v">${num(it.labor_cost).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</div>
+          <div class="k">ค่าชุบ / ชิ้น</div><div class="v">${num(it.plating_cost).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</div>
+          <div class="k lead">รวมรายการนี้</div><div class="v lead">${num(t.labor_total).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ibody">
+      <div class="photo">${it.photo_url ? `<img src="${esc(it.photo_url)}" alt="" />` : 'รูปแบบ / สเก็ตช์'}</div>
+      <div class="irest">
+        <div class="note"><div class="k">หมายเหตุช่าง</div>
+          <div class="v">${it.note ? esc(it.note).replace(/\n/g, '<br/>') : '—'}</div></div>
+        <div class="stones"><div class="k">เพชร</div>
+          <table class="st">
+            <thead><tr><th>รายละเอียด</th><th class="n">จำนวน</th><th class="n">กะรัตรวม</th><th class="n">กรัม</th></tr></thead>
+            <tbody>${stoneRows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="isum">
+      <span>น้ำหนักรวม <b>${num(t.weight_g).toFixed(2)} ก.</b></span>
+      <span>เพชร <b>${num(t.stone_g).toFixed(2)} ก.</b></span>
+      <span>โลหะ <b>${num(t.metal_g).toFixed(2)} ก.</b></span>
+      <span class="pure">เทียบทองแท้ 100% <b>${num(t.pure_gold_g).toFixed(2)} ก.</b></span>
+    </div>
+  </div>`;
+}
+
+function buildWorkOrder(wo = {}) {
+  const items = Array.isArray(wo.items) ? wo.items : [];
+  const seq = String(wo.work_no || '').split('-').pop() || '';
+
+  const body = `<div class="doc">
+    <div class="stripe">
+      <div>${esc(COMPANY.name)}</div>
+      <div class="mid">ใบสั่งทำ · WORK ORDER</div>
+      <div>พิมพ์เมื่อ ${new Date().toLocaleDateString('th-TH')}</div>
+    </div>
+
+    <div class="head">
+      <div class="kv">
+        <div class="k">เลขที่ใบสั่งทำ</div><div class="v">${esc(wo.work_no || '—')}</div>
+        <div class="k">อ้างอิงใบเสนอราคา</div><div class="v">${esc(wo.quotation_ref || '—')}</div>
+        <div class="k">วันที่สั่ง</div><div class="v">${dateTH(wo.ordered_at || wo.created_at)}</div>
+        <div class="k">กำหนดส่ง</div><div class="v">${wo.due_date ? dateTH(wo.due_date) : '—'}</div>
+      </div>
+      <div class="kv">
+        <div class="k">ช่าง / โรงงาน</div><div class="v">${esc(wo.workshop || '—')}</div>
+        <div class="k">ลูกค้า</div><div class="v">${esc(wo.customer_name || '—')}</div>
+        <div class="k">ผู้สั่งทำ</div><div class="v">${esc(wo.ordered_by || '—')}</div>
+        <div class="k">หมายเหตุงาน</div><div class="v${wo.is_urgent ? ' flag' : ''}">${esc(wo.job_note || (wo.is_urgent ? 'งานเร่ง' : '—'))}</div>
+      </div>
+      <div class="brand">
+        <div class="jobcode">${esc(seq)}</div>
+        <div class="wm">ANAKYN</div>
+        <div class="wms">GEMS</div>
+        <div class="stamp">ติดตรา ANAKYN ทุกชิ้น</div>
+      </div>
+    </div>
+
+    ${items.map(woItemBlock).join('')}
+
+    <div class="grand">
+      <div class="grow">
+        <span>น้ำหนักรวมทั้งใบ <b>${num(wo.total_weight_g).toFixed(2)} กรัม</b></span>
+        <span>รวมน้ำหนักเพชร <b>${num(wo.total_stone_g).toFixed(2)} กรัม</b></span>
+        <span>รวมน้ำหนักโลหะ <b>${num(wo.total_metal_g).toFixed(2)} กรัม</b></span>
+      </div>
+      <div class="grow key">
+        <span>รวมจำนวนสั่งทำ <b>${num(wo.total_qty)} หน่วย</b></span>
+        <span>รวมค่าแรง + ชุบ <b>${baht(wo.total_labor_cost)}</b></span>
+        <span style="margin-left:auto">รวมเทียบทองแท้ 100% <b>${num(wo.total_pure_gold_g).toFixed(2)} กรัม</b></span>
+      </div>
+    </div>
+
+    <div class="bottom-block">
+      <div class="signs">
+        <div class="sign"><div class="sline"></div><div class="slabel">ผู้สั่งทำ · Anakyn Gems</div>
+          <div class="ssub">วันที่ ......./......./.......</div></div>
+        <div class="sign"><div class="sline"></div><div class="slabel">ผู้รับงาน · ช่าง</div>
+          <div class="ssub">รับทองและเพชรครบตามรายการ</div></div>
+        <div class="sign"><div class="sline"></div><div class="slabel">ตรวจน้ำหนักและจำนวน</div>
+          <div class="ssub">วันที่ ......./......./.......</div></div>
+      </div>
+      <div class="foot">เอกสารนี้ออกจากระบบ Anakyn Gems · ${esc(COMPANY.name)} · ${esc(COMPANY.addr)}</div>
+    </div>
+  </div>`;
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>${WO_STYLE}</style></head><body>${body}</body></html>`;
+}
+
 // ── ข้อมูลป้าย: ใช้ร่วมกับ "ตัวอย่างป้ายสินค้า" บนหน้าจอ (TagPreview.jsx) ──
 //    ตัวอย่างบนจอกับป้ายที่พิมพ์จริงจึงอ่านค่าจากที่เดียวกันเสมอ
 export const TAG_SPEC = {
@@ -707,3 +931,5 @@ export const saveServiceOrder = (o) => savePdf(buildServiceOrder(o));
 export const printReceipt = (o) => printHtml(buildReceipt(o));
 export const saveReceipt = (o) => savePdf(buildReceipt(o));
 export const printSummary = (d, label) => printHtml(buildSummary(d, label));
+export const printWorkOrder = (wo) => printHtml(buildWorkOrder(wo));
+export const saveWorkOrder = (wo) => savePdf(buildWorkOrder(wo));
