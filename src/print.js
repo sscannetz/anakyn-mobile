@@ -31,7 +31,7 @@ const STYLE = `
   /* สูงอย่างน้อยเกือบเต็มหน้า A4 (269mm − ขอบล่างกันไว้) + เป็น flex column
      → .signs ใช้ margin-top:auto ดันตัวเองกับ .foot ลงไปอยู่ท้ายหน้าเสมอ
      เอกสารที่มีไม่กี่รายการจะได้ไม่ลอยค้างกลางหน้า */
-  .doc { width:100%; max-width:780px; margin:0 auto; min-height:252mm; display:flex; flex-direction:column; }
+  .doc { width:100%; max-width:780px; margin:0 auto; min-height:265mm; display:flex; flex-direction:column; }
 
   /* ── หัวเอกสาร ── */
   .hd { display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:14px; border-bottom:2.5px solid #550a19; }
@@ -264,16 +264,17 @@ function buildInvoice(inv = {}) {
     ${table(
       [{ label: '#', align: 'c' }, { label: 'รายการ' }, { label: 'จำนวน', align: 'c' }, { label: 'ราคา/หน่วย', align: 'r' }, { label: 'จำนวนเงิน', align: 'r' }],
       rows
-    )}</div>
-    ${totals(
-      [['รวมค่าสินค้า', baht(inv.subtotal ?? inv.grand_total)]],
-      'ยอดรวมทั้งสิ้น', baht(inv.grand_total)
-    )}`;
+    )}</div>`;
+  // ยอดรวมเกาะท้ายกระดาษพร้อมลายเซ็น เหมือนใบสั่งซ่อม
+  const sectionsBottom = totals(
+    [['รวมค่าสินค้า', baht(inv.subtotal ?? inv.grand_total)]],
+    'ยอดรวมทั้งสิ้น', baht(inv.grand_total)
+  );
   return renderDoc({
     badge: 'ใบกำกับภาษี', docNo: inv.invoice_no,
     meta: [['วันที่', dateTH(inv.issued_at)], ['อ้างอิงการขาย', inv.sale_no || '—']],
     parties: { seller: SELLER, buyer: { label: 'ลูกค้า / ผู้ซื้อ', name: inv.customer_name, sub: inv.customer_phone } },
-    sections,
+    sections, sectionsBottom,
     signatures: [{ label: 'ผู้รับสินค้า' }, { label: 'ผู้มีอำนาจลงนาม' }],
   });
 }
@@ -290,8 +291,8 @@ function buildQuotation(qt = {}) {
     ${table(
       [{ label: '#', align: 'c' }, { label: 'รายการ' }, { label: 'จำนวน', align: 'c' }, { label: 'ราคา/หน่วย', align: 'r' }, { label: 'จำนวนเงิน', align: 'r' }],
       rows
-    )}</div>
-    ${totals(
+    )}</div>`;
+  const sectionsBottom = `${totals(
       [['รวมค่าสินค้า', baht(qt.subtotal ?? qt.grand_total)]],
       'ยอดรวมทั้งสิ้น', baht(qt.grand_total)
     )}
@@ -300,7 +301,7 @@ function buildQuotation(qt = {}) {
     badge: 'ใบเสนอราคา', docNo: qt.quote_no || qt.quotation_no,
     meta: [['วันที่', dateTH(qt.created_at || qt.issued_at)], ['ยืนราคาถึง', qt.valid_until ? dateTH(qt.valid_until) : '—']],
     parties: { seller: { ...SELLER, label: 'ผู้เสนอราคา' }, buyer: { label: 'ลูกค้า', name: qt.customer_name, sub: qt.phone } },
-    sections,
+    sections, sectionsBottom,
     signatures: [{ label: 'ผู้เสนอราคา' }, { label: 'ผู้อนุมัติ / ลูกค้า' }],
   });
 }
@@ -319,8 +320,8 @@ function buildPO(po = {}) {
     ${table(
       [{ label: '#', align: 'c' }, { label: 'รายการ' }, { label: 'จำนวน', align: 'c' }, { label: 'ราคา/หน่วย', align: 'r' }, { label: 'จำนวนเงิน', align: 'r' }],
       rows
-    )}</div>
-    ${totals(
+    )}</div>`;
+  const sectionsBottom = `${totals(
       [['รวมค่าสินค้า', baht(po.subtotal ?? po.total)]],
       'ยอดรวมทั้งสิ้น', baht(po.total)
     )}
@@ -329,36 +330,104 @@ function buildPO(po = {}) {
     badge: 'ใบสั่งซื้อ', docNo: po.po_no,
     meta: [['วันที่', dateTH(po.created_at)], ['ต้องการภายใน', po.needed_by ? dateTH(po.needed_by) : '—']],
     parties: { seller: { label: 'ผู้ขาย (ซัพพลายเออร์)', name: po.supplier_name, sub: po.phone }, buyer: { ...SELLER, label: 'ผู้สั่งซื้อ' } },
-    sections,
+    sections, sectionsBottom,
     signatures: [{ label: 'ผู้สั่งซื้อ' }, { label: 'ผู้อนุมัติ' }],
   });
 }
 
-function buildServiceOrder(so = {}) {
-  const rows = (so.services || []).map((sv, i) =>
-    `<tr><td class="c">${i + 1}</td><td class="iname">${esc(sv.name || 'บริการ')}</td>
-      <td class="r ${sv.is_warranty ? 'muted' : 'price'}">${sv.is_warranty ? 'ประกัน (ฟรี)' : baht(sv.price)}</td></tr>`).join('');
-  const totalRows = [['ค่าซ่อม / บริการ', baht(so.base_cost ?? so.total_cost ?? so.estimated_cost)]];
-  const sections = `<div class="sec"><div class="sl">รายละเอียดงานซ่อม</div>
-      <div class="fields">
-        <div class="field"><div class="fl">สินค้าที่ซ่อม</div><div class="fv">${esc(so.product_name || '—')}</div></div>
-        ${so.issue_description ? `<div class="field"><div class="fl">อาการ / ปัญหา</div><div class="fv">${esc(so.issue_description)}</div></div>` : ''}
+// ── ใบสั่งซ่อม — ใช้หน้าตาชุดเดียวกับใบสั่งทำ (ตาราง + รูป 4 รูป + จัดกลุ่มตามลูกค้า) ──
+// ตัวช่วย woPics / groupByCustomer / WO_STYLE อยู่ในบล็อกใบสั่งทำท้ายไฟล์
+// เรียกข้ามได้เพราะตอนถูกเรียกใช้จริง โมดูลโหลดครบแล้ว
+function soDetail(so = {}) {
+  const title = [esc(so.job_type || 'งานซ่อม'),
+    num(so.job_qty) > 1 ? `${esc(so.job_qty)} ชิ้น` : ''].filter(Boolean).join(' · ');
+  return `<div class="dl">
+    <div class="d0">${title}</div>
+    ${so.repair_detail ? `<div class="d1">${esc(so.repair_detail)}</div>` : ''}
+    ${so.note ? `<div class="d3">${esc(so.note)}</div>` : ''}
+  </div>`;
+}
+
+function soPage(orders) {
+  const list = Array.isArray(orders) ? orders : [orders];
+  const blank = list.length === 1 && list[0].blank;
+  const head = list[0] || {};
+
+  const rows = blank
+    ? [1, 2, 3, 4].map((i) => `<tr>
+        <td class="no">${i}</td><td class="pic">${woPics({}, true)}</td>
+        <td class="code">&nbsp;</td><td style="height:64px"></td><td class="amt">&nbsp;</td>
+      </tr>`)
+    : list.map((so, i) => `<tr>
+        <td class="no">${i + 1}</td>
+        <td class="pic">${woPics(so, false)}</td>
+        <td class="code">${esc(so.service_no || '—')}</td>
+        <td>${soDetail(so)}</td>
+        <td class="amt">${num(so.price) ? money(so.price) : '—'}</td>
+      </tr>`);
+
+  const price = list.reduce((sum, o) => sum + num(o.price), 0);
+  const deposit = list.reduce((sum, o) => sum + num(o.deposit), 0);
+
+  return `<div class="doc">
+    <div class="stripe">
+      <div>${esc(COMPANY.name)}</div>
+      <div class="mid">ใบสั่งซ่อม · SERVICE ORDER</div>
+      <div>${esc(COMPANY.addr).slice(0, 40)}</div>
+    </div>
+
+    <div class="head">
+      <div class="kv">
+        <div class="k">ลูกค้า</div><div class="v ${blank || !head.customer_name ? 'blank' : ''}">${blank || !head.customer_name ? '&nbsp;' : esc(head.customer_name)}</div>
+        <div class="k">เบอร์โทร</div><div class="v ${blank || !head.customer_phone ? 'blank' : ''}">${blank || !head.customer_phone ? '&nbsp;' : esc(head.customer_phone)}</div>
+        <div class="k">วันที่รับงาน</div><div class="v">${blank || !head.received_at ? DOTS : woDate(head.received_at)}</div>
+        <div class="k">วันที่ส่งงาน</div><div class="v">${blank || !head.due_date ? DOTS : woDate(head.due_date)}</div>
+      </div>
+      <div class="brand">
+        <img class="brandlogo" src="${LOGO_URI}" alt="ANAKYN GEMS" />
+        <div class="stamp">${blank ? 'ใบเปล่า — กรอกด้วยมือ' : `${list.length} งาน`}</div>
       </div>
     </div>
-    `;
-  const sectionsBottom = `<div class="sec"><div class="sl">รายการซ่อม / บริการ</div>
-    ${table(
-      [{ label: '#', align: 'c' }, { label: 'รายการ' }, { label: 'ค่าบริการ', align: 'r' }],
-      rows
-    )}</div>
-    ${totals(totalRows, 'ยอดรวมทั้งสิ้น', baht(so.grand_total ?? so.total_cost ?? so.estimated_cost))}`;
-  return renderDoc({
-    badge: 'ใบสั่งซ่อม', docNo: so.service_no,
-    meta: [['วันที่รับ', dateTH(so.received_at || so.created_at)], ['นัดรับ', so.pickup_date ? dateTH(so.pickup_date) : '—']],
-    parties: { seller: SELLER, buyer: { label: 'ลูกค้า', name: so.customer_name, sub: so.customer_phone } },
-    sections, sectionsBottom,
-    signatures: [{ label: 'ผู้รับงานซ่อม' }, { label: 'ลูกค้า' }],
-  });
+
+    <table class="jobs">
+      <thead><tr>
+        <th class="c">No.</th><th>รูป</th><th>รหัสงานซ่อม</th><th>รายละเอียด</th><th class="r">ราคา (บาท)</th>
+      </tr></thead>
+      <tbody>${rows.join('')}</tbody>
+    </table>
+
+    <div class="bottom-block">
+      <div class="sum"><div class="sumtbl">
+        <div class="sumrow total"><div class="lbl">ราคา</div>
+          <div class="val">${blank ? '&nbsp;' : money(price)}</div></div>
+        <div class="sumrow paid"><div class="lbl">มัดจำ</div>
+          <div class="val">${blank ? '&nbsp;' : money(deposit)}</div></div>
+        <div class="sumrow bal"><div class="lbl">รวม</div>
+          <div class="val">${blank ? '&nbsp;' : money(Math.max(0, price - deposit))}</div></div>
+      </div></div>
+
+      <div class="signs">
+        <div class="sign"><div class="gap"></div><div class="sline"></div>
+          <div class="slabel">${blank || !head.customer_name ? 'ลูกค้า' : esc(head.customer_name)}</div>
+          <div class="ssub">วันที่ ${DOTS}</div></div>
+        <div class="sign"><div class="gap"></div><div class="sline"></div>
+          <div class="slabel">${blank || !head.received_by ? 'ผู้รับออเดอร์' : esc(head.received_by)}</div>
+          <div class="ssub">วันที่ ${DOTS}</div></div>
+      </div>
+
+      <div class="foot">ใบสั่งซ่อม · ${esc(COMPANY.name)} · เอกสารฉบับนี้ใช้ประกอบการรับงานและส่งมอบงานเท่านั้น</div>
+    </div>
+  </div>`;
+}
+
+function buildServiceOrder(input) {
+  const list = Array.isArray(input) ? input : [input || {}];
+  const pages = list.length === 1 && list[0].blank
+    ? [soPage(list[0])]
+    : groupByCustomer(list).map(soPage);
+  return `<!DOCTYPE html><html><head><meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>${WO_STYLE}</style></head><body>${pages.join('')}</body></html>`;
 }
 
 const PAY_LABELS = { cash: 'เงินสด', transfer: 'โอนเงิน', card: 'บัตรเครดิต', other: 'อื่นๆ' };
@@ -377,8 +446,8 @@ function buildReceipt(rc = {}) {
     ${table(
       [{ label: '#', align: 'c' }, { label: 'รายการ' }, { label: 'จำนวน', align: 'c' }, { label: 'ราคา/หน่วย', align: 'r' }, { label: 'จำนวนเงิน', align: 'r' }],
       rows
-    )}</div>
-    ${totals(
+    )}</div>`;
+  const sectionsBottom = `${totals(
       [['ชำระโดย', PAY_LABELS[rc.payment_method] || rc.payment_method || '—']],
       'จำนวนเงินที่รับ', baht(amount)
     )}
@@ -387,7 +456,7 @@ function buildReceipt(rc = {}) {
     badge: 'ใบเสร็จรับเงิน', docNo: rc.receipt_no,
     meta: [['วันที่', dateTH(rc.issued_at)], ['อ้างอิงการขาย', rc.sale_no || '—']],
     parties: { seller: { ...SELLER, label: 'ผู้รับเงิน' }, buyer: { label: 'ผู้ชำระเงิน', name: rc.customer_name, sub: rc.phone } },
-    sections,
+    sections, sectionsBottom,
     signatures: [{ label: 'ผู้รับเงิน' }, { label: 'ผู้ชำระเงิน' }],
   });
 }
@@ -459,6 +528,16 @@ const TAG_COL  = +(TAG_PNL_A - TAG_PAD_X * 2 - TAG_QR - 0.8).toFixed(2); // ค�
 const TAG_RCOL = +(TAG_PNL_B - TAG_PAD_X * 2).toFixed(2);                // ความกว้างแผงสเปก
 const TAG_RH = TAG_BODY_H - 1.4;  // ความสูงใช้งานของแผง (หัก padding บน-ล่าง)
 const TAG_FOLD_LINE = false;      // เส้นประช่วยพับ — ปิดไว้ (ตั้ง true ถ้าอยากให้แสดงอีกครั้ง)
+// ── เครื่องหมาย "มีใบเซอร์" ต่อท้ายชื่อสินค้า ────────────────
+// ใช้ \u25CF (●) วงกลมทึบแบบตัวอักษร ไม่ใช่ emoji \u26AB (⚫)
+// เพราะ emoji เป็นฟอนต์สี เครื่องพิมพ์ความร้อนขาวดำแปลงแล้วขอบแตก
+// และ emoji ไม่เคารพขนาด/น้ำหนักฟอนต์ เลย์เอาต์ที่คำนวณไว้จะเพี้ยน
+// ● เป็นตัวอักษรปกติ คมทุกขนาด ทุกฟอนต์ ทั้งเว็บ PDF และเครื่องพิมพ์
+export const CERT_MARK  = '\u25CF';
+// ● ตัวเต็มกินพื้นที่กว้างกว่า * หรือ • มาก จึงย่อลงไม่ให้ข่มชื่อสินค้า
+export const CERT_SCALE = 0.85;
+const TAG_DGAP = 0.5;             // ช่องไฟระหว่าง 2 คอลัมน์ของรายการเพชร (มม.)
+const TAG_D_2COL_MIN = 4;         // เพชรกี่ช่องขึ้นไปถึงจะแตกเป็น 2 คอลัมน์
 
 const TAG_STYLE = `
   @page { size: ${TAG_PAGE_W}mm ${TAG_H}mm; margin: 0; }
@@ -500,8 +579,9 @@ const TAG_STYLE = `
   .nm    { font-weight:700; line-height:1.18; overflow:hidden; word-break:break-word;
            display:-webkit-box; -webkit-box-orient:vertical; }
   .pr    { font-weight:800; line-height:1.2; white-space:nowrap; overflow:hidden; }
-  /* "มีใบเซอร์" — อยู่กลางคอลัมน์ ระหว่างชื่อสินค้ากับราคา (space-between จัดให้เอง) */
-  .ct    { font-weight:700; line-height:1.25; white-space:nowrap; overflow:hidden; }
+  /* วงกลมทึบหลังชื่อ = สินค้ามีใบเซอร์ (เดิมเป็นคำว่า "มีใบเซอร์" บรรทัดแยก กินที่ 2.3 มม.)
+     ขนาดคุมด้วย CERT_SCALE · อยู่กลางบรรทัดเองไม่ต้องขยับแนวตั้ง */
+  .cs    { font-size:${CERT_SCALE}em; }
 
   /* ── หน้าสเปก: ANAKYN#xxxx / WG / D: ... (ขนาดฟอนต์คำนวณต่อใบใน buildTags) ── */
   .pnl.b { display:flex; flex-direction:column; justify-content:flex-start; }
@@ -509,6 +589,10 @@ const TAG_STYLE = `
            white-space:nowrap; overflow:hidden; }
   .sp    { line-height:1.32; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
            font-variant-numeric:tabular-nums; }
+  /* เพชร 4 ช่องขึ้นไป = 2 คอลัมน์ ไล่ซ้ายไปขวาแล้วขึ้นแถวใหม่
+     1-3 ช่องยังเป็นคอลัมน์เดียวเหมือนเดิม (.sp ล้วน ๆ) */
+  .dgrid { display:flex; flex-wrap:wrap; column-gap:${TAG_DGAP}mm; }
+  .dgrid > .sp { flex:0 0 auto; }
 
   @media print { .tag { page-break-inside:avoid; break-inside:avoid; } }
 `;
@@ -600,7 +684,8 @@ function tagHasCert(p) {
   return Array.isArray(ds) && ds.some(d => d && d.hasCert);
 }
 
-// ["D: 1/1.00ct (RD)", "D: 10/0.20ct (RD)", ...] — 1 บรรทัดต่อเพชร 1 กลุ่ม
+// ["1/1.00ct (RD)", "10/0.20ct (RD)", ...] — 1 รายการต่อเพชร 1 กลุ่ม
+// ไม่ใส่ "D: " มาให้ เพราะโหมด 2 คอลัมน์ใส่แค่ช่องแรกช่องเดียว (ที่แคบ ใส่ทุกช่องไม่พอ)
 // จำนวน / น้ำหนักรวมของกลุ่มนั้น (weight ในฐานข้อมูลเป็นน้ำหนักต่อเม็ด จึงคูณด้วยจำนวน)
 function tagDiamondLines(p) {
   let ds = p.diamonds;
@@ -612,8 +697,76 @@ function tagDiamondLines(p) {
       const q = num(d.qty) || 1;
       const ct = num(d.weight) * q;
       const sc = shapeCode(d.shape);
-      return `D: ${q}/${ct.toFixed(2)}ct${sc ? ` (${sc})` : ''}`;
+      return `${q}/${ct.toFixed(2)}ct${sc ? ` (${sc})` : ''}`;
     });
+}
+
+// ── ช่องรายการเพชรสำหรับแสดงผล — ใช้ร่วมกันทั้งหน้าพิมพ์และตัวอย่างบนจอ ──
+// 1-3 ช่อง = คอลัมน์เดียว ใส่ "D: " ทุกบรรทัด
+// 4+  ช่อง = 2 คอลัมน์ ใส่ "D: " แค่ช่องแรก (ช่องกว้างแค่ ~11 มม. ใส่ทุกช่องแล้วฟอนต์เล็กจนอ่านไม่ออก)
+// ★ กฎนี้ต้องอยู่ที่เดียว ไม่งั้นตัวอย่างบนจอกับของที่พิมพ์จริงจะไม่ตรงกัน
+export function tagDiamondCells(p) {
+  const raw = tagDiamondLines(p);
+  const twoCol = raw.length >= TAG_D_2COL_MIN;
+  return {
+    twoCol,
+    cells: raw.map((d, i) => (twoCol ? (i === 0 ? 'D: ' : '') : 'D: ') + d),
+  };
+}
+
+// ── คำนวณ "ขนาดตัวอักษร + ช่องที่แสดงได้" ของป้าย 1 ใบ ─────────────
+// ★ เจ้าของสูตรตัวจริง — ทั้งหน้าพิมพ์ (buildTags) และตัวอย่างบนจอ (TagPreview)
+//   ต้องเรียกตัวนี้ ห้ามคำนวณเอง ไม่งั้นบนจอกับที่พิมพ์ออกมาจะไม่ตรงกัน
+//   (เคยพลาดมาแล้ว: บนจอใช้ฟอนต์ตายตัวเลยล้นขอบ ส่วนหน้าพิมพ์ย่อฟอนต์ให้พอดี)
+// ทุกค่าที่คืนมีหน่วยเป็นมิลลิเมตร
+export function tagLayout(p = {}) {
+  // ฝั่งซ้าย: ชื่อ (ชิดบน) + ราคา (ชิดล่าง) ในคอลัมน์สูงเท่า QR
+  const prTxt = baht(p.sale_price);
+  const prFs  = fitFs(prTxt, TAG_COL, 2.3, 1.35);
+
+  // มีใบเซอร์ = วงกลมทึบต่อท้ายชื่อ (เดิมเป็นคำว่า "มีใบเซอร์" บรรทัดแยก กินความสูง 2.3 มม.)
+  const hasCert = tagHasCert(p);
+  const nmTxt   = String(p.name || '-');
+  // วัดเผื่อด้วยเครื่องหมาย 2 ตัว เพื่อกันพลาด (ของจริงแสดงตัวเดียว)
+  const nmMeas  = hasCert ? nmTxt + ' ' + CERT_MARK + CERT_MARK : nmTxt;
+  const nmH     = Math.max(1.6, TAG_QR - (prFs * 1.2 + 0.4));
+  const nm      = fitWrapped(nmMeas, TAG_COL, nmH, 1.75, 1.05, 5);
+
+  // ฝั่งขวา: ANAKYN#xxxx / WG / รายการเพชร
+  const { cells: dCells, twoCol } = tagDiamondCells(p);
+  const cellW  = twoCol ? (TAG_RCOL - TAG_DGAP) / 2 : TAG_RCOL;
+  const wgTxt  = tagWgLine(p);
+  const wgEm   = textEm(wgTxt);
+  const cellEm = dCells.length ? Math.max(...dCells.map(textEm)) : 0;
+  const rowsNeeded = twoCol ? Math.ceil(dCells.length / 2) : dCells.length;
+
+  // ย่อฟอนต์ลงเรื่อย ๆ จนทั้ง "ความสูงรวม" และ "ความกว้างช่องที่ยาวที่สุด" ผ่านทั้งคู่
+  let spFs = 1.7, cdFs = 2.2;
+  for (; spFs >= 1.0; spFs -= 0.05) {
+    cdFs = Math.min(2.4, spFs + 0.55);
+    const fitsH = cdFs * 1.2 + 0.3 + (1 + rowsNeeded) * spFs * 1.32 <= TAG_RH;
+    const fitsW = cellEm * spFs <= cellW * 0.94 && wgEm * spFs <= TAG_RCOL * 0.94;
+    if (fitsH && fitsW) break;
+  }
+  cdFs = Math.min(cdFs, fitFs(p.sku || '', TAG_RCOL, cdFs, 1.4));
+
+  // ใส่ได้กี่แถว (แถวแรกเป็น WG เสมอ) — เกินกว่านี้ต้องยุบ
+  const rowCap  = Math.max(1, Math.floor((TAG_RH - cdFs * 1.2 - 0.3) / (spFs * 1.32)));
+  const dRowCap = Math.max(0, rowCap - 1);
+  const cellCap = twoCol ? dRowCap * 2 : dRowCap;
+
+  // ★ ใส่ไม่หมด → ช่องสุดท้ายที่เห็นเป็น "+N" ไม่ตัดทิ้งเงียบ ๆ
+  const cells = dCells.slice(0, cellCap);
+  if (dCells.length > cellCap && cellCap > 0) {
+    cells[cellCap - 1] = `+${dCells.length - cellCap + 1}`;
+  }
+
+  return {
+    nmTxt, hasCert, nmFs: nm.fs, nmLines: nm.lines,   // ชื่อ + เครื่องหมายใบเซอร์
+    prTxt, prFs: +prFs.toFixed(2),                     // ราคา
+    wgTxt, cells, twoCol, cellW,                       // ฝั่งขวา
+    spFs: +spFs.toFixed(2), cdFs: +cdFs.toFixed(2),
+  };
 }
 
 function buildTags(items = []) {
@@ -628,45 +781,27 @@ function buildTags(items = []) {
     // QR ชี้ไปหน้า "บันทึกการขาย" พร้อมสินค้าชิ้นนี้ — สแกนแล้วขายได้เลย
     const qr = qrSvg(p.qr || tagSaleUrl(p.sku), { margin: 1, cls: 'qr' });
 
-    // ── ฝั่งซ้าย: ชื่อสินค้า (ชิดบน) + ราคา (ชิดล่าง) ในคอลัมน์สูงเท่า QR ──
-    const prTxt = baht(p.sale_price);
-    const prFs  = fitFs(prTxt, TAG_COL, 2.3, 1.35);
-
-    // "มีใบเซอร์" แทรกกลางคอลัมน์ — กินความสูงไปจากโควตาของชื่อสินค้า
-    const hasCert = tagHasCert(p);
-    const ctTxt   = 'มีใบเซอร์';
-    const ctFs    = hasCert ? fitFs(ctTxt, TAG_COL, 1.6, 1.05) : 0;
-    const ctH     = hasCert ? ctFs * 1.25 + 0.3 : 0;
-
-    // ยาวได้ถึง 4 บรรทัด — เกินกว่านั้นค่อยย่อฟอนต์ลง (ไม่ตัดท้ายด้วย …)
-    const nmH   = Math.max(1.6, TAG_QR - (prFs * 1.2 + 0.4) - ctH);
-    const nm    = fitWrapped(p.name || '-', TAG_COL, nmH, 1.75, 1.05, 4);
-
-    // ── ฝั่งขวา: ANAKYN#xxxx / WG: ... / D: ... ──
-    // ย่อฟอนต์ลงเรื่อย ๆ จนทุกบรรทัดใส่ในความสูงที่มี แล้วค่อยหยุด
-    const specs = [tagWgLine(p), ...tagDiamondLines(p)];
-    let spFs = 1.7, cdFs = 2.2;
-    for (; spFs >= 1.0; spFs -= 0.05) {
-      cdFs = Math.min(2.4, spFs + 0.55);
-      if (cdFs * 1.2 + 0.3 + specs.length * spFs * 1.32 <= TAG_RH) break;
-    }
-    cdFs = Math.min(cdFs, fitFs(p.sku || '', TAG_RCOL, cdFs, 1.4));
-    // ถ้าเพชรเยอะจนใส่ไม่หมดจริง ๆ ตัดเฉพาะเท่าที่พอดี (กันล้นกรอบ)
-    const maxLines = Math.max(1, Math.floor((TAG_RH - cdFs * 1.2 - 0.3) / (spFs * 1.32)));
-    const shown = specs.slice(0, maxLines);
+    const L = tagLayout(p);
+    const { nmTxt, hasCert, prTxt, wgTxt, twoCol, cellW } = L;
+    const nm = { fs: L.nmFs, lines: L.nmLines };
+    const prFs = L.prFs, spFs = L.spFs, cdFs = L.cdFs, shownCells = L.cells;
 
     const head = `<div class="tag">
       <div class="pnl a">
         ${qr}
         <div class="acol">
-          <div class="nm" style="font-size:${nm.fs}mm; -webkit-line-clamp:${nm.lines}">${esc(p.name || '-')}</div>
-          ${hasCert ? `<div class="ct" style="font-size:${ctFs.toFixed(2)}mm">${ctTxt}</div>` : ''}
+          <div class="nm" style="font-size:${nm.fs}mm; -webkit-line-clamp:${nm.lines}">${esc(nmTxt)}${hasCert ? `<span class="cs">${CERT_MARK}</span>` : ''}</div>
           <div class="pr" style="font-size:${prFs.toFixed(2)}mm">${prTxt}</div>
         </div>
       </div>
       <div class="pnl b">
         <div class="cd" style="font-size:${cdFs.toFixed(2)}mm">${esc(p.sku || '')}</div>
-        ${shown.map(s => `<div class="sp" style="font-size:${spFs.toFixed(2)}mm">${esc(s)}</div>`).join('')}
+        <div class="sp" style="font-size:${spFs.toFixed(2)}mm">${esc(wgTxt)}</div>
+        ${twoCol
+          ? `<div class="dgrid">${shownCells.map(c =>
+              `<div class="sp" style="font-size:${spFs.toFixed(2)}mm; width:${cellW.toFixed(2)}mm">${esc(c)}</div>`).join('')}</div>`
+          : shownCells.map(c =>
+              `<div class="sp" style="font-size:${spFs.toFixed(2)}mm">${esc(c)}</div>`).join('')}
       </div>
     </div>`;
     const tail = '<div class="tail"></div>';
@@ -683,228 +818,266 @@ function buildTags(items = []) {
 // แยกสไตล์ของตัวเองทั้งชุด ไม่ใช้ STYLE ร่วมกับเอกสารอื่น
 // เพราะหน้าตาเป็นคนละแบบ (หนาแน่นแบบใบสั่งผลิตโรงงาน ไม่ใช่เอกสารการเงิน)
 // ═══════════════════════════════════════════════════════════════
-const WO_METAL_COLOR = { yellow: 'ทองคำ', white: 'ทองคำขาว', pink: 'พิ้งค์โกลด์' };
+const WO_METAL_COLOR = {
+  white: 'White gold', yellow: 'Yellow gold', light: 'Light gold',
+  rose: 'Rose gold', silver: 'Silver',
+};
+const WO_METAL_TYPE = { '9K': '9K', '14K': '14K', '18K': '18K', silver: 'Silver 925' };
 
 const WO_STYLE = `
   @page { size: A4; margin: 12mm 11mm; }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:'Sarabun',-apple-system,'Helvetica Neue',Arial,sans-serif;
-         color:#241016; font-size:11px; line-height:1.55;
+         color:#241016; font-size:12px; line-height:1.5;
          -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .doc { width:100%; max-width:800px; margin:0 auto; min-height:255mm; display:flex; flex-direction:column; }
+
+  /* 1 ลูกค้า = 1 แผ่น — ลูกค้าคนถัดไปขึ้นหน้าใหม่เสมอ */
+  .doc { width:100%; max-width:800px; margin:0 auto; min-height:269mm; display:flex; flex-direction:column; }
+  .doc + .doc { page-break-before:always; break-before:page; }
 
   .stripe { display:flex; justify-content:space-between; align-items:baseline;
-            font-size:9.5px; color:#8a7078; padding-bottom:9px; border-bottom:1px solid #d6c6ca; }
+            font-size:10px; color:#8a7078; padding-bottom:9px; border-bottom:1px solid #d6c6ca; }
   .stripe .mid { font-size:14px; font-weight:700; color:#550a19; letter-spacing:.08em; }
 
-  .head { display:flex; gap:26px; padding:13px 0 12px; border-bottom:2px solid #550a19; }
-  .kv { flex:1; display:grid; grid-template-columns:86px 1fr; gap:3px 8px; align-content:start; }
-  .kv .k { color:#8a7078; font-size:10px; }
-  .kv .v { font-weight:700; font-size:11px; }
-  .kv .v.flag { color:#b3261e; }
-  .brand { width:210px; text-align:right; }
-  .jobcode { font-size:26px; font-weight:300; letter-spacing:.02em; line-height:1; }
-  .wm  { font-size:15px; letter-spacing:.3em; color:#550a19; margin-top:5px; }
-  .wms { font-size:6.5px; letter-spacing:.6em; color:#550a19; margin-top:3px; }
-  .stamp { display:inline-block; margin-top:6px; border:1px solid #d6c6ca; border-radius:3px;
-           padding:3px 8px; font-size:9px; color:#8a7078; }
+  .head { display:flex; gap:26px; padding:14px 0 13px; border-bottom:2px solid #550a19; align-items:flex-start; }
+  .kv { flex:1; display:grid; grid-template-columns:78px 1fr; gap:4px 10px; align-content:start; }
+  .kv .k { color:#8a7078; font-size:10.5px; }
+  .kv .v { font-weight:700; font-size:12px; }
+  .kv .v.blank { border-bottom:1px dotted #cdbcc1; min-height:16px; }
+  .brand { width:190px; text-align:right; }
+  .brandlogo { height:72px; width:auto; display:block; margin-left:auto; }
+  .stamp { display:inline-block; margin-top:8px; border:1px solid #d6c6ca; border-radius:3px;
+           padding:3px 9px; font-size:9.5px; color:#8a7078; }
+  .urgent { display:inline-block; margin-top:5px; border:1px solid #b3261e; color:#b3261e;
+            border-radius:3px; padding:2px 8px; font-size:9.5px; font-weight:700; }
 
-  .item { border-bottom:1px solid #d6c6ca; padding:13px 0 0; }
-  .itop { display:flex; gap:20px; align-items:flex-start; }
-  .icol1 { width:150px; flex:0 0 150px; }
-  .icol2 { flex:1; min-width:0; }
-  .icol3 { width:152px; flex:0 0 152px; }
-  .ino { font-size:14px; font-weight:700; color:#550a19; }
-  .icode { font-size:11.5px; font-weight:700; margin-left:8px; }
-  .iname { font-size:10.5px; color:#4c383d; margin-top:2px; line-height:1.45; }
-  .spec { display:grid; grid-template-columns:96px 1fr; gap:2px 8px; font-size:10.5px; }
-  .spec .k { color:#8a7078; }
-  .spec .v { font-weight:700; }
-  .money { display:grid; grid-template-columns:1fr auto; gap:2px 10px; font-size:10.5px; }
-  .money .k { color:#8a7078; }
-  .money .v { text-align:right; font-weight:700; }
-  .money .k.lead { color:#241016; }
-  .money .v.lead { color:#550a19; font-weight:700; font-size:12px; }
+  table.jobs { width:100%; border-collapse:collapse; margin-top:16px; }
+  table.jobs th { font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:#8a7078;
+                  font-weight:600; text-align:left; padding:0 8px 6px; border-bottom:1.5px solid #550a19; }
+  table.jobs th.c { text-align:center; }
+  table.jobs th.r { text-align:right; }
+  table.jobs td { padding:10px 8px; border-bottom:1px solid #ece1e3; vertical-align:top; }
+  table.jobs tr { break-inside:avoid; page-break-inside:avoid; }
+  td.no   { text-align:center; width:34px; font-size:13px; font-weight:700; color:#550a19; }
+  td.pic  { width:150px; }
+  td.code { width:112px; font-weight:700; font-size:11.5px; }
+  td.amt  { text-align:right; width:96px; font-weight:700; font-size:12.5px; }
 
-  .ibody { display:flex; gap:20px; margin-top:10px; }
-  .photo { width:150px; flex:0 0 150px; height:112px; border:1px dashed #d6c6ca; border-radius:3px;
-           display:flex; align-items:center; justify-content:center; overflow:hidden;
-           color:#bda8ae; font-size:9.5px; text-align:center; }
-  .photo img { width:100%; height:100%; object-fit:cover; display:block; }
-  .irest { flex:1; min-width:0; }
-  .note { display:flex; gap:8px; font-size:10.5px; }
-  .note .k { width:62px; flex:0 0 62px; color:#8a7078; }
-  .note .v { flex:1; color:#b3261e; line-height:1.7; }
+  .pics { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+  .pic1 { aspect-ratio:1/1; border-radius:2px; border:1px solid #e6d8db; max-width:100%;
+          overflow:hidden; display:flex; align-items:center; justify-content:center;
+          font-size:8px; color:#bda8ae; }
+  .pic1.empty { border-style:dashed; }
+  .pic1 img { width:100%; height:100%; object-fit:cover; display:block; }
 
-  .stones { display:flex; gap:8px; margin-top:10px; font-size:10.5px; }
-  .stones .k { width:62px; flex:0 0 62px; color:#8a7078; }
-  table.st { width:100%; border-collapse:collapse; }
-  table.st th { text-align:left; font-weight:400; font-size:8.5px; letter-spacing:.1em; color:#8a7078;
-                text-transform:uppercase; padding:0 8px 3px 0; border-bottom:1px solid #ece1e3; }
-  table.st th.n, table.st td.n { text-align:right; width:74px; }
-  table.st td { padding:3px 8px 3px 0; border-bottom:1px solid #ece1e3; font-size:10.5px; }
-  table.st tr:last-child td { border-bottom:0; }
+  .dl { display:flex; flex-direction:column; gap:1px; }
+  .dl .d0 { font-weight:700; font-size:12px; }
+  .dl .d1 { font-size:11.5px; color:#4c383d; }
+  .dl .d2 { font-size:11px; color:#8a7078; }
+  .dl .d3 { font-size:11px; color:#b3261e; }
 
-  .isum { display:flex; flex-wrap:wrap; gap:4px 18px; justify-content:space-between;
-          margin-top:9px; padding:6px 9px; background:#fdf2f4; font-size:10px; color:#8a7078; }
-  .isum b { color:#241016; }
-  .isum .pure b { color:#550a19; }
+  .bottom-block { margin-top:auto; padding-top:18px; }
+  .sum { display:flex; justify-content:flex-end; }
+  .sumtbl { width:330px; }
+  .sumrow { display:flex; justify-content:space-between; gap:12px; padding:6px 10px; font-size:12px; }
+  .sumrow .lbl { color:#8a7078; }
+  .sumrow .val { font-weight:700; }
+  .sumrow.total { border-top:1px solid #d6c6ca; }
+  .sumrow.paid .lbl { font-size:10.5px; }
+  .sumrow.bal { background:#fdf2f4; border:2px solid #550a19; margin-top:4px; padding:9px 10px; }
+  .sumrow.bal .lbl { color:#550a19; font-weight:700; font-size:12.5px; }
+  .sumrow.bal .val { color:#550a19; font-size:15px; }
 
-  .grand { margin-top:14px; border:2px solid #550a19; }
-  .grow { display:flex; flex-wrap:wrap; gap:2px 22px; padding:9px 12px; font-size:10.5px; color:#8a7078; }
-  .grow + .grow { border-top:1px solid #ece1e3; }
-  .grow b { color:#241016; }
-  .grow.key { background:#fdf2f4; }
-  .grow.key b { color:#550a19; }
-
-  .bottom-block { margin-top:auto; }
-  /* ใบที่ 2 เป็นต้นไปขึ้นหน้าใหม่ — ใช้ตอนเลือกปริ้นหลายใบพร้อมกัน */
-  .doc + .doc { page-break-before:always; break-before:page; }
-  .signs { display:flex; gap:44px; margin-top:46px; }
+  .signs { display:flex; gap:46px; margin-top:30px; }
   .sign { flex:1; text-align:center; }
   .sline { border-top:1px dotted #b3a3a9; margin:0 6px; }
   .slabel { font-size:10px; font-weight:700; color:#5a4f54; margin-top:6px; }
   .ssub { font-size:8.5px; color:#b3a3a9; margin-top:3px; }
-  .foot { margin-top:20px; padding-top:10px; border-top:1px solid #ece1e3;
+  .gap { height:19px; }
+  .foot { margin-top:16px; padding-top:9px; border-top:1px solid #ece1e3;
           text-align:center; font-size:8.5px; color:#b3a3a9; }
 `;
 
-// เพชร 1 กะรัต = 0.2 กรัม — ใช้เลขเดียวกับฝั่ง backend
-const woStoneG = (st) => num(st.carat) * 0.2;
+const woDate = (v) => {
+  if (!v) return '';
+  const d = new Date(v);
+  return isNaN(d) ? String(v) : d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+const DOTS = '......../......../........';
+const jsonArr = (v) => {
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string') { try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch (_) { return []; } }
+  return [];
+};
+const money = (v) => Math.round(num(v)).toLocaleString('th-TH') + '.—';
 
-function woItemBlock(it, idx) {
-  const t = it.totals || {};
-  const qty = num(it.qty) || 1;
-  const stones = Array.isArray(it.stones) ? it.stones
-    : (typeof it.stones === 'string' ? (() => { try { return JSON.parse(it.stones); } catch (_) { return []; } })() : []);
+// ── บรรทัดรายละเอียดของงาน 1 ชิ้น — ยุบตัวเรือน/เพชร/ไซซ์/สลัก มาไว้ช่องเดียว ──
+function woDetail(it = {}) {
+  const metal = [WO_METAL_TYPE[it.metal_type] || '', WO_METAL_COLOR[it.metal_color] || ''].filter(Boolean).join(' ');
+  const title = [esc(it.job_type || it.name || 'งานสั่งทำ'), metal ? esc(metal) : ''].filter(Boolean).join(' · ');
 
-  const stoneRows = stones.length
-    ? stones.map((st) => {
-        const desc = [st.shape, st.size_mm ? `${st.size_mm} มม.` : '', st.color, st.clarity,
-                      st.cert_no ? `IGI ${st.cert_no}` : ''].filter(Boolean).join(' · ') || (st.desc || '—');
-        return `<tr><td>${esc(desc)}</td><td class="n">${esc(st.qty || 1)} เม็ด</td>
-          <td class="n">${num(st.carat).toFixed(2)} ct</td><td class="n">${woStoneG(st).toFixed(3)}</td></tr>`;
-      }).join('')
-    : '<tr><td colspan="4" style="color:#b3a3a9">— ไม่มีเพชร —</td></tr>';
+  const spec = [
+    num(it.unit_weight_g) ? `ทอง ${num(it.unit_weight_g).toFixed(2)} กรัม` : '',
+    it.ring_size ? `ไซซ์ ${esc(it.ring_size)}` : '',
+    num(it.qty) > 1 ? `${esc(it.qty)} ชิ้น` : '',
+  ].filter(Boolean).join(' · ');
 
-  const metal = [it.metal_type || '', WO_METAL_COLOR[it.metal_color] || ''].filter(Boolean).join(' ');
+  const stones = jsonArr(it.stones);
+  const stoneLines = stones.map((st) => {
+    const head = [esc(st.shape || 'เพชร'),
+      `${Math.max(1, num(st.qty) || 1)} เม็ด`,
+      num(st.carat) ? `${num(st.carat).toFixed(2)} กะรัต` : ''].filter(Boolean).join(' ');
+    const grade = [st.color ? `สี ${esc(st.color)}` : '', esc(st.clarity || ''),
+      st.has_cert && st.cert_no ? `IGI ${esc(st.cert_no)}` : ''].filter(Boolean).join(' · ');
+    return `<div class="d2">${head}${grade ? ` · ${grade}` : ''}</div>`;
+  }).join('');
 
-  return `<div class="item">
-    <div class="itop">
-      <div class="icol1">
-        <div><span class="ino">${idx + 1}</span><span class="icode">${esc(it.design_code || '—')}</span></div>
-        <div class="iname">${esc(it.name || 'งานสั่งทำ')}${metal ? `<br/>${esc(metal)}` : ''}</div>
-      </div>
-      <div class="icol2">
-        <div class="spec">
-          <div class="k">น้ำหนัก / ชิ้น</div><div class="v">${num(it.unit_weight_g).toFixed(2)} กรัม</div>
-          <div class="k">จำนวนสั่งทำ</div><div class="v">${qty} ชิ้น</div>
-          <div class="k">เผื่อสูญเสีย</div><div class="v">${num(it.loss_pct)} %</div>
-          <div class="k">ไซซ์</div><div class="v">${esc(it.ring_size || '—')}</div>
-        </div>
-      </div>
-      <div class="icol3">
-        <div class="money">
-          <div class="k">ค่าแรง / ชิ้น</div><div class="v">${num(it.labor_cost).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</div>
-          <div class="k">ค่าชุบ / ชิ้น</div><div class="v">${num(it.plating_cost).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</div>
-          <div class="k lead">รวมรายการนี้</div><div class="v lead">${num(t.labor_total).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</div>
-        </div>
-      </div>
-    </div>
+  const totalCt = stones.reduce((sum, st) => sum + num(st.carat), 0);
+  const totalPcs = stones.reduce((sum, st) => sum + Math.max(1, num(st.qty) || 1), 0);
+  const sumLine = stones.length > 1
+    ? `<div class="d2">รวม ${totalPcs} เม็ด / ${totalCt.toFixed(2)} กะรัต</div>` : '';
 
-    <div class="ibody">
-      <div class="photo">${it.photo_url ? `<img src="${esc(it.photo_url)}" alt="" />` : 'รูปแบบ / สเก็ตช์'}</div>
-      <div class="irest">
-        <div class="note"><div class="k">หมายเหตุช่าง</div>
-          <div class="v">${it.note ? esc(it.note).replace(/\n/g, '<br/>') : '—'}</div></div>
-        <div class="stones"><div class="k">เพชร</div>
-          <table class="st">
-            <thead><tr><th>รายละเอียด</th><th class="n">จำนวน</th><th class="n">กะรัตรวม</th><th class="n">กรัม</th></tr></thead>
-            <tbody>${stoneRows}</tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+  const red = [it.engrave ? `สลัก ${esc(it.engrave)}` : '', esc(it.note || '')].filter(Boolean).join(' · ');
 
-    <div class="isum">
-      <span>น้ำหนักรวม <b>${num(t.weight_g).toFixed(2)} ก.</b></span>
-      <span>เพชร <b>${num(t.stone_g).toFixed(2)} ก.</b></span>
-      <span>โลหะ <b>${num(t.metal_g).toFixed(2)} ก.</b></span>
-      <span class="pure">เทียบทองแท้ 100% <b>${num(t.pure_gold_g).toFixed(2)} ก.</b></span>
-    </div>
+  return `<div class="dl">
+    <div class="d0">${title}</div>
+    ${spec ? `<div class="d1">${spec}</div>` : ''}
+    ${stoneLines}${sumLine}
+    ${red ? `<div class="d3">${red}</div>` : ''}
   </div>`;
 }
 
-function woDoc(wo = {}) {
-  const items = Array.isArray(wo.items) ? wo.items : [];
-  const seq = String(wo.work_no || '').split('-').pop() || '';
+function woPics(it = {}, blank) {
+  const photos = jsonArr(it.photos).filter(Boolean).slice(0, 4);
+  return `<div class="pics">${[0, 1, 2, 3].map((i) => {
+    const src = photos[i];
+    return src && !blank
+      ? `<div class="pic1"><img src="${esc(src)}" /></div>`
+      : `<div class="pic1 empty">รูป ${i + 1}</div>`;
+  }).join('')}</div>`;
+}
 
-  const body = `<div class="doc">
+// ── 1 แผ่น = 1 ลูกค้า ──
+// orders = ใบสั่งทำของลูกค้าคนนั้น (รวมกันได้หลายใบ) · งานทุกชิ้นลิสต์ต่อกันลงมา
+function woPage(orders) {
+  const list = Array.isArray(orders) ? orders : [orders];
+  const blank = list.length === 1 && list[0].blank;
+  const head = list[0] || {};
+
+  const rows = [];
+  let n = 0;
+  for (const o of list) {
+    for (const it of (o.items || [])) {
+      n += 1;
+      rows.push(`<tr>
+        <td class="no">${n}</td>
+        <td class="pic">${woPics(it, blank)}</td>
+        <td class="code">${esc(it.job_code || '—')}</td>
+        <td>${woDetail(it)}</td>
+        <td class="amt">${num(it.price) ? money(it.price) : '—'}</td>
+      </tr>`);
+    }
+  }
+  if (rows.length === 0) {
+    for (let i = 1; i <= 4; i++) {
+      rows.push(`<tr>
+        <td class="no">${i}</td>
+        <td class="pic">${woPics({}, true)}</td>
+        <td class="code">&nbsp;</td>
+        <td style="height:64px"></td>
+        <td class="amt">&nbsp;</td>
+      </tr>`);
+    }
+  }
+
+  const grand = list.reduce((sum, o) => sum + (o.items || []).reduce((t, it) => t + num(it.price), 0), 0);
+  const pays = list.flatMap((o) => jsonArr(o.payments)).filter((p) => num(p.amount) > 0);
+  const paid = pays.reduce((sum, p) => sum + num(p.amount), 0);
+  const paidBreak = pays.length > 1
+    ? ` &nbsp;${pays.map((p) => Math.round(num(p.amount)).toLocaleString('th-TH')).join(' + ')}` : '';
+
+  const jobCount = n || 0;
+
+  return `<div class="doc">
     <div class="stripe">
       <div>${esc(COMPANY.name)}</div>
-      <div class="mid">ใบสั่งทำ · WORK ORDER</div>
-      <div>พิมพ์เมื่อ ${new Date().toLocaleDateString('th-TH')}</div>
+      <div class="mid">ใบสั่งทำ · CUSTOM ORDER</div>
+      <div>${esc(COMPANY.addr).slice(0, 40)}</div>
     </div>
 
     <div class="head">
       <div class="kv">
-        <div class="k">เลขที่ใบสั่งทำ</div><div class="v">${esc(wo.work_no || '—')}</div>
-        <div class="k">อ้างอิงใบเสนอราคา</div><div class="v">${esc(wo.quotation_ref || '—')}</div>
-        <div class="k">วันที่สั่ง</div><div class="v">${dateTH(wo.ordered_at || wo.created_at)}</div>
-        <div class="k">กำหนดส่ง</div><div class="v">${wo.due_date ? dateTH(wo.due_date) : '—'}</div>
-      </div>
-      <div class="kv">
-        <div class="k">ช่าง / โรงงาน</div><div class="v">${esc(wo.workshop || '—')}</div>
-        <div class="k">ลูกค้า</div><div class="v">${esc(wo.customer_name || '—')}</div>
-        <div class="k">ผู้สั่งทำ</div><div class="v">${esc(wo.ordered_by || '—')}</div>
-        <div class="k">หมายเหตุงาน</div><div class="v${wo.is_urgent ? ' flag' : ''}">${esc(wo.job_note || (wo.is_urgent ? 'งานเร่ง' : '—'))}</div>
+        <div class="k">ลูกค้า</div><div class="v ${blank || !head.customer_name ? 'blank' : ''}">${blank || !head.customer_name ? '&nbsp;' : esc(head.customer_name)}</div>
+        <div class="k">เบอร์โทร</div><div class="v ${blank || !head.customer_phone ? 'blank' : ''}">${blank || !head.customer_phone ? '&nbsp;' : esc(head.customer_phone)}</div>
+        <div class="k">วันที่รับงาน</div><div class="v">${blank || !head.ordered_at ? DOTS : woDate(head.ordered_at)}</div>
+        <div class="k">กำหนดส่ง</div><div class="v">${blank || !head.due_date ? DOTS : woDate(head.due_date)}</div>
       </div>
       <div class="brand">
-        <div class="jobcode">${esc(seq)}</div>
-        <div class="wm">ANAKYN</div>
-        <div class="wms">GEMS</div>
-        <div class="stamp">ติดตรา ANAKYN ทุกชิ้น</div>
+        <img class="brandlogo" src="${LOGO_URI}" alt="ANAKYN GEMS" />
+        <div class="stamp">${blank ? 'ใบเปล่า — กรอกด้วยมือ' : `${jobCount} งาน`}</div>
+        ${!blank && list.some((o) => o.is_urgent) ? '<div class="urgent">งานเร่ง</div>' : ''}
       </div>
     </div>
 
-    ${items.map(woItemBlock).join('')}
-
-    <div class="grand">
-      <div class="grow">
-        <span>น้ำหนักรวมทั้งใบ <b>${num(wo.total_weight_g).toFixed(2)} กรัม</b></span>
-        <span>รวมน้ำหนักเพชร <b>${num(wo.total_stone_g).toFixed(2)} กรัม</b></span>
-        <span>รวมน้ำหนักโลหะ <b>${num(wo.total_metal_g).toFixed(2)} กรัม</b></span>
-      </div>
-      <div class="grow key">
-        <span>รวมจำนวนสั่งทำ <b>${num(wo.total_qty)} หน่วย</b></span>
-        <span>รวมค่าแรง + ชุบ <b>${baht(wo.total_labor_cost)}</b></span>
-        <span style="margin-left:auto">รวมเทียบทองแท้ 100% <b>${num(wo.total_pure_gold_g).toFixed(2)} กรัม</b></span>
-      </div>
-    </div>
+    <table class="jobs">
+      <thead><tr>
+        <th class="c">No.</th><th>รูป</th><th>รหัสงาน</th><th>รายละเอียด</th><th class="r">ราคา (บาท)</th>
+      </tr></thead>
+      <tbody>${rows.join('')}</tbody>
+    </table>
 
     <div class="bottom-block">
+      <div class="sum"><div class="sumtbl">
+        <div class="sumrow total"><div class="lbl">ยอดรวมทั้งหมด</div>
+          <div class="val">${blank ? '&nbsp;' : money(grand)}</div></div>
+        <div class="sumrow paid"><div class="lbl">ชำระแล้ว${blank ? '' : paidBreak}</div>
+          <div class="val">${blank ? '&nbsp;' : money(paid)}</div></div>
+        <div class="sumrow bal"><div class="lbl">คงเหลือ</div>
+          <div class="val">${blank ? '&nbsp;' : money(grand - paid)}</div></div>
+      </div></div>
+
       <div class="signs">
-        <div class="sign"><div class="sline"></div><div class="slabel">ผู้สั่งทำ · Anakyn Gems</div>
-          <div class="ssub">วันที่ ......./......./.......</div></div>
-        <div class="sign"><div class="sline"></div><div class="slabel">ผู้รับงาน · ช่าง</div>
-          <div class="ssub">รับทองและเพชรครบตามรายการ</div></div>
-        <div class="sign"><div class="sline"></div><div class="slabel">ตรวจน้ำหนักและจำนวน</div>
-          <div class="ssub">วันที่ ......./......./.......</div></div>
+        <div class="sign"><div class="gap"></div><div class="sline"></div>
+          <div class="slabel">${blank || !head.customer_name ? 'ลูกค้า' : esc(head.customer_name)}</div>
+          <div class="ssub">วันที่ ${DOTS}</div></div>
+        <div class="sign"><div class="gap"></div><div class="sline"></div>
+          <div class="slabel">${blank || !head.received_by ? 'ผู้รับออเดอร์' : esc(head.received_by)}</div>
+          <div class="ssub">วันที่ ${DOTS}</div></div>
       </div>
-      <div class="foot">เอกสารนี้ออกจากระบบ Anakyn Gems · ${esc(COMPANY.name)} · ${esc(COMPANY.addr)}</div>
+
+      <div class="foot">ใบสั่งทำ · ${esc(COMPANY.name)} · เอกสารฉบับนี้ใช้ประกอบการรับงานและส่งมอบงานเท่านั้น</div>
     </div>
   </div>`;
-
-  return body;
 }
 
-// รับได้ทั้งใบเดียวและหลายใบ — หลายใบจะคั่นหน้าให้อัตโนมัติ
+// จับกลุ่มตามชื่อลูกค้า — ชื่อเดียวกันรวมแผ่นเดียว คนละชื่อแยกแผ่น
+// ไม่ได้ใส่ชื่อ = กลุ่มของตัวเอง ไม่เอาไปรวมกับใคร
+function groupByCustomer(list) {
+  const groups = [];
+  const index = new Map();
+  list.forEach((o, i) => {
+    const name = (o.customer_name || '').trim().toLowerCase();
+    const key = name || `__ไม่ระบุ__${i}`;
+    if (!index.has(key)) { index.set(key, groups.length); groups.push([]); }
+    groups[index.get(key)].push(o);
+  });
+  return groups;
+}
+
 function buildWorkOrder(input) {
   const list = Array.isArray(input) ? input : [input || {}];
+  const pages = list.length === 1 && list[0].blank
+    ? [woPage(list[0])]
+    : groupByCustomer(list).map(woPage);
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>${WO_STYLE}</style></head><body>${list.map(woDoc).join('')}</body></html>`;
+    <style>${WO_STYLE}</style></head><body>${pages.join('')}</body></html>`;
 }
+
+export const printWorkOrder = (wo) => printHtml(buildWorkOrder(wo));
+export const saveWorkOrder  = (wo) => savePdf(buildWorkOrder(wo));
+// ใบเปล่าไว้ปริ้นตุนหน้าร้าน เขียนมือแล้วค่อยมาคีย์เข้าระบบ
+export const printBlankWorkOrder = () => printHtml(buildWorkOrder({ blank: true }));
 
 // ── ข้อมูลป้าย: ใช้ร่วมกับ "ตัวอย่างป้ายสินค้า" บนหน้าจอ (TagPreview.jsx) ──
 //    ตัวอย่างบนจอกับป้ายที่พิมพ์จริงจึงอ่านค่าจากที่เดียวกันเสมอ
@@ -914,12 +1087,20 @@ export const TAG_SPEC = {
 };
 
 export function tagFields(p = {}) {
+  // ขนาดตัวอักษรและช่องที่แสดงได้ มาจาก tagLayout() ตัวเดียวกับที่หน้าพิมพ์ใช้
+  // → ตัวอย่างบนจอจึงย่อฟอนต์ตามและไม่มีทางล้นขอบ
+  const L = tagLayout(p);
   return {
-    name:    p.name || '-',
+    name:    L.nmTxt,
     sku:     p.sku || '',
-    price:   baht(p.sale_price),
-    hasCert: tagHasCert(p),
-    specs:   [tagWgLine(p), ...tagDiamondLines(p)],
+    price:   L.prTxt,
+    hasCert: L.hasCert,        // true = เติมวงกลมทึบท้ายชื่อ (ไม่ใช่บรรทัดแยกแล้ว)
+    wg:      L.wgTxt,          // 'WG: 9K 2.95g'
+    dCells:  L.cells,          // ช่องเพชรที่ใส่คำนำหน้า + ยุบ "+N" เรียบร้อยแล้ว
+    twoCol:  L.twoCol,         // true = ให้วาง 2 คอลัมน์
+    // ★ ขนาดทั้งหมดเป็นมิลลิเมตร — คูณ MM แล้วใช้ได้เลย ห้ามตั้งค่าเอง
+    nmFs: L.nmFs, nmLines: L.nmLines, prFs: L.prFs, spFs: L.spFs, cdFs: L.cdFs,
+    specs:   [L.wgTxt, ...L.cells],   // แบบแบนเรียงต่อกัน (ของเดิม)
     qrText:  p.qr || tagSaleUrl(p.sku || ''),
   };
 }
@@ -939,5 +1120,3 @@ export const saveServiceOrder = (o) => savePdf(buildServiceOrder(o));
 export const printReceipt = (o) => printHtml(buildReceipt(o));
 export const saveReceipt = (o) => savePdf(buildReceipt(o));
 export const printSummary = (d, label) => printHtml(buildSummary(d, label));
-export const printWorkOrder = (wo) => printHtml(buildWorkOrder(wo));
-export const saveWorkOrder = (wo) => savePdf(buildWorkOrder(wo));

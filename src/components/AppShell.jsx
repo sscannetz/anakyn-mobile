@@ -18,7 +18,7 @@ import { clearSession, getRole } from '../storage';
 import { LOGO_LIGHT_URI } from '../logoBase64';
 
 export const SHELL_BP = 1024;      // ต่ำกว่านี้ใช้ลิ้นชักแทนแถบซ้าย
-const SIDE_W   = 242;
+export const SIDE_W = 242;   // ShellModal ใช้ค่านี้เว้นที่ให้แถบเมนู
 const DRAWER_W = 278;
 const EDGE     = 26;               // ระยะจากขอบซ้ายที่เริ่มปัดได้
 // เว็บต้องใช้ JS driver — ระหว่างลากนิ้วเราสั่ง setValue() เองตลอด

@@ -5,12 +5,15 @@
 // คูณด้วย MM เพื่อขยายให้ดูบนจอ — พิมพ์ออกมาแล้วจะได้หน้าตาแบบเดียวกัน
 // ข้อความทุกบรรทัดมาจาก tagFields() ตัวเดียวกับที่ buildTags() เรียก
 // แก้ตรรกะป้ายที่ print.js ที่เดียว ตัวอย่างบนจอเปลี่ยนตาม
+//
+// ⚠ ไฟล์นี้วาดเอง ไม่ได้ใช้ HTML ของ buildTags() — เวลาแก้หน้าตาป้าย
+//   ต้องไล่แก้ที่นี่ด้วยเสมอ ไม่งั้นตัวอย่างบนจอจะไม่ตรงกับที่พิมพ์ออกมา
 // ══════════════════════════════════════════════════════════════
 import { memo, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { qrMatrix } from '../qr';
-import { TAG_SPEC, tagFields } from '../print';
+import { TAG_SPEC, tagFields, CERT_MARK, CERT_SCALE } from '../print';
 
 const MM = 5.9;                       // พิกเซลต่อ 1 มิลลิเมตร บนหน้าจอ
 const mm = (v) => +(v * MM).toFixed(2);
@@ -43,7 +46,10 @@ const Qr = memo(function Qr({ text, size }) {
 });
 
 export default function TagPreview({ product, lang = 'th' }) {
-  const { name, sku, price, hasCert, specs, qrText } = tagFields(product || {});
+  // ขนาดตัวอักษรทุกตัวมาจาก tagFields() (คำนวณด้วยสูตรเดียวกับหน้าพิมพ์)
+  // ห้ามฮาร์ดโค้ดขนาดเอง ไม่งั้นชื่อยาว ๆ จะล้นขอบเพราะไม่ได้ย่อตาม
+  const { name, sku, price, hasCert, wg, dCells, twoCol,
+          nmFs, nmLines, prFs, spFs, cdFs, qrText } = tagFields(product || {});
   const { w, h, foldX, padX, qr } = TAG_SPEC;
 
   return (
@@ -52,18 +58,16 @@ export default function TagPreview({ product, lang = 'th' }) {
 
       {/* หน้าหลัก — QR + ชื่อสินค้า + ราคา */}
       <View style={{ width: mm(foldX), flexDirection: 'row', alignItems: 'center',
-        gap: mm(0.8), paddingHorizontal: mm(padX) }}>
+        gap: mm(0.8), paddingHorizontal: mm(padX), overflow: 'hidden' }}>
         <Qr text={qrText} size={mm(qr)} />
         <View style={{ flex: 1, minWidth: 0, height: mm(qr), justifyContent: 'space-between' }}>
-          <Text numberOfLines={3} style={{ fontSize: mm(1.75), lineHeight: mm(1.75) * 1.15, color: '#1a0509' }}>
+          <Text numberOfLines={nmLines} style={{ fontSize: mm(nmFs), lineHeight: mm(nmFs) * 1.18, color: '#1a0509' }}>
             {name}
+            {hasCert && (
+              <Text style={{ fontSize: mm(nmFs) * CERT_SCALE }}>{CERT_MARK}</Text>
+            )}
           </Text>
-          {hasCert && (
-            <Text numberOfLines={1} style={{ fontSize: mm(1.6), color: '#550a19', fontWeight: '600' }}>
-              {lang === 'th' ? 'มีใบเซอร์' : 'มีใบเซอร์'}
-            </Text>
-          )}
-          <Text numberOfLines={1} style={{ fontSize: mm(2.3), fontWeight: '700', color: '#1a0509' }}>
+          <Text numberOfLines={1} style={{ fontSize: mm(prFs), fontWeight: '700', color: '#1a0509' }}>
             {price}
           </Text>
         </View>
@@ -71,15 +75,23 @@ export default function TagPreview({ product, lang = 'th' }) {
 
       {/* หน้าสเปก — SKU / น้ำหนักโลหะ / เพชร */}
       <View style={{ width: mm(w - foldX), paddingHorizontal: mm(padX), justifyContent: 'center',
+        overflow: 'hidden',
         borderLeftWidth: 1, borderLeftColor: '#f2e6e9', borderStyle: 'dashed' }}>
-        <Text numberOfLines={1} style={{ fontSize: mm(2.0), fontWeight: '700', color: '#1a0509', letterSpacing: 0.2 }}>
+        <Text numberOfLines={1} style={{ fontSize: mm(cdFs), fontWeight: '700', color: '#1a0509', letterSpacing: 0.2 }}>
           {sku}
         </Text>
-        {specs.filter(Boolean).slice(0, 4).map((line, i) => (
-          <Text key={i} numberOfLines={1} style={{ fontSize: mm(1.7), color: '#3a2228', marginTop: mm(0.35) }}>
-            {line}
-          </Text>
-        ))}
+        <Text numberOfLines={1} style={{ fontSize: mm(spFs), lineHeight: mm(spFs) * 1.32, color: '#3a2228' }}>
+          {wg}
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+          {dCells.map((cell, i) => (
+            <Text key={i} numberOfLines={1}
+              style={{ fontSize: mm(spFs), lineHeight: mm(spFs) * 1.32, color: '#3a2228',
+                       width: twoCol ? '50%' : '100%' }}>
+              {cell}
+            </Text>
+          ))}
+        </View>
       </View>
     </View>
   );

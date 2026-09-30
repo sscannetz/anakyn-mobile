@@ -9,6 +9,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Modal, Switch,
 } from 'react-native';
+import ShellModal from '../components/ShellModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
@@ -290,7 +291,7 @@ export default function AddUserScreen({ navigation }) {
       </ScrollView>
 
       {/* ADD / EDIT USER MODAL */}
-      <Modal visible={!!form} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setForm(null)}>
+      <ShellModal visible={!!form} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setForm(null)}>
         <View style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{isEdit ? t.editUser : t.addUser}</Text>
@@ -370,10 +371,10 @@ export default function AddUserScreen({ navigation }) {
             </TouchableOpacity>
           </ScrollView>
         </View>
-      </Modal>
+      </ShellModal>
 
       {/* DELETE CONFIRM MODAL */}
-      <Modal visible={!!delTarget} animationType="fade" transparent onRequestClose={() => setDelTarget(null)}>
+      <ShellModal visible={!!delTarget} animationType="fade" transparent onRequestClose={() => setDelTarget(null)}>
         <View style={s.overlay}>
           <View style={s.confirmBox}>
             <MaterialCommunityIcons name="trash-can" size={sc(28)} color="#c62828" style={{ marginBottom: 8 }} />
@@ -390,7 +391,7 @@ export default function AddUserScreen({ navigation }) {
             </View>
           </View>
         </View>
-      </Modal>
+      </ShellModal>
     </View>
   );
 }

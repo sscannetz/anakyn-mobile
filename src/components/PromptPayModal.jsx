@@ -10,6 +10,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, Image, Modal, TouchableOpacity, ActivityIndicator, ScrollView,
 } from 'react-native';
+import ShellModal from './ShellModal';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
@@ -103,7 +104,7 @@ export default function PromptPayModal({ payment, lang = 'th', onPaid, onClose }
   const isOk      = status === 'successful';
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <ShellModal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={s.wrap}>
         <View style={s.header}>
           <Text style={s.title}>{t.title}</Text>
@@ -168,7 +169,7 @@ export default function PromptPayModal({ payment, lang = 'th', onPaid, onClose }
           </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+    </ShellModal>
   );
 }
 

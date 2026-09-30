@@ -1,15 +1,25 @@
-// ══════════════════════════════════════════════════════
-// ServiceOrderScreen.jsx — React Native
-// ══════════════════════════════════════════════════════
-import { useState, useEffect } from 'react';
+// ══════════════════════════════════════════════════════════════
+// ServiceOrderScreen.jsx — ใบสั่งซ่อม (Service Order)
+//
+// โครงใหม่ (ก.ย. 2569): รหัส SERVICE#00001 รันเอง พิมพ์ทับได้
+// ชุดข้อมูล: ลูกค้า · เบอร์ · ประเภทงานซ่อม · จำนวน · วันที่รับ/ส่ง ·
+//            รูปของที่ซ่อม 4 รูป · ข้อมูลการซ่อม · หมายเหตุ · ราคา · มัดจำ · รวม
+// ผู้รับออเดอร์มาจากคนที่ล็อกอิน — ฝั่งเซิร์ฟเวอร์เป็นคนใส่ ไม่รับจากหน้าจอ
+// เอกสารใช้หน้าตาชุดเดียวกับใบสั่งทำ จัดกลุ่มตามลูกค้า (ดู print.js)
+// ══════════════════════════════════════════════════════════════
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, Modal,
+  ActivityIndicator, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import Header from '../components/Header';
 import ConnectingBar from '../components/ConnectingBar';
+import DateInput from '../components/DateInput';
+import ShellModal from '../components/ShellModal';
 import {
   useWide, Toolbar, SearchBox, Chip, PrimaryButton, Panel,
   TableHead, TableRow, TdNo, TdMain, TdAmt, Pill, Empty,
@@ -17,167 +27,306 @@ import {
 import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { printServiceOrder, saveServiceOrder } from '../print';
-import { DocWrapper, DocHeader, Parties, Sec, SL, ItemHead, ItemRow, InfoRow, TRow, VatRow, GrandTotal, DocFooter, DocActions, fmtBaht } from '../components/DocLayout';
 
-// ป้ายสถานะ: งานที่ยังค้างอยู่ = แดงอ่อน · งานที่ลูกค้ารับคืนแล้ว = ขาวเส้นบาง
-const STATUS_STYLE = {
-  received:  { bg: '#fdf0f2', col: '#8c1b2f' },
-  repairing: { bg: '#fdf0f2', col: '#8c1b2f' },
-  qc:        { bg: '#fdf0f2', col: '#8c1b2f' },
-  notified:  { bg: '#fdf0f2', col: '#8c1b2f' },
-  picked_up: { bg: '#ffffff', col: '#9b7d86' },
-};
+const JOB_TYPES = ['แหวน', 'แหวนหมั้น', 'สร้อยคอ', 'จี้', 'ต่างหู', 'กำไล', 'อื่นๆ'];
 
+const STATUSES = ['received', 'repairing', 'qc', 'notified', 'picked_up'];
 const STATUS_LABELS = {
   th: { received: 'รับเรื่อง', repairing: 'กำลังซ่อม', qc: 'ตรวจสอบ', notified: 'แจ้งลูกค้า', picked_up: 'รับคืนแล้ว' },
   en: { received: 'Received', repairing: 'Repairing', qc: 'QC', notified: 'Notified', picked_up: 'Picked up' },
 };
-
-const fmt = (n) => {
-  const num = Number(n);
-  return Math.round(Number.isFinite(num) ? num : 0).toLocaleString('th-TH');
-};
-
+const TONE = { received: 'attn', repairing: 'attn', qc: 'attn', notified: 'attn', picked_up: 'done' };
 const FILTERS = [
-  { key: 'all',       th: 'ทั้งหมด',    en: 'All' },
-  { key: 'open',      th: 'ค้างอยู่',    en: 'Open' },
+  { key: 'all', th: 'ทั้งหมด', en: 'All' },
+  { key: 'open', th: 'ค้างอยู่', en: 'Open' },
   { key: 'picked_up', th: 'รับคืนแล้ว', en: 'Picked up' },
 ];
-const TONE = { received: 'attn', repairing: 'attn', qc: 'attn', notified: 'attn', picked_up: 'done' };
 const COLS = [
-  { label: 'เลขที่', w: 125 },
-  { label: 'ลูกค้า', w: 150 },
+  { label: '', w: 30 },
+  { label: 'รหัสงานซ่อม', w: 150 },
+  { label: 'ลูกค้า', w: 160 },
   { label: 'งานที่รับ' },
-  { label: 'สถานะ', w: 105 },
-  { label: 'ค่าซ่อม', w: 90, rt: true },
+  { label: 'ส่งงาน', w: 100 },
+  { label: 'สถานะ', w: 104 },
+  { label: 'คงเหลือ', w: 100, rt: true },
+  { label: '', w: 78 },
 ];
 
+const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const fmt = (n) => Math.round(num(n)).toLocaleString('th-TH');
+const dateTH = (v) => { const d = new Date(v); return isNaN(d) ? '—' : d.toLocaleDateString('th-TH'); };
+const jsonArr = (v) => {
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string') { try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch (_) { return []; } }
+  return [];
+};
+
+const emptyForm = () => ({
+  id: null, service_no: '',
+  customer_name: '', customer_phone: '',
+  job_type: '', job_qty: '1',
+  received_at: '', due_date: '',
+  photos: [], repair_detail: '', note: '',
+  price: '', deposit: '', received_by: '',
+});
+
 export default function ServiceOrderScreen({ navigation }) {
-  const { styles: s, sc, center } = useScaledStyles(baseStyles);
+  const { styles: s, sc } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
-  const [lang, setLang]     = useState('th');
-  const [q, setQ] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [orders, setOrders] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showNew, setShowNew] = useState(false);
-  const [selSO, setSelSO]   = useState(null);
-  const [dVatOn, setDVatOn]   = useState(false);
-  const [dVatRate, setDVatRate] = useState('7');
-  const [custName, setCustName]   = useState('');
-  const [custPhone, setCustPhone] = useState('');
-  const [prodName, setProdName]   = useState('');
-  const [issue, setIssue]         = useState('');
-  const [estimatedCost, setEstimatedCost] = useState('');
-  const [dueDate, setDueDate]     = useState('');
-  const [saving, setSaving]       = useState(false);
-  const [error, setError]         = useState('');
-  const [confirmDel, setConfirmDel] = useState(false);  // แตะครั้งแรก = ขอยืนยัน, ครั้งที่สอง = ลบจริง
+  const wide = useWide();
+  const [lang, setLang] = useState('th');
   const slabs = STATUS_LABELS[lang];
 
-  useEffect(() => {
-    api.getServiceOrders().then(setOrders).finally(() => setLoading(false));
-    api.getCustomers().then(setCustomers).catch(() => {});
-  }, []);
+  const [orders, setOrders]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [q, setQ]             = useState('');
+  const [filter, setFilter]   = useState('all');
+  const [picked, setPicked]   = useState({});
+  const [printing, setPrinting] = useState(false);
 
-  const handleCreate = async () => {
-    if (!custName.trim() || !prodName.trim()) {
-      setError(lang === 'th' ? 'กรุณากรอกชื่อลูกค้าและสินค้า' : 'Please fill customer and product');
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm]   = useState(emptyForm());
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState('');
+
+  const [sel, setSel] = useState(null);
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [statusErr, setStatusErr]   = useState('');
+  const [askDel, setAskDel] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try { setOrders(await api.getServiceOrders()); } catch (_) {}
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const upd = (patch) => setForm(f => ({ ...f, ...patch }));
+  const balance = useMemo(
+    () => Math.max(0, num(form.price) - num(form.deposit)),
+    [form.price, form.deposit],
+  );
+
+  const openNew = async () => {
+    setForm(emptyForm()); setError(''); setShowForm(true);
+    try {
+      const r = await api.nextServiceNo();
+      setForm(cur => (cur.id ? cur : { ...cur, service_no: r.service_no || '', received_by: r.received_by || '' }));
+    } catch (_) {}
+  };
+
+  const openEdit = async (o) => {
+    setError(''); setShowForm(true);
+    setForm({ ...emptyForm(), id: o.id, service_no: o.service_no || '' });
+    let full = o;
+    try { full = await api.getServiceOrder(o.id); } catch (_) {}
+    setForm({
+      ...emptyForm(),
+      id: full.id,
+      service_no: full.service_no || '',
+      customer_name: full.customer_name || '',
+      customer_phone: full.customer_phone || '',
+      job_type: full.job_type || '',
+      job_qty: String(full.job_qty || 1),
+      received_at: String(full.received_at || '').slice(0, 10),
+      due_date: String(full.due_date || full.pickup_date || '').slice(0, 10),
+      photos: jsonArr(full.photos).filter(Boolean).slice(0, 4),
+      repair_detail: full.repair_detail || '',
+      note: full.note || '',
+      price: num(full.price) ? String(num(full.price)) : '',
+      deposit: num(full.deposit) ? String(num(full.deposit)) : '',
+      received_by: full.received_by || '',
+    });
+  };
+
+  const pickPhoto = async () => {
+    if (form.photos.length >= 4) return;
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) return;
+      const r = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
+      if (r.canceled || !r.assets?.[0]) return;
+      const out = await ImageManipulator.manipulateAsync(
+        r.assets[0].uri, [{ resize: { width: 700 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true },
+      );
+      const uri = out.base64 ? `data:image/jpeg;base64,${out.base64}` : out.uri;
+      setForm(f => ({ ...f, photos: [...f.photos, uri].slice(0, 4) }));
+    } catch (_) {}
+  };
+  const dropPhoto = (i) => setForm(f => ({ ...f, photos: f.photos.filter((_, k) => k !== i) }));
+
+  const save = async () => {
+    if (!form.customer_name.trim() && !form.job_type.trim()) {
+      setError(lang === 'th' ? 'กรอกชื่อลูกค้าหรือประเภทงานซ่อมอย่างน้อยอย่างหนึ่ง' : 'Customer or job type is required');
       return;
     }
     setSaving(true); setError('');
+    const payload = {
+      service_no: form.service_no.trim(),
+      customer_name: form.customer_name.trim() || null,
+      customer_phone: form.customer_phone.trim() || null,
+      job_type: form.job_type.trim() || null,
+      job_qty: Math.max(1, parseInt(form.job_qty, 10) || 1),
+      received_at: form.received_at.trim() || null,
+      due_date: form.due_date.trim() || null,
+      photos: form.photos,
+      repair_detail: form.repair_detail.trim() || null,
+      note: form.note.trim() || null,
+      price: num(form.price),
+      deposit: num(form.deposit),
+    };
     try {
-      const so = await api.createServiceOrder({
-        customer_name: custName, customer_phone: custPhone,
-        product_name: prodName, issue_description: issue,
-        estimated_cost: parseFloat(estimatedCost) || 0,
-        expected_completion_date: dueDate || null,
-      });
-      setOrders(prev => [so, ...prev]);
-      setShowNew(false);
-      setCustName(''); setCustPhone(''); setProdName(''); setIssue(''); setEstimatedCost(''); setDueDate('');
-    } catch (err) { setError(err.message); }
-    finally { setSaving(false); }
-  };
-
-  const handleUpdateStatus = async (id, status) => {
-    try {
-      await api.updateServiceStatus(id, status);
-      setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
-      if (selSO?.id === id) setSelSO(prev => ({ ...prev, status }));
-    } catch (_) {}
-  };
-
-  const handleDelete = async () => {
-    if (!confirmDel) {
-      setConfirmDel(true);
-      setTimeout(() => setConfirmDel(false), 4000);  // ไม่ยืนยันใน 4 วิ → รีเซ็ต
-      return;
+      if (form.id) {
+        const updated = await api.updateServiceOrder(form.id, payload);
+        setOrders(prev => prev.map(o => (o.id === updated.id ? updated : o)));
+        if (sel && sel.id === updated.id) setSel(updated);
+      } else {
+        const created = await api.createServiceOrder(payload);
+        setOrders(prev => [created, ...prev]);
+      }
+      setShowForm(false); setForm(emptyForm());
+    } catch (e) {
+      setError(e.message || 'บันทึกไม่สำเร็จ');
     }
-    try {
-      await api.deleteServiceOrder(selSO.id);
-      setOrders(prev => prev.filter(o => o.id !== selSO.id));
-      setSelSO(null);
-    } catch (_) {}
-    setConfirmDel(false);
+    setSaving(false);
   };
 
-  const wide = useWide();
-  const openSO = (o) => { setDVatOn(false); setDVatRate('7'); setConfirmDel(false); setSelSO(o); };
+  const changeStatus = async (status) => {
+    if (!sel) return;
+    setStatusBusy(true); setStatusErr('');
+    try {
+      const updated = await api.updateServiceStatus(sel.id, status);
+      setSel(cur => ({ ...cur, ...updated }));
+      setOrders(prev => prev.map(o => (o.id === sel.id ? { ...o, ...updated } : o)));
+    } catch (e) {
+      setStatusErr(e.message || 'เปลี่ยนสถานะไม่สำเร็จ');
+    }
+    setStatusBusy(false);
+  };
+
+  const remove = async () => {
+    if (!sel) return;
+    try {
+      await api.deleteServiceOrder(sel.id);
+      setOrders(prev => prev.filter(o => o.id !== sel.id));
+      setAskDel(false); setSel(null);
+    } catch (_) { setAskDel(false); }
+  };
+
+  const togglePick = (id) => setPicked(p => ({ ...p, [id]: !p[id] }));
+  const pickedIds = Object.keys(picked).filter(k => picked[k]);
+  const printPicked = async (asPdf) => {
+    setPrinting(true);
+    const full = [];
+    for (const id of pickedIds) {
+      try { full.push(await api.getServiceOrder(id)); } catch (_) {}
+    }
+    if (full.length) (asPdf ? saveServiceOrder : printServiceOrder)(full);
+    setPrinting(false);
+  };
+
   const needle = q.trim().toLowerCase();
-  const shown = orders.filter(v => {
-    if (filter === 'open' && v.status === 'picked_up') return false;
-    if (filter !== 'all' && filter !== 'open' && v.status !== filter) return false;
+  const shown = orders.filter(o => {
+    if (filter === 'open' && o.status === 'picked_up') return false;
+    if (filter === 'picked_up' && o.status !== 'picked_up') return false;
     if (!needle) return true;
-    return `${v.service_no} ${v.customer_name || ''} ${v.product_name || ''}`.toLowerCase().includes(needle);
+    return `${o.service_no} ${o.customer_name || ''} ${o.job_type || ''}`.toLowerCase().includes(needle);
   });
   const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const dueOf = (o) => (num(o.balance) || Math.max(0, num(o.price) - num(o.deposit)));
+
+  const EditBtn = ({ o }) => (
+    <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => openEdit(o)} style={s.editBtn}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+      <MaterialCommunityIcons name="pencil-outline" size={sc(13)} color="#550a19" />
+      <Text style={s.editText}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
-      <Header title={lang === 'th' ? 'ใบสั่งซ่อม' : 'Service Order'} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
+      <Header title={lang === 'th' ? 'ใบสั่งซ่อม' : 'Service Order'} subtitle={headDate}
+        onBack={() => navigation.goBack()} lang={lang}
+        onLangToggle={() => setLang(l => (l === 'th' ? 'en' : 'th'))} />
       <ConnectingBar visible={loading} lang={lang} />
+
       <ScrollView contentContainerStyle={s.content}>
         <Toolbar>
           <SearchBox value={q} onChangeText={setQ}
-            placeholder={lang === 'th' ? 'ค้นหาเลขที่งานซ่อม ลูกค้า หรือสินค้า' : 'Search job no., customer or item'} />
+            placeholder={lang === 'th' ? 'ค้นหารหัสงานซ่อม หรือชื่อลูกค้า' : 'Search code or customer'} />
           {FILTERS.map(f => (
             <Chip key={f.key} label={lang === 'th' ? f.th : f.en} on={filter === f.key} onPress={() => setFilter(f.key)} />
           ))}
-          <PrimaryButton label={lang === 'th' ? 'รับงานซ่อมใหม่' : 'New service'} onPress={() => setShowNew(true)} />
+          <PrimaryButton label={lang === 'th' ? 'รับงานซ่อมใหม่' : 'New repair'} onPress={openNew} />
         </Toolbar>
+
+        {pickedIds.length > 0 && (
+          <View style={s.pickBar}>
+            <Text style={s.pickCount}>
+              {lang === 'th' ? `เลือกไว้ ${pickedIds.length} ใบ` : `${pickedIds.length} selected`}
+            </Text>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setPicked({})} style={s.pickClear}>
+              <Text style={s.pickClearText}>{lang === 'th' ? 'ล้าง' : 'Clear'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printPicked(false)} disabled={printing} style={s.pickBtn}>
+              {printing ? <ActivityIndicator size="small" color="#550a19" />
+                : <MaterialCommunityIcons name="printer" size={sc(15)} color="#550a19" />}
+              <Text style={s.pickBtnText}>{lang === 'th' ? 'ปริ้นที่เลือก' : 'Print selected'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printPicked(true)} disabled={printing} style={s.pickBtn}>
+              <MaterialCommunityIcons name="file-pdf-box" size={sc(15)} color="#550a19" />
+              <Text style={s.pickBtnText}>{lang === 'th' ? 'PDF ที่เลือก' : 'Save PDF'}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20, marginBottom: 12 }} />}
 
-        <Panel title={lang === 'th' ? 'ใบสั่งซ่อมทั้งหมด' : 'All service orders'}
-          right={`${shown.length} ${lang === 'th' ? 'งาน' : 'jobs'}`}>
+        <Panel title={lang === 'th' ? 'ใบสั่งซ่อมทั้งหมด' : 'All repairs'}
+          right={`${shown.length} ${lang === 'th' ? 'ใบ' : 'orders'}`}>
           {wide && <TableHead cols={COLS} />}
-          {!loading && shown.length === 0 && <Empty text={lang === 'th' ? 'ยังไม่มีใบสั่งซ่อม' : 'No service orders yet'} />}
+          {!loading && shown.length === 0 && <Empty text={lang === 'th' ? 'ยังไม่มีใบสั่งซ่อม' : 'No repairs yet'} />}
           {shown.map((o, i) => {
-            const tone = TONE[o.status] || 'done';
-            const label = slabs[o.status] || o.status;
             const last = i === shown.length - 1;
+            const label = slabs[o.status] || o.status;
             return wide ? (
-              <TableRow key={o.id} cols={COLS} last={last} onPress={() => openSO(o)}
-                cells={[
-                  <TdNo text={o.service_no} />,
-                  <TdMain text={o.customer_name || 'ไม่ระบุ'} />,
-                  <TdMain text={o.product_name || '—'} sub={o.issue_description} />,
-                  <Pill label={label} tone={tone} />,
-                  <TdAmt text={o.estimated_cost > 0 ? `฿${fmt(o.estimated_cost)}` : '—'} />,
-                ]} />
+              <TableRow key={o.id} cols={COLS} last={last} onPress={() => setSel(o)} cells={[
+                <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => togglePick(o.id)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <View style={[s.box, picked[o.id] && s.boxOn]}>
+                    {picked[o.id] && <MaterialCommunityIcons name="check" size={sc(11)} color="#fff" />}
+                  </View>
+                </TouchableOpacity>,
+                <TdNo text={o.service_no} />,
+                <TdMain text={o.customer_name || '—'} sub={o.customer_phone || undefined} />,
+                <TdMain text={`${o.job_type || '—'}${num(o.job_qty) > 1 ? ` · ${o.job_qty} ชิ้น` : ''}`}
+                  sub={o.repair_detail || undefined} />,
+                <TdMain text={o.due_date ? dateTH(o.due_date) : '—'} />,
+                <Pill label={label} tone={TONE[o.status] || 'done'} />,
+                <TdAmt text={num(o.price) ? `฿${fmt(dueOf(o))}` : '—'} />,
+                <EditBtn o={o} />,
+              ]} />
             ) : (
-              <TouchableOpacity dataSet={{ hov: 'btn' }} key={o.id} onPress={() => openSO(o)}
+              <TouchableOpacity dataSet={{ hov: 'btn' }} key={o.id} onPress={() => setSel(o)}
                 style={[s.mrow, last && { borderBottomWidth: 0 }]}>
+                <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => togglePick(o.id)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 6 }}>
+                  <View style={[s.box, picked[o.id] && s.boxOn]}>
+                    {picked[o.id] && <MaterialCommunityIcons name="check" size={sc(11)} color="#fff" />}
+                  </View>
+                </TouchableOpacity>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={s.cardNo}>{o.service_no}</Text>
-                  <Text style={s.cardTitle}>{o.product_name || '—'}</Text>
-                  <Text style={s.cardSub}>{o.customer_name || 'ไม่ระบุ'}</Text>
+                  <Text style={s.cardTitle}>{o.customer_name || '—'}</Text>
+                  <Text style={s.cardSub}>
+                    {o.job_type || '—'}{o.due_date ? ` · ส่ง ${dateTH(o.due_date)}` : ''}
+                  </Text>
+                  <View style={{ marginTop: 6, alignSelf: 'flex-start' }}><EditBtn o={o} /></View>
                 </View>
                 <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                  {o.estimated_cost > 0 && <Text style={s.cardAmt}>฿{fmt(o.estimated_cost)}</Text>}
-                  <Pill label={label} tone={tone} />
+                  <Text style={s.cardAmt}>{num(o.price) ? `฿${fmt(dueOf(o))}` : '—'}</Text>
+                  <Pill label={label} tone={TONE[o.status] || 'done'} />
                 </View>
               </TouchableOpacity>
             );
@@ -186,139 +335,322 @@ export default function ServiceOrderScreen({ navigation }) {
         <View style={{ height: 20 }} />
       </ScrollView>
 
-      {/* NEW SO MODAL */}
-      <Modal visible={showNew} animationType="slide" presentationStyle="pageSheet">
+      {/* ═══════════ ฟอร์ม ═══════════ */}
+      <ShellModal visible={showForm} animationType="slide" presentationStyle="pageSheet"
+        onClose={() => setShowForm(false)}>
         <View style={s.modal}>
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>{lang === 'th' ? 'รับงานซ่อมใหม่' : 'New Service Order'}</Text>
-            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(false)}>
-              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
-            </TouchableOpacity>
+            <Text style={s.modalTitle}>
+              {form.id ? (lang === 'th' ? 'แก้ไขใบสั่งซ่อม' : 'Edit repair')
+                       : (lang === 'th' ? 'รับงานซ่อมใหม่' : 'New repair')}
+            </Text>
           </View>
-          <ScrollView keyboardShouldPersistTaps="handled">
+
+          <ScrollView contentContainerStyle={s.modalBody}>
             {!!error && <View style={s.errBox}><Text style={s.errText}>{error}</Text></View>}
-            <Text style={s.fieldLabel}>{lang === 'th' ? 'ชื่อลูกค้า' : 'Customer Name'}</Text>
-            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={custName} onChangeText={setCustName} placeholderTextColor="#c0a0a8" />
-            <Text style={s.fieldLabel}>{lang === 'th' ? 'เบอร์โทร' : 'Phone'}</Text>
-            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={custPhone} onChangeText={setCustPhone} keyboardType="phone-pad" />
-            <Text style={s.fieldLabel}>{lang === 'th' ? 'ชื่อสินค้าที่นำมาซ่อม' : 'Product Name'}</Text>
-            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={prodName} onChangeText={setProdName} placeholderTextColor="#c0a0a8" />
-            <Text style={s.fieldLabel}>{lang === 'th' ? 'อาการเสีย / ปัญหา' : 'Issue Description'}</Text>
-            <TextInput dataSet={{ hov: 'field' }} style={[s.input, { height: 70, textAlignVertical: 'top' }]} value={issue} onChangeText={setIssue} multiline placeholderTextColor="#c0a0a8" />
-            <Text style={s.fieldLabel}>{lang === 'th' ? 'ค่าซ่อมประมาณ (บาท)' : 'Estimated Cost (THB)'}</Text>
-            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={estimatedCost} onChangeText={setEstimatedCost} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
-            <Text style={s.fieldLabel}>{lang === 'th' ? 'วันนัดรับ (YYYY-MM-DD)' : 'Due Date (YYYY-MM-DD)'}</Text>
-            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={dueDate} onChangeText={setDueDate} placeholder="2026-01-31" placeholderTextColor="#c0a0a8" />
-            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleCreate} disabled={saving} style={[s.createBtn, { opacity: saving ? 0.7 : 1, marginTop: 8 }]}>
-              {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
-              <Text style={s.createBtnText}>{saving ? 'กำลังบันทึก...' : (lang === 'th' ? 'รับงาน' : 'Accept Job')}</Text>
+
+            <Field label={lang === 'th' ? 'รหัสงานซ่อม — รันให้เอง พิมพ์ทับได้' : 'Service code'} s={s}>
+              <TextInput dataSet={{ hov: 'field' }} style={[s.input, s.codeIn]} value={form.service_no}
+                onChangeText={(v) => upd({ service_no: v })} placeholder="SERVICE#00001"
+                placeholderTextColor="#c0a0a8" autoCapitalize="characters" />
+            </Field>
+
+            <View style={s.row2}>
+              <Field label={lang === 'th' ? 'ชื่อลูกค้า' : 'Customer'} s={s} flex>
+                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={form.customer_name}
+                  onChangeText={(v) => upd({ customer_name: v })} placeholder="เช่น คุณณิชา รัตนพงศ์"
+                  placeholderTextColor="#c0a0a8" />
+              </Field>
+              <Field label={lang === 'th' ? 'เบอร์โทร' : 'Phone'} s={s} flex>
+                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={form.customer_phone}
+                  onChangeText={(v) => upd({ customer_phone: v })} keyboardType="phone-pad"
+                  placeholder="081-234-5678" placeholderTextColor="#c0a0a8" />
+              </Field>
+            </View>
+
+            <Field label={lang === 'th' ? 'ประเภทงานซ่อม' : 'Repair type'} s={s}>
+              <TextInput dataSet={{ hov: 'field' }} style={s.input} value={form.job_type}
+                onChangeText={(v) => upd({ job_type: v })} placeholder="เช่น แหวน"
+                placeholderTextColor="#c0a0a8" />
+              <View style={s.chipRow}>
+                {JOB_TYPES.map(t => (
+                  <TouchableOpacity dataSet={{ hov: 'btn' }} key={t} onPress={() => upd({ job_type: t })}
+                    style={[s.tChip, form.job_type === t && s.tChipOn]}>
+                    <Text style={[s.tChipText, form.job_type === t && s.tChipTextOn]}>{t}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Field>
+
+            <View style={s.row3}>
+              <Field label={lang === 'th' ? 'จำนวน (ชิ้น)' : 'Qty'} s={s} flex>
+                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={form.job_qty}
+                  onChangeText={(v) => upd({ job_qty: v.replace(/[^0-9]/g, '') })} keyboardType="number-pad"
+                  placeholder="1" placeholderTextColor="#c0a0a8" />
+              </Field>
+              <Field label={lang === 'th' ? 'วันที่รับงาน' : 'Received'} s={s} flex>
+                <DateInput style={s.input} value={form.received_at} onChangeText={(v) => upd({ received_at: v })} />
+              </Field>
+              <Field label={lang === 'th' ? 'วันที่ส่งงาน' : 'Due'} s={s} flex>
+                <DateInput style={s.input} value={form.due_date} onChangeText={(v) => upd({ due_date: v })} />
+              </Field>
+            </View>
+
+            <Text style={s.grpLabel}>
+              {lang === 'th' ? `รูปของที่ซ่อม — ${form.photos.length}/4` : `Photos — ${form.photos.length}/4`}
+            </Text>
+            <View style={s.photoRow}>
+              {form.photos.map((p, i) => (
+                <View key={i} style={s.photoBox}>
+                  <Image source={{ uri: p }} style={s.photoImg} resizeMode="cover" />
+                  <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => dropPhoto(i)} style={s.photoX}>
+                    <MaterialCommunityIcons name="close" size={sc(13)} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {form.photos.length < 4 && (
+                <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={pickPhoto} style={[s.photoBox, s.photoAdd]}>
+                  <MaterialCommunityIcons name="image-plus" size={sc(18)} color="#c0a0a8" />
+                  <Text style={s.photoAddText}>{lang === 'th' ? 'เพิ่มรูป' : 'Add'}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <Field label={lang === 'th' ? 'ข้อมูลการซ่อม' : 'Repair detail'} s={s}>
+              <TextInput dataSet={{ hov: 'field' }} style={[s.input, { height: 74, textAlignVertical: 'top' }]}
+                value={form.repair_detail} onChangeText={(v) => upd({ repair_detail: v })} multiline
+                placeholder="อาการ · สิ่งที่ต้องซ่อม" placeholderTextColor="#c0a0a8" />
+            </Field>
+
+            <Field label={lang === 'th' ? 'หมายเหตุ' : 'Notes'} s={s}>
+              <TextInput dataSet={{ hov: 'field' }} style={[s.input, { height: 60, textAlignVertical: 'top' }]}
+                value={form.note} onChangeText={(v) => upd({ note: v })} multiline
+                placeholder="สิ่งที่ต้องระวัง" placeholderTextColor="#c0a0a8" />
+            </Field>
+
+            <Text style={s.grpLabel}>{lang === 'th' ? 'ราคา' : 'Price'}</Text>
+            <View style={s.row2}>
+              <Field label={lang === 'th' ? 'ราคา' : 'Price'} s={s} flex>
+                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={form.price}
+                  onChangeText={(v) => upd({ price: v })} keyboardType="numeric"
+                  placeholder="0" placeholderTextColor="#c0a0a8" />
+              </Field>
+              <Field label={lang === 'th' ? 'มัดจำ' : 'Deposit'} s={s} flex>
+                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={form.deposit}
+                  onChangeText={(v) => upd({ deposit: v })} keyboardType="numeric"
+                  placeholder="0" placeholderTextColor="#c0a0a8" />
+              </Field>
+            </View>
+            <View style={s.totalBox}>
+              <Text style={s.totalLabel}>{lang === 'th' ? 'รวม (ราคา − มัดจำ)' : 'Balance'}</Text>
+              <Text style={s.totalVal}>฿{fmt(balance)}</Text>
+            </View>
+
+            <Field label={lang === 'th' ? 'ผู้รับออเดอร์' : 'Received by'} s={s}>
+              <View style={[s.input, s.lockBox]}>
+                <MaterialCommunityIcons name="account-check-outline" size={sc(14)} color="#550a19" />
+                <Text style={s.lockText}>{form.received_by || (lang === 'th' ? 'จากคนที่ล็อกอิน' : 'from login')}</Text>
+              </View>
+            </Field>
+
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={save} disabled={saving}
+              style={[s.saveBtn, saving && { opacity: 0.7 }]}>
+              <Text style={s.saveText}>
+                {saving ? (lang === 'th' ? 'กำลังบันทึก...' : 'Saving...')
+                        : form.id ? (lang === 'th' ? 'บันทึกการแก้ไข' : 'Save changes')
+                                  : (lang === 'th' ? 'บันทึกใบสั่งซ่อม' : 'Save repair')}
+              </Text>
             </TouchableOpacity>
+            <View style={{ height: 30 }} />
           </ScrollView>
         </View>
-      </Modal>
+      </ShellModal>
 
-      {/* DETAIL MODAL */}
-      <Modal visible={!!selSO} animationType="slide" presentationStyle="pageSheet">
-        {selSO && (
-          <ScrollView style={s.modal} contentContainerStyle={{ paddingTop: 16, paddingBottom: 30 }}>
-            {(() => {
-              const base = Number(selSO.total_cost ?? selSO.estimated_cost) || 0;
-              const rate = parseFloat(dVatRate) || 0;
-              const vatAmt = dVatOn ? Math.round(base * rate / 100) : 0;
-              const grand = base + vatAmt;
-              const docObj = { ...selSO, base_cost: base, vat_amount: vatAmt, grand_total: grand, vat_applied: dVatOn, vat_rate: rate };
-              return (
-                <>
-                  <DocWrapper>
-                    <DocHeader badge={lang === 'th' ? 'ใบสั่งซ่อม' : 'SERVICE ORDER'} docNo={selSO.service_no}
-                      meta={[
-                        ['วันที่รับ', new Date(selSO.received_at || selSO.created_at).toLocaleDateString('th-TH')],
-                        ['นัดรับ', selSO.pickup_date ? new Date(selSO.pickup_date).toLocaleDateString('th-TH') : '—'],
-                        ['VAT', dVatOn ? `${rate}%` : 'ไม่มี'],
-                      ]} />
-                    <Parties
-                      buyer={{ label: lang === 'th' ? 'ลูกค้า' : 'CUSTOMER', name: selSO.customer_name || 'ไม่ระบุ', sub: selSO.customer_phone || '—' }}
-                    />
-                    <Sec>
-                      <InfoRow label={lang === 'th' ? 'สินค้าที่ซ่อม' : 'Item'} value={selSO.product_name} />
-                      {!!selSO.issue_description && <InfoRow label={lang === 'th' ? 'อาการ / ปัญหา' : 'Issue'} value={selSO.issue_description} />}
-                    </Sec>
-                    <Sec>
-                      <SL>{lang === 'th' ? 'รายการซ่อม / บริการ' : 'SERVICES'}</SL>
-                      <ItemHead cols={['รายการ', '', 'ค่าบริการ']} />
-                      {(selSO.services || []).map((sv, i) => (
-                        <ItemRow key={i} name={sv.name || `บริการที่ ${i + 1}`}
-                          price={sv.is_warranty ? 0 : sv.price}
-                          sub={sv.is_warranty ? (lang === 'th' ? 'ประกัน (ฟรี)' : 'Warranty') : null} />
-                      ))}
-                      {(selSO.services || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
-                    </Sec>
-                    <Sec>
-                      <TRow label={lang === 'th' ? 'ค่าซ่อม' : 'Service cost'} value={fmtBaht(base)} />
-                      <VatRow enabled={dVatOn} rate={dVatRate} amount={vatAmt} onToggle={setDVatOn} onRate={setDVatRate} lang={lang} />
-                    </Sec>
-                    <GrandTotal label={lang === 'th' ? 'ยอดรวมทั้งสิ้น' : 'Grand Total'} value={fmtBaht(grand)} />
-                    <DocFooter>ใบสั่งซ่อม · Anakyn Gems Co., Ltd.</DocFooter>
-                  </DocWrapper>
-                  <Text style={[s.fieldLabel, { marginTop: 16 }]}>{lang === 'th' ? 'อัปเดตสถานะ' : 'Update status'}</Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-                    {['received','repairing','qc','notified','picked_up'].map(st => {
-                      const stStyle = STATUS_STYLE[st];
-                      return (
-                        <TouchableOpacity dataSet={{ hov: 'btn' }} key={st} onPress={() => handleUpdateStatus(selSO.id, st)}
-                          style={[s.stBtn, { backgroundColor: selSO.status === st ? stStyle.col : stStyle.bg, borderColor: stStyle.col }]}>
-                          <Text style={[s.stBtnText, { color: selSO.status === st ? '#fff' : stStyle.col }]}>{slabs[st]}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+      {/* ═══════════ ดูใบ ═══════════ */}
+      <ShellModal visible={!!sel} animationType="slide" presentationStyle="pageSheet"
+        onClose={() => { setSel(null); setAskDel(false); }}>
+        <View style={s.modal}>
+          <View style={s.modalHeader}>
+            <Text style={s.modalTitle}>{sel?.service_no}</Text>
+            {!!sel && (
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { const o = sel; setSel(null); openEdit(o); }}
+                style={s.editBtn}>
+                <MaterialCommunityIcons name="pencil-outline" size={sc(13)} color="#550a19" />
+                <Text style={s.editText}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <ScrollView contentContainerStyle={s.modalBody}>
+            {!!sel && (
+              <>
+                <View style={s.card}>
+                  <InfoLine s={s} k="ลูกค้า" v={sel.customer_name || '—'} />
+                  <InfoLine s={s} k="เบอร์โทร" v={sel.customer_phone || '—'} />
+                  <InfoLine s={s} k="ประเภทงานซ่อม" v={`${sel.job_type || '—'} · ${sel.job_qty || 1} ชิ้น`} />
+                  <InfoLine s={s} k="วันที่รับงาน" v={sel.received_at ? dateTH(sel.received_at) : '—'} />
+                  <InfoLine s={s} k="วันที่ส่งงาน" v={sel.due_date ? dateTH(sel.due_date) : '—'} />
+                  {!!sel.repair_detail && <InfoLine s={s} k="ข้อมูลการซ่อม" v={sel.repair_detail} />}
+                  {!!sel.note && <InfoLine s={s} k="หมายเหตุ" v={sel.note} />}
+                  <InfoLine s={s} k="ราคา" v={`฿${fmt(sel.price)}`} />
+                  <InfoLine s={s} k="มัดจำ" v={`฿${fmt(sel.deposit)}`} />
+                  <InfoLine s={s} k="รวม" v={`฿${fmt(dueOf(sel))}`} />
+                  <InfoLine s={s} k="ผู้รับออเดอร์" v={sel.received_by || '—'} />
+                </View>
+
+                <View style={s.card}>
+                  <Text style={s.secTitle}>สถานะ</Text>
+                  {!!statusErr && <View style={s.errBox}><Text style={s.errText}>{statusErr}</Text></View>}
+                  <View style={[s.chipRow, statusBusy && { opacity: 0.5 }]}>
+                    {STATUSES.map(st => (
+                      <TouchableOpacity dataSet={{ hov: 'btn' }} key={st} disabled={statusBusy}
+                        onPress={() => changeStatus(st)}
+                        style={[s.tChip, sel.status === st && s.tChipOn]}>
+                        <Text style={[s.tChipText, sel.status === st && s.tChipTextOn]}>{slabs[st]}</Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                  <DocActions lang={lang} onPrint={() => printServiceOrder(docObj)} onSavePdf={() => saveServiceOrder(docObj)} onBack={() => setSelSO(null)} />
-                  <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleDelete} style={[s.delBtn, confirmDel && s.delBtnConfirm]} activeOpacity={0.85}>
-                    <MaterialCommunityIcons name="trash-can-outline" size={sc(16)} color={confirmDel ? '#fff' : '#a32d2d'} />
-                    <Text style={[s.delBtnText, confirmDel && { color: '#fff' }]}>
-                      {confirmDel
-                        ? (lang === 'th' ? 'แตะอีกครั้งเพื่อยืนยันลบ' : 'Tap again to confirm')
-                        : (lang === 'th' ? 'ลบใบสั่งซ่อม' : 'Delete')}
-                    </Text>
+                </View>
+
+                <View style={s.actRow}>
+                  <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printServiceOrder(sel)} style={s.actBtn}>
+                    <MaterialCommunityIcons name="printer" size={sc(15)} color="#550a19" />
+                    <Text style={s.actText}>ปริ้น</Text>
                   </TouchableOpacity>
-                </>
-              );
-            })()}
+                  <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => saveServiceOrder(sel)} style={s.actBtn}>
+                    <MaterialCommunityIcons name="file-pdf-box" size={sc(15)} color="#550a19" />
+                    <Text style={s.actText}>บันทึก PDF</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setAskDel(true)} style={s.delBtn}>
+                  <MaterialCommunityIcons name="trash-can-outline" size={sc(14)} color="#a32d2d" />
+                  <Text style={s.delText}>{lang === 'th' ? 'ลบใบสั่งซ่อม' : 'Delete'}</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </ScrollView>
-        )}
-      </Modal>
+        </View>
+      </ShellModal>
+
+      {/* ═══════════ ยืนยันลบ ═══════════ */}
+      <ShellModal visible={askDel} animationType="fade" transparent onRequestClose={() => setAskDel(false)}>
+        <View style={s.overlay}>
+          <View style={s.confirmBox}>
+            <Text style={s.modalTitle}>ลบใบสั่งซ่อม</Text>
+            <Text style={s.confirmMsg}>{sel?.service_no} — ลบแล้วเอากลับไม่ได้</Text>
+            <View style={s.confirmBtns}>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setAskDel(false)}
+                style={[s.confirmBtn, { backgroundColor: '#f9f4f5' }]}>
+                <Text style={[s.confirmBtnText, { color: '#806070' }]}>ยกเลิก</Text>
+              </TouchableOpacity>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={remove}
+                style={[s.confirmBtn, { backgroundColor: '#a32d2d' }]}>
+                <Text style={[s.confirmBtnText, { color: '#fff5f7' }]}>ลบ</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </ShellModal>
+    </View>
+  );
+}
+
+function Field({ label, children, s, flex }) {
+  return (
+    <View style={[s.field, flex && { flex: 1, minWidth: 140 }]}>
+      <Text style={s.fieldLabel}>{label}</Text>
+      {children}
+    </View>
+  );
+}
+function InfoLine({ k, v, s }) {
+  return (
+    <View style={s.infoLine}>
+      <Text style={s.infoK}>{k}</Text>
+      <Text style={s.infoV}>{v}</Text>
     </View>
   );
 }
 
 const baseStyles = {
-  toolbar:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 14 },
-  toolbarCount: { flex: 1, fontSize: 12, color: '#9b7d86' },
-  primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
-  primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: '#fff5f7' },
-  content:    { padding: 14, paddingBottom: 30 },
-  mrow:       { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
-  emptyText:  { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
-  card:       { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
-  cardNo:     { fontSize: 10, fontWeight: '500', color: '#550a19', marginBottom: 1 },
-  cardTitle:  { fontSize: 13, fontWeight: '500', color: '#2c1015' },
-  cardSub:    { fontSize: 11, color: '#a07080', marginTop: 2 },
-  cardAmt:    { fontSize: 13, fontWeight: '500', color: '#2c1015' },
-  badge:      { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2.5, borderWidth: 1, borderColor: '#ece0e3' },
-  badgeText:  { fontSize: 9, fontWeight: '500' },
-  iconBtn:    { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  modal:      { flex: 1, backgroundColor: '#fff', padding: 16 },
-  modalHeader:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  modalTitle: { fontSize: 16, fontWeight: '500', color: '#550a19' },
-  errBox:     { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 12 },
-  errText:    { fontSize: 12, color: '#a32d2d' },
-  fieldLabel: { fontSize: 11, color: '#a07080', marginBottom: 4 },
-  input:      { backgroundColor: '#f9f4f5', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 8, padding: 9, fontSize: 13, color: '#2c1015', marginBottom: 10 },
-  createBtn:  { backgroundColor: '#550a19', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 },
-  createBtnText: { fontSize: 15, fontWeight: '500', color: '#fff5f7' },
-  stBtn:      { borderWidth: 0.5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
-  stBtnText:  { fontSize: 12, fontWeight: '500' },
-  delBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e8c0c8', backgroundColor: '#fff' },
-  delBtnConfirm: { backgroundColor: '#a32d2d', borderColor: '#a32d2d' },
-  delBtnText: { fontSize: 13, fontWeight: '600', color: '#a32d2d' },
+  content: { padding: 14, paddingBottom: 30 },
+  box: { width: 17, height: 17, borderRadius: 4, borderWidth: 1, borderColor: '#d4bcc2', justifyContent: 'center', alignItems: 'center' },
+  boxOn: { backgroundColor: '#550a19', borderColor: '#550a19' },
+
+  pickBar: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, backgroundColor: '#fdf0f2', borderWidth: 1, borderColor: '#f0d3da', borderRadius: 12, padding: 11, marginBottom: 12 },
+  pickCount: { flex: 1, minWidth: 100, fontSize: 13, color: '#550a19', fontWeight: '600' },
+  pickClear: { paddingVertical: 6, paddingHorizontal: 10 },
+  pickClearText: { fontSize: 12.5, color: '#9b7d86' },
+  pickBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e8d5d9', borderRadius: 9, paddingVertical: 8, paddingHorizontal: 13 },
+  pickBtnText: { fontSize: 12.5, color: '#550a19', fontWeight: '500' },
+
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: '#e8d5d9', backgroundColor: '#fff', alignSelf: 'flex-start' },
+  editText: { fontSize: 12, color: '#550a19', fontWeight: '500' },
+
+  mrow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
+  cardNo: { fontSize: 12, color: '#9b7d86', letterSpacing: 0.4 },
+  cardTitle: { fontSize: 14, color: '#2c1015', fontWeight: '500', marginTop: 1 },
+  cardSub: { fontSize: 12, color: '#9b7d86', marginTop: 2 },
+  cardAmt: { fontSize: 14, color: '#550a19', fontWeight: '600' },
+
+  modal: { flex: 1, backgroundColor: '#fdfbfb' },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingRight: 56, borderBottomWidth: 1, borderBottomColor: '#ece0e3', backgroundColor: '#fff' },
+  modalTitle: { fontSize: 16, fontWeight: '600', color: '#550a19' },
+  modalBody: { padding: 16, paddingBottom: 40 },
+
+  grpLabel: { fontSize: 11, letterSpacing: 1.4, color: '#9b7d86', fontWeight: '600', marginTop: 18, marginBottom: 10 },
+
+  field: { marginBottom: 12 },
+  fieldLabel: { fontSize: 12, color: '#9b7d86', marginBottom: 5 },
+  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, fontSize: 14, color: '#2c1015' },
+  codeIn: { fontWeight: '600', color: '#550a19', letterSpacing: 0.6 },
+  lockBox: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#fdf0f2', borderColor: '#f0d3da' },
+  lockText: { fontSize: 13.5, color: '#550a19', fontWeight: '500', flex: 1, minWidth: 0 },
+
+  row2: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  row3: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', alignItems: 'flex-start' },
+
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 7 },
+  tChip: { paddingVertical: 7, paddingHorizontal: 13, borderRadius: 999, borderWidth: 1, borderColor: '#e8d5d9', backgroundColor: '#fff' },
+  tChipOn: { backgroundColor: '#550a19', borderColor: '#550a19' },
+  tChipText: { fontSize: 12.5, color: '#a07080' },
+  tChipTextOn: { color: '#fff5f7' },
+
+  photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginBottom: 12 },
+  photoBox: { width: 96, height: 96, borderRadius: 9, overflow: 'hidden', borderWidth: 1, borderColor: '#ece0e3', backgroundColor: '#fff' },
+  photoImg: { width: '100%', height: '100%' },
+  photoX: { position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(85,10,25,0.85)', alignItems: 'center', justifyContent: 'center' },
+  photoAdd: { borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 3, backgroundColor: '#fdfbfb' },
+  photoAddText: { fontSize: 11, color: '#9b7d86' },
+
+  totalBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, backgroundColor: '#fdf0f2', borderWidth: 1, borderColor: '#f0d3da', borderRadius: 12, padding: 14, marginBottom: 12 },
+  totalLabel: { fontSize: 12.5, color: '#8c1b2f' },
+  totalVal: { fontSize: 20, fontWeight: '700', color: '#550a19' },
+
+  saveBtn: { backgroundColor: '#550a19', borderRadius: 11, paddingVertical: 14, alignItems: 'center', marginTop: 6 },
+  saveText: { color: '#fff5f7', fontSize: 15, fontWeight: '600' },
+
+  errBox: { backgroundColor: '#fdf0f2', borderWidth: 1, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 10 },
+  errText: { fontSize: 12, color: '#a32d2d' },
+
+  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 12, padding: 14, marginBottom: 12 },
+  secTitle: { fontSize: 13.5, fontWeight: '600', color: '#550a19', marginBottom: 4 },
+  infoLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
+  infoK: { width: 116, fontSize: 12.5, color: '#9b7d86' },
+  infoV: { flex: 1, fontSize: 13, color: '#2c1015', minWidth: 0 },
+
+  actRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginTop: 4 },
+  actBtn: { flex: 1, minWidth: 130, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e8d5d9', backgroundColor: '#fff' },
+  actText: { fontSize: 13.5, color: '#550a19', fontWeight: '500' },
+
+  delBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, marginTop: 12 },
+  delText: { fontSize: 13, color: '#a32d2d', fontWeight: '500' },
+
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  confirmBox: { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '100%', maxWidth: 360 },
+  confirmMsg: { fontSize: 12.5, color: '#7d5f68', lineHeight: 20, marginTop: 8, marginBottom: 14 },
+  confirmBtns: { flexDirection: 'row', gap: 10, marginTop: 6 },
+  confirmBtn: { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  confirmBtnText: { fontSize: 13.5, fontWeight: '600' },
 };

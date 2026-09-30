@@ -6,6 +6,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   ActivityIndicator, Modal, FlatList,
 } from 'react-native';
+import ShellModal from '../components/ShellModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
@@ -175,7 +176,7 @@ export default function InvoiceScreen({ navigation }) {
       </ScrollView>
 
       {/* NEW INVOICE MODAL */}
-      <Modal visible={showNew} animationType="slide" presentationStyle="pageSheet">
+      <ShellModal visible={showNew} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t.newTitle}</Text>
@@ -218,10 +219,11 @@ export default function InvoiceScreen({ navigation }) {
             <Text style={styles.issueBtnText}>{issuing ? t.issuing : t.issueBtnLabel}</Text>
           </TouchableOpacity>
         </View>
-      </Modal>
+      </ShellModal>
 
       {/* INVOICE DETAIL MODAL */}
-      <Modal visible={!!selInvoice} animationType="slide" presentationStyle="pageSheet">
+      <ShellModal visible={!!selInvoice} animationType="slide" presentationStyle="pageSheet"
+        onClose={() => setSelInvoice(null)}>
         {selInvoice && (
           <ScrollView style={styles.modal} contentContainerStyle={{ paddingTop: 16, paddingBottom: 30 }}>
             {(() => {
@@ -258,13 +260,13 @@ export default function InvoiceScreen({ navigation }) {
                     <GrandTotal label={t.grand} value={fmtBaht(grand)} />
                     <DocFooter>ขอบคุณที่ใช้บริการ · Anakyn Gems Co., Ltd.</DocFooter>
                   </DocWrapper>
-                  <DocActions lang={lang} onPrint={() => printInvoice(docObj)} onSavePdf={() => saveInvoice(docObj)} onBack={() => setSelInvoice(null)} />
+                  <DocActions lang={lang} onPrint={() => printInvoice(docObj)} onSavePdf={() => saveInvoice(docObj)} />
                 </>
               );
             })()}
           </ScrollView>
         )}
-      </Modal>
+      </ShellModal>
     </View>
   );
 }

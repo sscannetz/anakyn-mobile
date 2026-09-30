@@ -6,6 +6,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Modal, FlatList, Platform,
 } from 'react-native';
+import ShellModal from '../components/ShellModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
@@ -36,7 +37,7 @@ const T = {
     saveSuccess: 'บันทึกการขายเรียบร้อย ✓ (สต๊อกถูกหักอัตโนมัติแล้ว)',
     payMethods: [
       { key: 'cash', label: 'เงินสด',    sub: 'Cash',      icon: 'cash' },
-      { key: 'qr',   label: 'โอน / QR',  sub: 'PromptPay', icon: 'qrcode' },
+      { key: 'qr',   label: 'โอน / QR',  sub: 'QR ร้าน',    icon: 'qrcode' },
       { key: 'card', label: 'บัตรเครดิต', sub: 'Visa / MC', icon: 'credit-card' },
     ],
   },
@@ -58,7 +59,7 @@ const T = {
     saveSuccess: 'Sale saved ✓ (stock deducted)',
     payMethods: [
       { key: 'cash', label: 'Cash',        sub: 'Physical',  icon: 'cash' },
-      { key: 'qr',   label: 'Transfer/QR', sub: 'PromptPay', icon: 'qrcode' },
+      { key: 'qr',   label: 'Transfer/QR', sub: 'Shop QR',   icon: 'qrcode' },
       { key: 'card', label: 'Credit card', sub: 'Visa / MC', icon: 'credit-card' },
     ],
   },
@@ -251,6 +252,18 @@ export default function SaleScreen({ navigation, route }) {
     (c.phone || '').includes(custQuery)
   );
 
+  // ── PromptPay ผ่าน Omise: ปิดไว้ก่อน (30 ก.ย. 2569) ──────────────
+  // ร้านยังไม่ได้คีย์ API ตัวจริง ตอนนี้ใช้ QR ของร้านเองที่ติดหน้าเคาน์เตอร์
+  // เงินจึงเข้านอกระบบ บิลต้องปิดเป็น "ขายสำเร็จ" ทันทีเหมือนเงินสด
+  //
+  // ถ้าปล่อยให้เรียก createPromptPay ต่อ หลังบ้านจะสั่ง
+  //     UPDATE sales SET status = 'pending'
+  // แล้วรอ Omise ยืนยันว่าจ่ายจริง — ซึ่งไม่มีวันมา บิลจะค้างตลอดไป
+  // และไม่ถูกนับในหน้าสรุปยอด (สรุปยอดนับเฉพาะ status = 'completed')
+  //
+  // ได้คีย์จริงเมื่อไหร่ เปลี่ยนเป็น true อย่างเดียว เส้นทางเดิมกลับมาครบ
+  const OMISE_QR_ENABLED = false;
+
   const PAY_MAP = { cash: 'cash', qr: 'transfer', transfer: 'transfer', card: 'card' };
 
   // ออกใบเสร็จอัตโนมัติแล้วเด้งไปหน้าใบเสร็จเพื่อสั่งปริ้น
@@ -295,7 +308,7 @@ export default function SaleScreen({ navigation, route }) {
       const qrRow   = payRows.find(r => r.method === 'qr');
 
       // ── มียอดที่จ่ายผ่าน QR → สร้าง QR แล้วรอเงินเข้าก่อน ค่อยออกใบเสร็จ ──
-      if (qrRow) {
+      if (qrRow && OMISE_QR_ENABLED) {
         try {
           const payment = await api.createPromptPay({ sale_id: sale.id, amount: qrRow.amount });
           setQrPending({ payment, sale, mainPay });
@@ -598,7 +611,7 @@ export default function SaleScreen({ navigation, route }) {
       </ScrollView>
 
       {/* STOCK PICKER MODAL */}
-      <Modal visible={showPicker} animationType="slide" presentationStyle="pageSheet">
+      <ShellModal visible={showPicker} animationType="slide" presentationStyle="pageSheet">
         <View style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{t.fromStock}</Text>
@@ -656,10 +669,10 @@ export default function SaleScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </ShellModal>
 
       {/* CUSTOMER PICKER MODAL */}
-      <Modal visible={showCustPicker} animationType="slide" presentationStyle="pageSheet">
+      <ShellModal visible={showCustPicker} animationType="slide" presentationStyle="pageSheet">
         <View style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{t.customer}</Text>
@@ -687,7 +700,7 @@ export default function SaleScreen({ navigation, route }) {
             )}
           />
         </View>
-      </Modal>
+      </ShellModal>
 
       {/* กล้องสแกน QR — สแกนติดกันหลายชิ้นได้ ตะกร้าไม่หาย */}
       <QrScanner

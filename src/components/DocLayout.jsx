@@ -181,8 +181,9 @@ export function VatRow({ enabled, rate, amount, onToggle, onRate, lang = 'th' })
   );
 }
 
-// ── ปุ่มล่างสุด: สั่งปริ้น + บันทึก PDF (แยกกัน) + ปุ่มย้อนกลับ ──
-export function DocActions({ onPrint, onSavePdf, onBack, lang = 'th' }) {
+// ── ปุ่มล่างสุด: สั่งปริ้น + บันทึก PDF ──
+// ปุ่มปิดย้ายขึ้นไปเป็นกากบาทมุมขวาบนของหน้าต่างแล้ว (ดู ShellModal)
+export function DocActions({ onPrint, onSavePdf, lang = 'th' }) {
   const { styles: d, sc } = useScaledStyles(baseStyles);
   return (
     <View style={d.actionsWrap}>
@@ -196,12 +197,6 @@ export function DocActions({ onPrint, onSavePdf, onBack, lang = 'th' }) {
           <Text style={d.actPdfText}>{lang === 'th' ? 'บันทึก PDF' : 'Save PDF'}</Text>
         </TouchableOpacity>
       </View>
-      {onBack && (
-        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onBack} style={d.actBack} activeOpacity={0.85}>
-          <MaterialCommunityIcons name="arrow-left" size={sc(18)} color="#806070" />
-          <Text style={d.actBackText}>{lang === 'th' ? 'ย้อนกลับ' : 'Back'}</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 }

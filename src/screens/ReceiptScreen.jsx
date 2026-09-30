@@ -6,6 +6,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   ActivityIndicator, Modal,
 } from 'react-native';
+import ShellModal from '../components/ShellModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
@@ -169,7 +170,7 @@ export default function ReceiptScreen({ navigation, route }) {
       </ScrollView>
 
       {/* NEW RECEIPT MODAL */}
-      <Modal visible={showNew} animationType="slide" presentationStyle="pageSheet">
+      <ShellModal visible={showNew} animationType="slide" presentationStyle="pageSheet">
         <View style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'ออกใบเสร็จใหม่' : 'New Receipt'}</Text>
@@ -209,10 +210,11 @@ export default function ReceiptScreen({ navigation, route }) {
             <Text style={s.issueBtnText}>{issuing ? (lang === 'th' ? 'กำลังออก...' : 'Issuing...') : (lang === 'th' ? 'ออกใบเสร็จ' : 'Issue receipt')}</Text>
           </TouchableOpacity>
         </View>
-      </Modal>
+      </ShellModal>
 
       {/* RECEIPT DETAIL MODAL */}
-      <Modal visible={!!selRc} animationType="slide" presentationStyle="pageSheet">
+      <ShellModal visible={!!selRc} animationType="slide" presentationStyle="pageSheet"
+        onClose={() => setSelRc(null)}>
         {selRc && (
           <ScrollView style={s.modal} contentContainerStyle={{ paddingTop: 16, paddingBottom: 30 }}>
             <DocWrapper>
@@ -243,7 +245,7 @@ export default function ReceiptScreen({ navigation, route }) {
               <GrandTotal label={lang === 'th' ? 'จำนวนเงินที่รับ' : 'Amount received'} value={fmtBaht(selRc.amount)} />
               <DocFooter>ขอบคุณที่ใช้บริการ · Anakyn Gems Co., Ltd.</DocFooter>
             </DocWrapper>
-            <DocActions lang={lang} onPrint={() => printReceipt(selRc)} onSavePdf={() => saveReceipt(selRc)} onBack={() => setSelRc(null)} />
+            <DocActions lang={lang} onPrint={() => printReceipt(selRc)} onSavePdf={() => saveReceipt(selRc)} />
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleDelete} style={[s.delBtn, confirmDel && s.delBtnConfirm]} activeOpacity={0.85}>
               <MaterialCommunityIcons name="trash-can-outline" size={sc(16)} color={confirmDel ? '#fff' : '#a32d2d'} />
               <Text style={[s.delBtnText, confirmDel && { color: '#fff' }]}>
@@ -254,7 +256,7 @@ export default function ReceiptScreen({ navigation, route }) {
             </TouchableOpacity>
           </ScrollView>
         )}
-      </Modal>
+      </ShellModal>
     </View>
   );
 }

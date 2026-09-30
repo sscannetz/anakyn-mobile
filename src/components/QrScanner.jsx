@@ -6,6 +6,7 @@
 // ══════════════════════════════════════════════════════
 import { useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Platform } from 'react-native';
+import ShellModal from './ShellModal';
 import { useScaledStyles } from '../responsive';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -34,7 +35,7 @@ export default function QrScanner({ visible, onClose, onScan, note, count = 0, l
   const noteOk = !note || note.ok || note.reason === 'busy';
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <ShellModal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={s.root}>
         {/* หัวข้อ */}
         <View style={s.head}>
@@ -92,7 +93,7 @@ export default function QrScanner({ visible, onClose, onScan, note, count = 0, l
           </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+    </ShellModal>
   );
 }
 

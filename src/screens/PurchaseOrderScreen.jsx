@@ -6,6 +6,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Modal, FlatList,
 } from 'react-native';
+import ShellModal from '../components/ShellModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
@@ -177,7 +178,7 @@ export default function PurchaseOrderScreen({ navigation }) {
       </ScrollView>
 
       {/* NEW PO MODAL */}
-      <Modal visible={showNew} animationType="slide" presentationStyle="pageSheet">
+      <ShellModal visible={showNew} animationType="slide" presentationStyle="pageSheet">
         <View style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'สร้างใบสั่งซื้อ' : 'Create Purchase Order'}</Text>
@@ -220,10 +221,11 @@ export default function PurchaseOrderScreen({ navigation }) {
             </TouchableOpacity>
           </ScrollView>
         </View>
-      </Modal>
+      </ShellModal>
 
       {/* DETAIL MODAL */}
-      <Modal visible={!!selPO} animationType="slide" presentationStyle="pageSheet">
+      <ShellModal visible={!!selPO} animationType="slide" presentationStyle="pageSheet"
+        onClose={() => setSelPO(null)}>
         {selPO && (
           <ScrollView style={s.modal} contentContainerStyle={{ paddingTop: 16, paddingBottom: 30 }}>
             {(() => {
@@ -275,13 +277,13 @@ export default function PurchaseOrderScreen({ navigation }) {
                       );
                     })}
                   </View>
-                  <DocActions lang={lang} onPrint={() => printPO(docObj)} onSavePdf={() => savePO(docObj)} onBack={() => setSelPO(null)} />
+                  <DocActions lang={lang} onPrint={() => printPO(docObj)} onSavePdf={() => savePO(docObj)} />
                 </>
               );
             })()}
           </ScrollView>
         )}
-      </Modal>
+      </ShellModal>
     </View>
   );
 }

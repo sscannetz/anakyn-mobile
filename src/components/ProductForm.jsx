@@ -7,8 +7,10 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  ActivityIndicator, Image, Modal, FlatList,
+  ActivityIndicator, Image,
 } from 'react-native';
+import ShellModal from './ShellModal';
+import SelectInput from './SelectInput';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -26,14 +28,15 @@ export const METAL_TABS = [
   { key: '18K',    label: '18K',    col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
   { key: 'silver', label: 'Silver', col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
 ];
-const SHAPES = [
+// ใช้ร่วมกับหน้าใบสั่งทำด้วย — แหล่งเดียวจะได้ไม่มีทางหลุดกัน
+export const SHAPES = [
   'Round Brilliant','Princess Cut','Cushion Cut','Emerald Cut','Asscher Cut',
   'Radiant Cut','Oval Cut','Pear Cut','Marquise Cut','Heart Cut',
   'Elongated Cushion Cut','Baguette Cut','Old Mine Cut','Old European Cut','Rose Cut',
   'Trillion Cut','Kite Cut','Shield Cut','Hexagon Cut',
 ];
-const COLORS  = ['D','E','F','G','H','I','J','K','L','M','Fancy Yellow','Fancy Pink','Fancy Blue','Fancy Green'];
-const CLARITY = ['FL','IF','VVS1','VVS2','VS1','VS2','SI1','SI2','I1','I2','I3'];
+export const COLORS  = ['D','E','F','G','H','I','J','K','L','M','Fancy Yellow','Fancy Pink','Fancy Blue','Fancy Green'];
+export const CLARITY = ['FL','IF','VVS1','VVS2','VS1','VS2','SI1','SI2','I1','I2','I3'];
 
 // รหัสหมวดหมู่ที่เก็บใน database — ลำดับตรงกับ T[lang].categories
 export const CAT_CODES = ['ring','necklace','earring','bracelet','pendant','other'];
@@ -208,8 +211,6 @@ export default function ProductForm({
   const [saveError, setSaveError]     = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  const [dropdownTarget, setDropdownTarget] = useState(null); // { diamondId, field, options }
-  const [dropdownQuery, setDropdownQuery]   = useState('');
 
   // create: เลข SKU วิ่งตามหน้าแม่
   useEffect(() => { if (!isEdit) setSkuNum(nextSkuNum); }, [nextSkuNum, isEdit]);
@@ -355,14 +356,6 @@ export default function ProductForm({
       setSaving(false);
     }
   };
-
-  const openDropdown = (diamondId, field, options) => {
-    setDropdownTarget({ diamondId, field, options });
-    setDropdownQuery('');
-  };
-  const filteredDropdown = dropdownTarget?.options.filter(o =>
-    !dropdownQuery || o.toLowerCase().includes(dropdownQuery.toLowerCase())
-  ) || [];
 
   return (
     <>
@@ -510,12 +503,15 @@ export default function ProductForm({
               {[['dShape', SHAPES, 'shape'], ['dColor', COLORS, 'color'], ['dClarity', CLARITY, 'clarity']].map(([field, opts, dKey]) => (
                 <View key={field} style={{ flex: 1 }}>
                   <Field label={t[field]}>
-                    <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => openDropdown(d.id, field, opts)}
-                      style={[s.input, s.dInput, { justifyContent: 'center' }]}>
-                      <Text style={{ fontSize: 11, color: d[dKey] ? '#2c1015' : '#c0a0a8' }} numberOfLines={1}>
-                        {d[dKey] || t.selectPh}
-                      </Text>
-                    </TouchableOpacity>
+                    <SelectInput
+                      value={d[dKey]}
+                      onChange={v => updD(d.id, dKey, v)}
+                      options={opts}
+                      placeholder={t.selectPh}
+                      title={t[field]}
+                      style={[s.input, s.dInput]}
+                      css={{ backgroundColor: '#fdf0f2', border: '0.5px solid #ece0e3', borderRadius: 8, padding: 9, fontSize: 11, lineHeight: '15px' }}
+                    />
                   </Field>
                 </View>
               ))}
@@ -634,7 +630,7 @@ export default function ProductForm({
       </View>
 
       {/* PHOTO MENU */}
-      <Modal visible={photoMenuOpen} transparent animationType="slide" onRequestClose={() => setPhotoMenuOpen(false)}>
+      <ShellModal visible={photoMenuOpen} transparent animationType="slide" onRequestClose={() => setPhotoMenuOpen(false)}>
         <TouchableOpacity dataSet={{ hov: 'btn' }} style={s.bottomSheetOverlay} onPress={() => setPhotoMenuOpen(false)} activeOpacity={1}>
           <View style={s.bottomSheet}>
             <View style={s.sheetHandle} />
@@ -648,37 +644,8 @@ export default function ProductForm({
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
-      </Modal>
+      </ShellModal>
 
-      {/* DROPDOWN (ทรง / สี / ความสะอาด) */}
-      <Modal visible={!!dropdownTarget} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setDropdownTarget(null)}>
-        <View style={s.modal}>
-          <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>{dropdownTarget ? t[dropdownTarget.field] : ''}</Text>
-            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setDropdownTarget(null)}>
-              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
-            </TouchableOpacity>
-          </View>
-          <TextInput dataSet={{ hov: 'field' }} style={s.modalSearch} value={dropdownQuery} onChangeText={setDropdownQuery} placeholder={t.search} placeholderTextColor="#b08090" autoFocus />
-          <FlatList
-            data={filteredDropdown}
-            keyExtractor={item => item}
-            renderItem={({ item }) => {
-              const field = dropdownTarget?.field;
-              const dKey  = field === 'dShape' ? 'shape' : field === 'dColor' ? 'color' : 'clarity';
-              const dId   = dropdownTarget?.diamondId;
-              const cur   = diamonds.find(d => d.id === dId)?.[dKey];
-              return (
-                <TouchableOpacity dataSet={{ hov: 'btn' }}
-                  onPress={() => { updD(dId, dKey, item); setDropdownTarget(null); }}
-                  style={[s.stockRow, { backgroundColor: cur === item ? '#550a19' : 'transparent' }]}>
-                  <Text style={[{ fontSize: 14 }, { color: cur === item ? '#fff' : '#2c1015' }]}>{item}</Text>
-                </TouchableOpacity>
-              );
-            }}
-          />
-        </View>
-      </Modal>
     </>
   );
 }

@@ -106,6 +106,9 @@ export const api = {
   getServiceOrders: () => request('/service-orders'),
   getServiceOrder: (id) => request(`/service-orders/${id}`),
   createServiceOrder: (data) => request('/service-orders', { method: 'POST', body: data }),
+  updateServiceOrder: (id, data) => request(`/service-orders/${id}`, { method: 'PUT', body: data }),
+  // รหัสถัดไป SERVICE#xxxxx + ชื่อคนล็อกอิน
+  nextServiceNo: () => request('/service-orders/next-no'),
   updateServiceStatus: (id, status) =>
     request(`/service-orders/${id}/status`, { method: 'PATCH', body: { status } }),
   deleteServiceOrder: (id) => request(`/service-orders/${id}`, { method: 'DELETE' }),
@@ -114,6 +117,11 @@ export const api = {
   getWorkOrders: () => request('/work-orders'),
   getWorkOrder: (id) => request(`/work-orders/${id}`),
   createWorkOrder: (data) => request('/work-orders', { method: 'POST', body: data }),
+  updateWorkOrder: (id, data) => request(`/work-orders/${id}`, { method: 'PUT', body: data }),
+  // เลขที่ถัดไป — หน้าจอเอาไปโชว์ในช่องรหัสงานก่อนกดบันทึก (พิมพ์ทับได้)
+  nextWorkNo: () => request('/work-orders/next-no'),
+  // รหัสสินค้าถัดไปสำหรับตอนเพิ่มงานเข้าสต๊อก (คนละชุดกับรหัสงาน)
+  nextStockSku: () => request('/work-orders/next-sku'),
   updateWorkOrderStatus: (id, status) =>
     request(`/work-orders/${id}/status`, { method: 'PATCH', body: { status } }),
   deleteWorkOrder: (id) => request(`/work-orders/${id}`, { method: 'DELETE' }),

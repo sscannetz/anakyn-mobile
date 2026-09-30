@@ -6,6 +6,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Modal, FlatList,
 } from 'react-native';
+import ShellModal from '../components/ShellModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
@@ -200,7 +201,7 @@ export default function QuotationScreen({ navigation }) {
       </ScrollView>
 
       {/* NEW QT MODAL */}
-      <Modal visible={showNew} animationType="slide" presentationStyle="pageSheet">
+      <ShellModal visible={showNew} animationType="slide" presentationStyle="pageSheet">
         <View style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'ออกใบเสนอราคาใหม่' : 'New Quotation'}</Text>
@@ -301,10 +302,10 @@ export default function QuotationScreen({ navigation }) {
             </TouchableOpacity>
           </ScrollView>
         </View>
-      </Modal>
+      </ShellModal>
 
       {/* PRODUCT PICKER */}
-      <Modal visible={showProdPicker} animationType="slide" presentationStyle="pageSheet">
+      <ShellModal visible={showProdPicker} animationType="slide" presentationStyle="pageSheet">
         <View style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'เลือกสินค้า' : 'Select Product'}</Text>
@@ -328,10 +329,11 @@ export default function QuotationScreen({ navigation }) {
             )}
           />
         </View>
-      </Modal>
+      </ShellModal>
 
       {/* DETAIL MODAL */}
-      <Modal visible={!!selQt} animationType="slide" presentationStyle="pageSheet">
+      <ShellModal visible={!!selQt} animationType="slide" presentationStyle="pageSheet"
+        onClose={() => setSelQt(null)}>
         {selQt && (
           <ScrollView style={s.modal} contentContainerStyle={{ paddingTop: 16, paddingBottom: 30 }}>
             {(() => {
@@ -381,13 +383,13 @@ export default function QuotationScreen({ navigation }) {
                       );
                     })}
                   </View>
-                  <DocActions lang={lang} onPrint={() => printQuotation(docObj)} onSavePdf={() => saveQuotation(docObj)} onBack={() => setSelQt(null)} />
+                  <DocActions lang={lang} onPrint={() => printQuotation(docObj)} onSavePdf={() => saveQuotation(docObj)} />
                 </>
               );
             })()}
           </ScrollView>
         )}
-      </Modal>
+      </ShellModal>
     </View>
   );
 }

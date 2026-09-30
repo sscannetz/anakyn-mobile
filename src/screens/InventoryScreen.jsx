@@ -8,6 +8,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   ActivityIndicator, Image, Modal,
 } from 'react-native';
+import ShellModal from '../components/ShellModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
@@ -488,7 +489,7 @@ export default function InventoryScreen({ navigation }) {
       )}
 
       {/* โมดัลแก้ไขสินค้า */}
-      <Modal visible={!!editing} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEditing(null)}>
+      <ShellModal visible={!!editing} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEditing(null)}>
         <View style={{ flex: 1, backgroundColor: '#fdfbfb' }}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle} numberOfLines={1}>{t.editTitle}</Text>
@@ -503,7 +504,7 @@ export default function InventoryScreen({ navigation }) {
             <View style={{ height: 20 }} />
           </ScrollView>
         </View>
-      </Modal>
+      </ShellModal>
     </View>
   );
 }
