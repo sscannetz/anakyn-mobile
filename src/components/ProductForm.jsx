@@ -76,6 +76,11 @@ export const T = {
     tagNote: 'บรรทัด "มีใบเซอร์" ขึ้นเองเมื่อสินค้ามีใบรับรอง',
     tagNamePh: 'ชื่อสินค้า',
     clearForm: 'ล้างฟอร์ม',
+    tagAskTitle: 'บันทึกสินค้าแล้ว',
+    tagAskSub: 'ปริ้นป้าย tag ของชิ้นนี้เลยไหม',
+    tagCopies: 'จำนวนดวง',
+    tagPrintBtn: 'ปริ้น tag',
+    tagCloseBtn: 'ปิด',
   },
   en: {
     skuSection: 'Product Code (SKU)', skuEditLabel: 'Product Code',
@@ -110,11 +115,17 @@ export const T = {
     tagNote: 'The "certificate" line appears by itself when the item has one',
     tagNamePh: 'Product name',
     clearForm: 'Clear form',
+    tagAskTitle: 'Product saved',
+    tagAskSub: 'Print the tag for this item now?',
+    tagCopies: 'Copies',
+    tagPrintBtn: 'Print tag',
+    tagCloseBtn: 'Close',
     search: 'Search...',
   },
 };
 
 import TagPreview from './TagPreview';
+import { printTags } from '../print';
 
 const fmt = (n) => {
   const num = Number(n);
@@ -210,6 +221,11 @@ export default function ProductForm({
   const [saving, setSaving]           = useState(false);
   const [saveError, setSaveError]     = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // ป้าย tag ที่เด้งถามหลังบันทึก — เก็บ "ภาพนิ่ง" ของสินค้าที่เพิ่งบันทึก
+  // ต้องเก็บก่อน resetForm() ไม่งั้นฟอร์มถูกล้างแล้วจะเหลือแต่ป้ายเปล่า
+  const [tagAsk, setTagAsk]       = useState(null);   // null = ไม่เด้ง
+  const [tagCopies, setTagCopies] = useState(1);
 
 
   // create: เลข SKU วิ่งตามหน้าแม่
@@ -348,6 +364,21 @@ export default function ProductForm({
 
       await onSubmit?.(payload);
       setSaveSuccess(true);
+
+      // ★ ต้องสร้างก่อน resetForm() — หลัง reset ค่าในฟอร์มหายหมด
+      // ใช้ dList (เพชรที่กรองแล้ว) ไม่ใช่ state diamonds ดิบ ๆ
+      // จะได้ตรงกับที่ปริ้นจากหน้า "สต๊อกสินค้า" เป๊ะ
+      setTagCopies(1);
+      setTagAsk({
+        name: payload.name,
+        sku: payload.sku,
+        sale_price: payload.sale_price,
+        metal_type: payload.metal_type,
+        metal_weight_g: payload.metal_weight_g,
+        diamonds: dList,
+        has_certificate: payload.has_certificate,
+      });
+
       if (isEdit) setPhotoOrig(photoUri);
       else { setSkuNum(n => n + 1); resetForm(); }
     } catch (err) {
@@ -646,6 +677,46 @@ export default function ProductForm({
         </TouchableOpacity>
       </ShellModal>
 
+      {/* ── เด้งถามปริ้นป้าย tag หลังบันทึกสินค้า ─────────────────── */}
+      {/* transparent = วางทับพื้นที่เนื้อหาเฉย ๆ เมนูซ้ายยังกดได้ (ดู ShellModal.jsx) */}
+      <ShellModal visible={!!tagAsk} transparent animationType="fade" onRequestClose={() => setTagAsk(null)}>
+        <View style={s.tagAskWrap}>
+          <TouchableOpacity style={s.tagAskBackdrop} activeOpacity={1} onPress={() => setTagAsk(null)} />
+          <View style={s.tagAskCard}>
+            <Text style={s.tagAskTitle}>{t.tagAskTitle}</Text>
+            <Text style={s.tagAskSub}>{t.tagAskSub}</Text>
+
+            <View style={s.tagAskStage}>
+              {!!tagAsk && <TagPreview product={tagAsk} lang={lang} />}
+            </View>
+
+            <View style={s.tagAskCopies}>
+              <Text style={s.tagAskCopiesLabel}>{t.tagCopies}</Text>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} style={s.tagAskStep}
+                onPress={() => setTagCopies(n => Math.max(1, n - 1))}>
+                <Text style={s.tagAskStepText}>−</Text>
+              </TouchableOpacity>
+              <Text style={s.tagAskCount}>{tagCopies}</Text>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} style={[s.tagAskStep, s.tagAskStepPlus]}
+                onPress={() => setTagCopies(n => Math.min(99, n + 1))}>
+                <Text style={[s.tagAskStepText, { color: '#550a19' }]}>+</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={s.tagAskBtns}>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} style={s.tagAskClose} onPress={() => setTagAsk(null)}>
+                <Text style={s.tagAskCloseText}>{t.tagCloseBtn}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} style={s.tagAskPrint} activeOpacity={0.85}
+                onPress={() => { printTags([{ ...tagAsk, copies: tagCopies }]); setTagAsk(null); }}>
+                <MaterialCommunityIcons name="printer" size={sc(16)} color="#fff5f7" />
+                <Text style={s.tagAskPrintText}>{t.tagPrintBtn}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </ShellModal>
+
     </>
   );
 }
@@ -718,6 +789,29 @@ const baseStyles = {
   tagSize:    { fontSize: 10.5, color: '#9b7d86' },
   tagStage:   { backgroundColor: '#fdfbfb', borderWidth: 1, borderColor: '#f2e6e9', borderRadius: 10, padding: 12, alignItems: 'center' },
   tagNote:    { fontSize: 10.5, color: '#9b7d86', marginTop: 8, lineHeight: 15 },
+
+  // popup ถามปริ้นป้าย tag หลังบันทึก
+  tagAskWrap:     { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
+  tagAskBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(44,16,21,0.42)' },
+  tagAskCard:     { width: '100%', maxWidth: 420, backgroundColor: '#fdfbfb', borderRadius: 16, padding: 18,
+                    borderWidth: 0.5, borderColor: '#ece0e3' },
+  tagAskTitle:    { fontSize: 15, fontWeight: '700', color: '#550a19' },
+  tagAskSub:      { fontSize: 12, color: '#9b7d86', marginTop: 3 },
+  tagAskStage:    { alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
+  tagAskCopies:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  tagAskCopiesLabel: { fontSize: 12, color: '#3a2228', flex: 1 },
+  tagAskStep:     { width: 34, height: 34, borderRadius: 9, backgroundColor: '#fff', borderWidth: 0.5,
+                    borderColor: '#e8c0c8', alignItems: 'center', justifyContent: 'center' },
+  tagAskStepPlus: { backgroundColor: '#fdf0f2' },
+  tagAskStepText: { fontSize: 16, fontWeight: '700', color: '#9b7d86' },
+  tagAskCount:    { fontSize: 15, fontWeight: '700', color: '#550a19', minWidth: 30, textAlign: 'center' },
+  tagAskBtns:     { flexDirection: 'row', gap: 8, marginTop: 16 },
+  tagAskClose:    { flex: 1, height: 44, borderRadius: 11, backgroundColor: '#fff', borderWidth: 0.5,
+                    borderColor: '#e8c0c8', alignItems: 'center', justifyContent: 'center' },
+  tagAskCloseText:{ fontSize: 13, fontWeight: '500', color: '#9b7d86' },
+  tagAskPrint:    { flex: 2, height: 44, borderRadius: 11, backgroundColor: '#8c1b2f', flexDirection: 'row',
+                    alignItems: 'center', justifyContent: 'center', gap: 7 },
+  tagAskPrintText:{ fontSize: 13, fontWeight: '700', color: '#fff5f7' },
   saveRow:    { flexDirection: 'row', gap: 8, marginBottom: 10 },
   clearBtn:   { justifyContent: 'center', borderWidth: 1, borderColor: '#ece0e3', backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 16 },
   clearBtnText: { fontSize: 13, fontWeight: '600', color: '#550a19' },
