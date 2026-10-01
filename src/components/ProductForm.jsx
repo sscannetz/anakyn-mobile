@@ -4,7 +4,7 @@
 //   mode="edit"   → โมดัลแก้ไขในหน้า "สต๊อกสินค้า" (InventoryScreen)
 // ฟิลด์เหมือนกันทุกช่อง รวมถึงคำนวณต้นทุนโลหะ/เพชรใหม่ทุกครั้งที่แก้
 // ══════════════════════════════════════════════════════
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   ActivityIndicator, Image,
@@ -46,6 +46,9 @@ export const T = {
     skuSection: 'รหัสสินค้า (SKU)', skuEditLabel: 'รหัสสินค้า',
     photoSection: 'รูปสินค้า', photoHint: 'ถ่ายรูป / อัพโหลด',
     photoTakeNew: 'ถ่ายรูปใหม่', photoGallery: 'เลือกจากคลัง',
+    photoMax: 'สูงสุด 4 รูป', photoMain: 'รูปหลัก',
+    photoMainHint: 'กดดาวเพื่อเลือกรูปที่จะโชว์ในหน้าสต๊อก',
+    photoAdd: 'เพิ่มรูป', photoLoading: 'กำลังโหลดรูป...',
     infoSection: 'ข้อมูลทั่วไป',
     itemName: 'ชื่อสินค้า', itemNamePh: 'เช่น แหวนเพชร Solitaire',
     category: 'หมวดหมู่', stockQty: 'จำนวนในสต๊อก', laborCost: 'ค่าแรงช่าง (บาท)',
@@ -86,6 +89,9 @@ export const T = {
     skuSection: 'Product Code (SKU)', skuEditLabel: 'Product Code',
     photoSection: 'Product Photo', photoHint: 'Take photo / Upload',
     photoTakeNew: 'Take new photo', photoGallery: 'Choose from gallery',
+    photoMax: 'Up to 4 photos', photoMain: 'Main',
+    photoMainHint: 'Tap the star to pick the photo shown in stock list',
+    photoAdd: 'Add photo', photoLoading: 'Loading photos...',
     infoSection: 'General Info',
     itemName: 'Product Name', itemNamePh: 'e.g. Solitaire Diamond Ring',
     category: 'Category', stockQty: 'Stock Qty', laborCost: 'Labor Cost (THB)',
@@ -126,6 +132,7 @@ export const T = {
 
 import TagPreview from './TagPreview';
 import { printTags } from '../print';
+import { api } from '../api';
 
 const fmt = (n) => {
   const num = Number(n);
@@ -203,9 +210,17 @@ export default function ProductForm({
   // เลขที่พิมพ์ค้างอยู่ในช่อง — null = ไม่ได้แก้ ให้โชว์ skuNum ที่รันเอง
   const [skuEdit, setSkuEdit] = useState(null);
   const [sku, setSku]       = useState('');
-  const [photoUri, setPhotoUri]   = useState(null);
-  const [photoOrig, setPhotoOrig] = useState(null);   // รูปเดิมจาก database — ใช้เช็คว่าเปลี่ยนรูปหรือยัง
+  // รูปสินค้าสูงสุด 4 รูป — เก็บเป็นอาเรย์ของ uri (หรือ data: base64 ที่โหลดจาก database)
+  // mainIdx = ช่องที่ติดดาว ตอนบันทึกจะย้ายรูปนั้นไปเป็นตัวแรกของอาเรย์
+  // ★ backend ยึด photos[0] เป็นรูปหลักแล้ว sync ลง photo_url เสมอ
+  const [photos, setPhotos]         = useState([]);
+  const [photosOrig, setPhotosOrig] = useState([]);   // ของเดิมจาก database — ใช้เช็คว่าแตะรูปหรือยัง
+  const [mainIdx, setMainIdx]       = useState(0);
+  const [photoBusy, setPhotoBusy]   = useState(false);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
+  const PHOTO_MAX  = 4;
+  // กันคำตอบเก่ามาทับ: สลับสินค้าเร็ว ๆ แล้วคำตอบของชิ้นก่อนมาทีหลัง จะเขียนทับรูปชิ้นใหม่
+  const photoReq = useRef(0);
 
   const [goldPrice, setGoldPrice]     = useState('67300');
   const [silverPrice, setSilverPrice] = useState('33.50');
@@ -235,8 +250,23 @@ export default function ProductForm({
   useEffect(() => {
     if (!isEdit || !product) return;
     setSku(str(product.sku));
-    setPhotoUri(product.photo_url || null);
-    setPhotoOrig(product.photo_url || null);
+    // รายการสินค้าในหน้าสต๊อกส่งมาแค่ photo_url (รูปหลัก) เพื่อไม่ให้โหลดหนัก
+    // รูปที่ 2-4 ต้องยิงถามทีละชิ้นตอนเปิดฟอร์ม ไม่งั้นกดบันทึกแล้วรูปที่เหลือจะหายหมด
+    const first = product.photo_url ? [product.photo_url] : [];
+    setPhotos(first); setPhotosOrig(first); setMainIdx(0);
+    if (product.id) {
+      const token = ++photoReq.current;
+      setPhotoBusy(true);
+      api.getProduct(product.id)
+        .then(full => {
+          if (token !== photoReq.current) return;
+          const list = Array.isArray(full?.photos) ? full.photos.filter(Boolean).slice(0, PHOTO_MAX) : [];
+          const next = list.length ? list : (full?.photo_url ? [full.photo_url] : []);
+          setPhotos(next); setPhotosOrig(next); setMainIdx(0);
+        })
+        .catch(() => {})
+        .finally(() => { if (token === photoReq.current) setPhotoBusy(false); });
+    }
     setItemName(str(product.name));
     setCatCode(CAT_CODES.includes(product.category) ? product.category : 'other');
     setQty(str(product.stock_qty ?? 0));
@@ -282,7 +312,7 @@ export default function ProductForm({
     setSkuEdit(null);
     setItemName(''); setCatCode(CAT_CODES[0]); setQty('1'); setLaborCost('');
     setMetalWeight(''); setSellingPrice(''); setDiamonds([newDiamond()]);
-    setPhotoUri(null); setSaveError(''); setSaveSuccess(false);
+    setPhotos([]); setPhotosOrig([]); setMainIdx(0); setSaveError(''); setSaveSuccess(false);
   };
 
   const pickPhoto = async (fromCamera) => {
@@ -295,12 +325,13 @@ export default function ProductForm({
       ? await ImagePicker.launchCameraAsync({ quality: 0.8 })
       : await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
     if (!result.canceled && result.assets[0]) {
+      // ย่อ 450px / คุณภาพ 0.7 ≈ 40-60KB ต่อรูป — 4 รูปแล้วยังไม่ทำให้แถวใน database บวมเกินไป
       const manipResult = await ImageManipulator.manipulateAsync(
         result.assets[0].uri,
-        [{ resize: { width: 600 } }],
-        { compress: 0.75, format: ImageManipulator.SaveFormat.JPEG }
+        [{ resize: { width: 450 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
       );
-      setPhotoUri(manipResult.uri);
+      setPhotos(prev => (prev.length >= PHOTO_MAX ? prev : [...prev, manipResult.uri]));
     }
   };
 
@@ -316,7 +347,8 @@ export default function ProductForm({
 
   const resetForm = () => {
     setItemName(''); setMetalWeight(''); setLaborCost(''); setSellingPrice('');
-    setDiamonds([newDiamond()]); setQty('1'); setPhotoUri(null); setPhotoOrig(null);
+    setDiamonds([newDiamond()]); setQty('1');
+    setPhotos([]); setPhotosOrig([]); setMainIdx(0);
   };
 
   const handleSave = async () => {
@@ -325,12 +357,19 @@ export default function ProductForm({
 
     setSaving(true); setSaveError(''); setSaveSuccess(false);
     try {
-      // รูป: ส่งเฉพาะตอนที่เปลี่ยนจริง (base64 ก้อนใหญ่ ไม่ต้องส่งซ้ำทุกครั้งที่แก้แค่ข้อความ)
-      let photoField;                                   // undefined = ไม่แตะคอลัมน์นี้
-      if (photoUri !== photoOrig) {
-        if (!photoUri) photoField = null;               // ผู้ใช้ลบรูปทิ้ง
-        else if (photoUri.startsWith('data:')) photoField = photoUri;
-        else photoField = await toBase64(photoUri);
+      // ── รูป ───────────────────────────────────────────────────────
+      // เรียงใหม่ให้รูปที่ติดดาวมาเป็นตัวแรก — backend ยึด photos[0] เป็นรูปหลัก
+      const ordered = photos.length
+        ? [photos[Math.min(mainIdx, photos.length - 1)],
+           ...photos.filter((_, i) => i !== Math.min(mainIdx, photos.length - 1))]
+        : [];
+      // ส่งเฉพาะตอนที่เปลี่ยนจริง (base64 ก้อนใหญ่ ไม่ต้องส่งซ้ำทุกครั้งที่แก้แค่ข้อความ)
+      let photoList;                                    // undefined = ไม่แตะคอลัมน์รูป
+      if (ordered.length !== photosOrig.length || ordered.some((u, i) => u !== photosOrig[i])) {
+        photoList = [];
+        for (const uri of ordered) {
+          photoList.push(uri.startsWith('data:') ? uri : await toBase64(uri));
+        }
       }
 
       const dList = diamonds.filter(d => d.weight || d.cost).map(d => ({
@@ -360,7 +399,9 @@ export default function ProductForm({
         sale_price: parseFloat(sellingPrice) || 0,
         stock_qty: parseInt(qty, 10) || 0,
       };
-      if (photoField !== undefined) payload.photo_url = photoField;
+      // ส่ง photos อย่างเดียวพอ — backend ตั้ง photo_url = photos[0] ให้เอง
+      // (ถ้าส่งทั้งคู่มาเองมีโอกาสหลุดกัน หน้าสต๊อกจะโชว์คนละรูปกับที่ติดดาวไว้)
+      if (photoList !== undefined) payload.photos = photoList;
 
       await onSubmit?.(payload);
       setSaveSuccess(true);
@@ -379,7 +420,9 @@ export default function ProductForm({
         has_certificate: payload.has_certificate,
       });
 
-      if (isEdit) setPhotoOrig(photoUri);
+      if (isEdit && photoList !== undefined) {
+        setPhotos(ordered); setPhotosOrig(ordered); setMainIdx(0);
+      }
       else { setSkuNum(n => n + 1); resetForm(); }
     } catch (err) {
       setSaveError(err?.message || (lang === 'th' ? 'ไม่สามารถบันทึกสินค้าได้' : 'Failed to save product'));
@@ -611,24 +654,49 @@ export default function ProductForm({
       {/* PHOTO */}
       <Sec>
         <SecHead icon="camera">{t.photoSection}</SecHead>
-        {photoUri ? (
-          <View>
-            <Image source={{ uri: photoUri }} style={s.photo} resizeMode="cover" />
-            <View style={s.photoOverlay}>
-              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setPhotoMenuOpen(true)} style={s.photoBtn}>
-                <MaterialCommunityIcons name="camera" size={sc(14)} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setPhotoUri(null)} style={s.photoBtn}>
-                <MaterialCommunityIcons name="trash-can" size={sc(14)} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setPhotoMenuOpen(true)} style={s.photoPlaceholder}>
-            <MaterialCommunityIcons name="camera" size={sc(24)} color="#c8a0b0" />
-            <Text style={s.photoHint}>{t.photoHint}</Text>
-          </TouchableOpacity>
-        )}
+        {/* กริด 2x2 — ช่องที่มีรูปโชว์รูป ช่องว่างเป็นปุ่มเพิ่ม
+            ดาว = รูปที่จะโชว์ในหน้าสต๊อก (ตอนบันทึกจะถูกย้ายไปเป็นรูปแรก) */}
+        <View style={s.photoGrid}>
+          {Array.from({ length: PHOTO_MAX }).map((_, i) => {
+            const uri = photos[i];
+            if (!uri) {
+              const isNext = i === photos.length;
+              return (
+                <TouchableOpacity key={i} dataSet={{ hov: 'btn' }} disabled={!isNext}
+                  onPress={() => setPhotoMenuOpen(true)}
+                  style={[s.photoCell, s.photoCellEmpty, !isNext && s.photoCellIdle]}>
+                  <MaterialCommunityIcons name={isNext ? 'plus' : 'image-outline'}
+                    size={sc(18)} color={isNext ? '#b08090' : '#e0cdd3'} />
+                </TouchableOpacity>
+              );
+            }
+            const isMain = i === Math.min(mainIdx, photos.length - 1);
+            return (
+              <View key={i} style={s.photoCell}>
+                <Image source={{ uri }} style={s.photoCellImg} resizeMode="cover" />
+                {isMain && <View style={s.photoMainTag}><Text style={s.photoMainTagText}>{t.photoMain}</Text></View>}
+                <View style={s.photoCellBtns}>
+                  <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setMainIdx(i)} style={s.photoBtn}>
+                    <MaterialCommunityIcons name={isMain ? 'star' : 'star-outline'}
+                      size={sc(13)} color={isMain ? '#ffd166' : '#fff'} />
+                  </TouchableOpacity>
+                  <TouchableOpacity dataSet={{ hov: 'btn' }} style={s.photoBtn}
+                    onPress={() => setPhotos(prev => {
+                      const next = prev.filter((_, j) => j !== i);
+                      // ลบรูปหลักทิ้ง → ให้รูปแรกที่เหลือเป็นหลักแทน
+                      setMainIdx(m => (i === m ? 0 : i < m ? m - 1 : m));
+                      return next;
+                    })}>
+                    <MaterialCommunityIcons name="trash-can" size={sc(13)} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+        <Text style={s.photoGridNote}>
+          {photoBusy ? t.photoLoading : `${t.photoMax} · ${t.photoMainHint}`}
+        </Text>
       </Sec>
 
       {/* ตัวอย่างป้ายสินค้า — เปลี่ยนตามที่พิมพ์ทันที */}
@@ -747,6 +815,19 @@ const baseStyles = {
   photoBtn: { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 7, width: 28, height: 28, justifyContent: 'center', alignItems: 'center' },
   photoPlaceholder: { backgroundColor: '#fdfbfb', borderRadius: 10, borderWidth: 0.5, borderStyle: 'dashed', borderColor: '#c8a0ac', height: 72, justifyContent: 'center', alignItems: 'center', gap: 6, flexDirection: 'row' },
   photoHint: { fontSize: 12, color: '#b08090' },
+
+  // กริดรูป 2x2
+  photoGrid:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  photoCell:     { width: '47.5%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden',
+                   borderWidth: 0.5, borderColor: '#ece0e3', backgroundColor: '#fdfbfb' },
+  photoCellImg:  { width: '100%', height: '100%' },
+  photoCellEmpty:{ borderStyle: 'dashed', borderColor: '#c8a0ac', alignItems: 'center', justifyContent: 'center' },
+  photoCellIdle: { borderColor: '#f0e4e7' },
+  photoCellBtns: { position: 'absolute', top: 6, right: 6, flexDirection: 'row', gap: 5 },
+  photoMainTag:  { position: 'absolute', bottom: 6, left: 6, backgroundColor: 'rgba(140,27,47,0.9)',
+                   borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  photoMainTagText: { fontSize: 9.5, fontWeight: '700', color: '#fff5f7' },
+  photoGridNote: { fontSize: 10.5, color: '#9b7d86', marginTop: 8, lineHeight: 15 },
   catChip: { borderWidth: 0.5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
   catChipText: { fontSize: 11 },
   metalTabs: { flexDirection: 'row', borderRadius: 10, overflow: 'hidden', borderWidth: 0.5, borderColor: '#ece0e3', marginBottom: 12 },
