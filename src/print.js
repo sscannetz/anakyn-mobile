@@ -477,7 +477,7 @@ function buildSummary(d = {}, periodLabel = '') {
   // กำไร = ราคาขาย(ไม่รวม VAT) − ต้นทุนรวม → ตรงกับ estimated_profit ที่ backend คิดมาแล้ว
   const stats = [
     ['รายได้รวม', baht(d.total_sales)],
-    ['จำนวนออเดอร์', `${num(d.order_count)} ชิ้น`],
+    ['จำนวนออเดอร์', `${num(d.order_count)} ออเดอร์`],
     ['ต้นทุน', baht(cost)],
     ['กำไร', baht(d.estimated_profit)],
   ].map(([l, v]) => `<div class="stat"><div class="sn">${esc(l)}</div><div class="sv">${v}</div></div>`).join('');

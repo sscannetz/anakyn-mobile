@@ -22,11 +22,12 @@ const T = {
     periodKeys: ['today','week','month','year'],
     custom: 'เลือกช่วงวันที่', pickRange: 'เลือกช่วงวันที่',
     dFrom: 'ตั้งแต่วันที่', dTo: 'ถึงวันที่', apply: 'ตกลง', cancel: 'ยกเลิก',
-    unitPcs: 'ชิ้น',
+    unitPcs: 'ออเดอร์',
     revenue: 'รายได้รวม', orders: 'จำนวนออเดอร์',
     profit: 'กำไรสุทธิ', profitMargin: 'อัตรากำไร',
     vatCollected: 'VAT ที่เก็บได้',
     topSales: 'สินค้าขายดี', rank: '#', item: 'สินค้า', qty: 'จำนวน', amount: 'ยอด',
+    moreLines: (n) => `และอีก ${n} รายการ`,
     payBreakdown: 'ช่องทางชำระเงิน',
     pendingSection: 'รายการค้างอยู่',
     pendingPO: 'PO ค้าง', pendingSrv: 'งานซ่อมค้าง', pendingQt: 'ใบเสนอราคา',
@@ -38,11 +39,12 @@ const T = {
     periodKeys: ['today','week','month','year'],
     custom: 'Date range', pickRange: 'Select date range',
     dFrom: 'From', dTo: 'To', apply: 'Apply', cancel: 'Cancel',
-    unitPcs: 'pcs',
+    unitPcs: 'orders',
     revenue: 'Total revenue', orders: 'Orders',
     profit: 'Net profit', profitMargin: 'Margin',
     vatCollected: 'VAT collected',
     topSales: 'Top selling items', rank: '#', item: 'Item', qty: 'Qty', amount: 'Amount',
+    moreLines: (n) => `and ${n} more`,
     payBreakdown: 'Payment breakdown',
     pendingSection: 'Pending items',
     pendingPO: 'Purchase orders', pendingSrv: 'Service orders', pendingQt: 'Quotations',
@@ -95,11 +97,17 @@ export default function SummaryScreen({ navigation }) {
     api.getSummary(arg).then(setSummary).catch(() => setSummary(null)).finally(() => { setLoading(false); setFirstLoad(false); });
   }, [period, range, lang]);
 
-  const d = summary || { total_sales: 0, order_count: 0, estimated_profit: 0, vat_collected: 0, top_items: [], payment_breakdown: {}, daily_chart: [], pending_po: 0, pending_service: 0, pending_quotation: 0 };
+  const d = summary || { total_sales: 0, order_count: 0, estimated_profit: 0, vat_collected: 0, top_items: [], sale_lines: [], payment_breakdown: {}, daily_chart: [], pending_po: 0, pending_service: 0, pending_quotation: 0 };
   const margin = d.total_sales > 0 ? ((d.estimated_profit / d.total_sales) * 100).toFixed(1) : '0.0';
   const chartDays = d.daily_chart || [];
   const chartMax  = Math.max(1, ...chartDays.map(c => c.total));
   const todayStr  = new Date().toISOString().slice(0, 10);
+  // 1 บรรทัด = สินค้า 1 รายการในบิล 1 ใบ (เลขที่บิลซ้ำกันได้) ไม่รวมยอดข้ามบิลแล้ว
+  // backend เวอร์ชันเก่าไม่มี sale_lines → ถอยไปใช้ top_items (รวมตามสินค้า) เหมือนเดิม
+  const SALE_LINES_MAX = 10;
+  const allLines   = d.sale_lines || d.top_items || [];
+  const shownLines = allLines.slice(0, SALE_LINES_MAX);
+
   const payEntries = Object.entries(d.payment_breakdown || {});
   const payTotal   = payEntries.reduce((s, [, v]) => s + v, 0) || 1;
   const PAY_COL = { cash: '#2e7d32', qr: '#1a3a60', card: '#550a19', mobile: '#854F0B' };
@@ -170,21 +178,27 @@ export default function SummaryScreen({ navigation }) {
         {/* TOP SALES */}
         <View style={s.sec}>
           <Text style={s.secTitle}>{t.topSales}</Text>
-          {d.top_items.length === 0
+          {shownLines.length === 0
             ? <Text style={s.emptyText}>{t.noData}</Text>
-            : d.top_items.map((item, i) => (
-              <View key={item.sku} style={s.topRow}>
-                <View style={[s.rankBadge, { backgroundColor: i === 0 ? '#550a19' : i === 1 ? '#b87020' : '#f0e8f0' }]}>
-                  <Text style={[s.rankText, { color: i < 2 ? '#fff' : '#a07080' }]}>{i + 1}</Text>
+            : (<>
+              {shownLines.map((item, i) => (
+                <View key={`${item.sale_no || ''}:${item.sku}:${i}`} style={s.topRow}>
+                  <View style={[s.rankBadge, { backgroundColor: i === 0 ? '#550a19' : i === 1 ? '#b87020' : '#f0e8f0' }]}>
+                    <Text style={[s.rankText, { color: i < 2 ? '#fff' : '#a07080' }]}>{i + 1}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.topName} numberOfLines={1}>{item.name}</Text>
+                    <Text style={s.topSku}>{item.sku}</Text>
+                  </View>
+                  <Text style={s.topBill} numberOfLines={1}>{item.sale_no || '—'}</Text>
+                  <Text style={s.topQty}>{item.qty}</Text>
+                  <Text style={s.topAmt}>฿{fmtCp(item.amount)}</Text>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.topName} numberOfLines={1}>{item.name}</Text>
-                  <Text style={s.topSku}>{item.sku}</Text>
-                </View>
-                <Text style={s.topQty}>{item.qty}</Text>
-                <Text style={s.topAmt}>฿{fmtCp(item.amount)}</Text>
-              </View>
-            ))
+              ))}
+              {allLines.length > SALE_LINES_MAX && (
+                <Text style={s.moreText}>{t.moreLines(allLines.length - SALE_LINES_MAX)}</Text>
+              )}
+            </>)
           }
         </View>
 
@@ -293,8 +307,10 @@ const baseStyles = {
   rankText:   { fontSize: 10, fontWeight: '500' },
   topName:    { fontSize: 11, fontWeight: '500', color: '#2c1015' },
   topSku:     { fontSize: 9, color: '#550a19', marginTop: 1 },
+  topBill:    { fontSize: 10, color: '#a07080', width: 72, textAlign: 'right' },
   topQty:     { fontSize: 12, color: '#2c1015', width: 30, textAlign: 'center' },
   topAmt:     { fontSize: 12, fontWeight: '500', color: '#550a19', width: 60, textAlign: 'right' },
+  moreText:   { fontSize: 10, color: '#a07080', textAlign: 'center', paddingTop: 4 },
   payLabelRow:{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 },
   payLabel:   { fontSize: 11, color: '#806070' },
   payBar:     { height: 6, backgroundColor: '#f0e8e8', borderRadius: 3, overflow: 'hidden' },

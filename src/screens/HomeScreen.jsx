@@ -104,10 +104,11 @@ const SRVSTATUS_LABEL = { received: 'รับเรื่อง', repairing: '�
 const SRVSTATUS_COL   = { received: ['#fdf0f2','#8c1b2f'], repairing: ['#fdf0f2','#8c1b2f'], qc: ['#fdf0f2','#8c1b2f'], notified: ['#fdf0f2','#8c1b2f'], picked_up: ['#ffffff','#9b7d86'] };
 
 const SALE_COLS = [
-  { label: 'เลขที่บิล', w: 130 },
-  { label: 'เวลา', w: 60 },
-  { label: 'ลูกค้า' },
-  { label: 'ช่องทาง', w: 120 },
+  { label: 'เลขที่บิล', w: 118 },
+  { label: 'เวลา', w: 54 },
+  { label: 'สินค้า' },
+  { label: 'ลูกค้า', w: 150 },
+  { label: 'ช่องทาง', w: 100 },
   { label: 'ยอด', w: 95, rt: true },
 ];
 
@@ -222,7 +223,16 @@ export default function HomeScreen({ navigation, route }) {
   };
 
   const visibleMenus = t.menus.filter(m => !m.adminOnly || isAdmin);
-  const visibleSales = showAllSales ? recentSales : recentSales.slice(0, SALES_PREVIEW);
+
+  // บิล 1 ใบที่มีสินค้าหลายรายการ → แตกเป็นบรรทัดละสินค้า (เลขที่บิลซ้ำกันได้)
+  // ยอดในแต่ละบรรทัดเป็นยอดของสินค้ารายการนั้น ไม่ใช่ยอดรวมทั้งบิล
+  // บิลเก่าที่ backend ยังไม่ส่ง items มา → ถอยไปแสดงเป็นบรรทัดเดียวทั้งบิลเหมือนเดิม
+  const saleRows = recentSales.flatMap(sale => {
+    const items = Array.isArray(sale.items) ? sale.items : [];
+    if (items.length === 0) return [{ key: sale.id, sale, item: null, amount: sale.total }];
+    return items.map(it => ({ key: `${sale.id}:${it.id}`, sale, item: it, amount: it.amount }));
+  });
+  const visibleSales = showAllSales ? saleRows : saleRows.slice(0, SALES_PREVIEW);
 
   const todayStr = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', {
     day: 'numeric', month: 'short', year: 'numeric',
@@ -306,19 +316,22 @@ export default function HomeScreen({ navigation, route }) {
             <View style={styles.cols}>
               <View style={styles.colMain}>
                 <Panel title={t.recentTitle}
-                  right={recentSales.length > SALES_PREVIEW ? (showAllSales ? t.seeLess : t.seeAll) : `${recentSales.length} ${lang === 'th' ? 'บิล' : 'orders'}`}
-                  onRightPress={recentSales.length > SALES_PREVIEW ? () => setShowAllSales(v => !v) : undefined}>
+                  right={saleRows.length > SALES_PREVIEW ? (showAllSales ? t.seeLess : t.seeAll) : `${recentSales.length} ${lang === 'th' ? 'บิล' : 'orders'}`}
+                  onRightPress={saleRows.length > SALES_PREVIEW ? () => setShowAllSales(v => !v) : undefined}>
                   <TableHead cols={SALE_COLS} />
                   {!loading && visibleSales.length === 0 && <Empty text={t.noSales} />}
-                  {visibleSales.map((sale, i) => (
-                    <TableRow key={sale.id} cols={SALE_COLS} last={i === visibleSales.length - 1}
-                      onPress={() => openSale(sale)}
+                  {visibleSales.map((row, i) => (
+                    <TableRow key={row.key} cols={SALE_COLS} last={i === visibleSales.length - 1}
+                      onPress={() => openSale(row.sale)}
                       cells={[
-                        <TdNo text={sale.sale_no} />,
-                        new Date(sale.sold_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
-                        <TdMain text={sale.customer_name || 'ไม่ระบุ'} />,
-                        <TdMain text={payLabel(sale.payment_methods)} />,
-                        <TdAmt text={`฿${fmt(sale.total)}`} />,
+                        <TdNo text={row.sale.sale_no} />,
+                        new Date(row.sale.sold_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+                        <TdMain
+                          text={row.item ? row.item.name : '—'}
+                          sub={row.item ? (row.item.qty > 1 ? `${row.item.sku} · ${row.item.qty} ชิ้น` : row.item.sku) : undefined} />,
+                        <TdMain text={row.sale.customer_name || 'ไม่ระบุ'} />,
+                        <TdMain text={payLabel(row.sale.payment_methods)} />,
+                        <TdAmt text={`฿${fmt(row.amount)}`} />,
                       ]} />
                   ))}
                 </Panel>
@@ -450,18 +463,22 @@ export default function HomeScreen({ navigation, route }) {
         {!loading && recentSales.length === 0 && (
           <Text style={styles.emptyText}>{t.noSales}</Text>
         )}
-        {visibleSales.map(s => (
-          <TouchableOpacity dataSet={{ hov: 'btn' }} key={s.id} onPress={() => openSale(s)} style={styles.listCard}>
+        {/* จอแคบ: การ์ดละสินค้า 1 รายการ (บิลเดียวกันจะขึ้นหลายใบ) */}
+        {visibleSales.map(row => (
+          <TouchableOpacity dataSet={{ hov: 'btn' }} key={row.key} onPress={() => openSale(row.sale)} style={styles.listCard}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.listCardTitle}>{s.sale_no}</Text>
-              <Text style={styles.listCardSub}>
-                {new Date(s.sold_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} · {s.customer_name || 'ไม่ระบุ'}
+              <Text style={styles.listCardTitle} numberOfLines={1}>
+                {row.item ? row.item.name : row.sale.sale_no}
+              </Text>
+              <Text style={styles.listCardSub} numberOfLines={1}>
+                {row.sale.sale_no} · {new Date(row.sale.sold_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} · {row.sale.customer_name || 'ไม่ระบุ'}
+                {row.item && row.item.qty > 1 ? ` · ${row.item.qty} ชิ้น` : ''}
               </Text>
             </View>
-            <Text style={styles.listCardAmt}>฿{fmt(s.total)}</Text>
+            <Text style={styles.listCardAmt}>฿{fmt(row.amount)}</Text>
           </TouchableOpacity>
         ))}
-        {recentSales.length > SALES_PREVIEW && (
+        {saleRows.length > SALES_PREVIEW && (
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowAllSales(v => !v)} style={styles.moreBtn}>
             <Text style={styles.moreText}>{showAllSales ? t.seeLess : t.seeAll}</Text>
           </TouchableOpacity>
