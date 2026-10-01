@@ -92,6 +92,22 @@ const STYLE = `
   tbody tr.sum td { background:#fdf2f5 !important; font-weight:800; color:#550a19;
                     border-top:1.5px solid #550a19; border-bottom:none; font-size:12px; }
 
+  /* ── สรุปยอดขาย: หัวเรื่อง = ตัวหนา / เนื้อหา = ตัวบาง ──
+     จำกัดขอบเขตด้วย .doc.summary เพราะ STYLE ก้อนนี้ใช้ร่วมกับใบเสร็จ/ใบกำกับ/ใบสั่งซื้อ ฯลฯ
+     ถ้าไปแก้ที่กฎกลางตรง ๆ เอกสารอื่นจะเปลี่ยนตามหมด */
+  .doc.summary .iname,
+  .doc.summary .price,
+  .doc.summary tbody td,
+  .doc.summary .field .fv,
+  .doc.summary .stat .sv,
+  .doc.summary .docno b,
+  .doc.summary tbody tr.sum td       { font-weight:400; }
+  .doc.summary .sl,
+  .doc.summary thead th,
+  .doc.summary .stat .sn,
+  .doc.summary .field .fl,
+  .doc.summary tbody tr.sum td.lbl   { font-weight:700; }
+
   /* ── กล่องข้อมูล (เช่น สินค้าที่ซ่อม / อาการ) ── */
   .fields { border:1px solid #e6d7dc; border-radius:7px; overflow:hidden; }
   .field { display:flex; padding:9px 13px; border-bottom:1px solid #f1e8eb; }
@@ -130,7 +146,7 @@ function totals(rows, grandLabel, grandValue) {
 }
 
 // ── แม่แบบเอกสาร ──
-function renderDoc({ badge, docNo, docNoLabel = 'เลขที่', meta = [], parties, sections = '', sectionsBottom = '', signatures }) {
+function renderDoc({ badge, docNo, docNoLabel = 'เลขที่', docClass = '', meta = [], parties, sections = '', sectionsBottom = '', signatures }) {
   const metaHtml = meta.length
     ? `<div class="meta">${meta.map(([l, v]) => `<div><div class="ml">${esc(l)}</div><div class="mv">${esc(v)}</div></div>`).join('')}</div>`
     : '';
@@ -146,7 +162,7 @@ function renderDoc({ badge, docNo, docNoLabel = 'เลขที่', meta = [],
     : '';
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" /><style>${STYLE}</style></head>
-    <body><div class="doc">
+    <body><div class="doc ${docClass}">
       <div class="hd">
         <div>
           <img class="logo" src="${LOGO_URI}" alt="ANAKYN GEMS" />
@@ -482,16 +498,18 @@ function buildSummary(d = {}, periodLabel = '') {
     ['กำไร', baht(d.estimated_profit)],
   ].map(([l, v]) => `<div class="stat"><div class="sn">${esc(l)}</div><div class="sv">${v}</div></div>`).join('');
 
-  // sales_items = ทุกรายการที่ขายได้ในช่วงนี้ (ถ้า backend ยังเป็นเวอร์ชันเก่าถอยไปใช้ 5 อันดับ)
-  const items  = d.sales_items || d.top_items || [];
+  // sale_lines = 1 บรรทัด/สินค้า 1 รายการในบิล 1 ใบ (มีเลขที่ใบเสร็จติดมาด้วย)
+  // ถอยไป sales_items (รวมตามสินค้า) แล้ว top_items (5 อันดับ) ถ้า backend ยังเป็นเวอร์ชันเก่า
+  const items  = d.sale_lines || d.sales_items || d.top_items || [];
   const sumQty = items.reduce((a, it) => a + num(it.qty), 0);
   const sumAmt = items.reduce((a, it) => a + num(it.amount), 0);
   const rows = items.map((it, i) =>
     `<tr><td class="c">${i + 1}</td><td class="iname">${esc(it.name)}</td><td class="isub">${esc(it.sku)}</td>
+      <td class="isub">${esc(it.sale_no || '—')}</td>
       <td class="c">${num(it.qty)}</td><td class="r price">${baht(it.amount)}</td></tr>`).join('');
   // แถวรวมยอด — ใส่เฉพาะเมื่อมีรายการ ไม่งั้นจะชนกับแถว "ไม่มีรายการ" ของ table()
   const sumRow = items.length
-    ? `<tr class="sum"><td colspan="3" class="r">รวมทั้งสิ้น</td><td class="c">${sumQty}</td><td class="r">${baht(sumAmt)}</td></tr>`
+    ? `<tr class="sum"><td colspan="4" class="r lbl">รวมทั้งสิ้น</td><td class="c">${sumQty}</td><td class="r">${baht(sumAmt)}</td></tr>`
     : '';
 
   const pending = [
@@ -502,12 +520,14 @@ function buildSummary(d = {}, periodLabel = '') {
   const sections = `<div class="stats">${stats}</div>
     <div class="sec"><div class="sl">รายงานยอดขาย</div>
     ${table(
-      [{ label: 'ลำดับ', align: 'c' }, { label: 'สินค้า' }, { label: 'รหัสสินค้า' }, { label: 'จำนวน', align: 'c' }, { label: 'ยอด', align: 'r' }],
+      [{ label: 'ลำดับ', align: 'c' }, { label: 'สินค้า' }, { label: 'รหัสสินค้า' }, { label: 'เลขที่ใบเสร็จ' },
+       { label: 'จำนวน', align: 'c' }, { label: 'ยอด', align: 'r' }],
       rows + sumRow
     )}</div>
     <div class="sec"><div class="sl">รายการค้างอยู่</div><div class="fields">${pending}</div></div>`;
   return renderDoc({
     badge: 'สรุปยอดขาย',
+    docClass: 'summary',
     docNoLabel: 'ช่วงวันที่',
     docNo: periodLabel || new Date().toLocaleDateString('th-TH'),
     sections,
