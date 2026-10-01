@@ -166,36 +166,38 @@ export default function AppShell({ routeName, children }) {
     if (navRef.isReady()) navRef.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
 
-  if (!show) return <View style={{ flex: 1 }}>{children}</View>;
+  // ── โครงเดียว ใช้ได้ทุกขนาดจอ / ทุกหน้า ──
+  // ⚠ ห้ามแยก return ตามความกว้างจอหรือตามหน้า เด็ดขาด
+  //   ถ้าแยก ตำแหน่งของ {children} ในต้นไม้จะย้าย React จะถือว่าเป็นคนละต้นไม้
+  //   แล้วถอด Stack.Navigator ทิ้งสร้างใหม่ = ทุกหน้า mount ใหม่ ยิง API ซ้ำ
+  //   ฟอร์มที่กรอกค้างหาย — อาการคือ "ลากขอบเบราว์เซอร์ข้าม 1024 แล้วหน้าโหลดใหม่"
+  //   ที่นี่จึงสลับแค่ว่า "โชว์อะไร" ไม่สลับว่า "children อยู่ตรงไหน"
+  const tx       = pos.interpolate({ inputRange: [0, 1], outputRange: [-DRAWER_W, 0] });
+  const sideOn   = show && hasSide;    // แถบเมนูค้างซ้าย (จอกว้าง)
+  const drawerOn = show && !hasSide;   // ลิ้นชัก (จอแคบ / มือถือ)
 
-  // ── จอกว้าง: แถบซ้ายค้างไว้ ──
-  if (hasSide) {
-    return (
-      <View style={{ flex: 1 }}>
+  return (
+    <View style={{ flex: 1 }}>
+      {sideOn ? (
         <View style={[S.side, S.sideFixed]}>
           <NavList active={routeName} role={role} onPick={goTo} onLogout={logout} />
         </View>
-        <View style={{ flex: 1, paddingLeft: SIDE_W }}>{children}</View>
-      </View>
-    );
-  }
+      ) : null}
 
-  // ── จอแคบ: ลิ้นชัก ──
-  const tx = pos.interpolate({ inputRange: [0, 1], outputRange: [-DRAWER_W, 0] });
-  return (
-    <View style={{ flex: 1 }}>
-      {children}
+      <View style={{ flex: 1, paddingLeft: sideOn ? SIDE_W : 0 }}>{children}</View>
+
       <Animated.View
-        pointerEvents={open ? 'auto' : 'none'}
-        style={[S.scrim, { opacity: pos }]}
+        pointerEvents={drawerOn && open ? 'auto' : 'none'}
+        style={[S.scrim, { opacity: pos, display: drawerOn ? 'flex' : 'none' }]}
       >
         <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setDrawer(false)} />
       </Animated.View>
+
       <Animated.View
-        pointerEvents={open ? 'auto' : 'none'}
-        style={[S.side, S.drawer, { transform: [{ translateX: tx }] }]}
+        pointerEvents={drawerOn && open ? 'auto' : 'none'}
+        style={[S.side, S.drawer, { transform: [{ translateX: tx }], display: drawerOn ? 'flex' : 'none' }]}
       >
-        <NavList active={routeName} role={role} onPick={goTo} onLogout={logout} />
+        {drawerOn ? <NavList active={routeName} role={role} onPick={goTo} onLogout={logout} /> : null}
       </Animated.View>
     </View>
   );
