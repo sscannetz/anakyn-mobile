@@ -26,6 +26,7 @@ const T = {
   th: {
     title: 'สต๊อกสินค้า',
     searchPh: 'ค้นหาชื่อสินค้า / รหัส SKU',
+    allCats: 'ทั้งหมด',
     printList: 'ปริ้นรายการ / PDF',
     selectAll: 'เลือกทั้งหมด', clearAll: 'ล้างทั้งหมด', matchQty: 'ตามจำนวนคงเหลือ',
     tagHint: 'ป้ายขนาด 50 × 15 มม. — ตั้งขนาดกระดาษใน driver เครื่องพิมพ์เป็น 50×15 มม. ก่อนสั่งพิมพ์',
@@ -45,6 +46,7 @@ const T = {
   en: {
     title: 'Stock',
     searchPh: 'Search name / SKU',
+    allCats: 'All',
     printList: 'Print list / PDF',
     selectAll: 'Select all', clearAll: 'Clear all', matchQty: 'Match stock qty',
     tagHint: 'Tag size 50 × 15 mm — set the printer driver paper size to 50×15 mm first',
@@ -63,6 +65,11 @@ const T = {
   },
 };
 
+// ปุ่มฟิลเตอร์หมวดหมู่ — เรียงตามที่ร้านต้องการ ใช้รหัสเดิมจาก CAT_CODES
+const FILTER_CODES = ['ring','earring','necklace','bracelet','pendant','other'];
+// 'other' = ทุกอย่างที่ไม่เข้า 5 หมวดแรก (รวมของเก่าที่ยังไม่ได้ระบุหมวด)
+const MAIN_CODES = FILTER_CODES.filter(c => c !== 'other');
+
 const fmt = (n) => {
   const num = Number(n);
   return Math.round(Number.isFinite(num) ? num : 0).toLocaleString('th-TH');
@@ -79,6 +86,7 @@ export default function InventoryScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [loadErr, setLoadErr] = useState('');
   const [query, setQuery]     = useState('');
+  const [cat, setCat]         = useState('');   // '' = ทุกหมวด
   const [isAdmin, setIsAdmin] = useState(false);
 
   // ── คิวป้ายรอพิมพ์ ──
@@ -146,14 +154,20 @@ export default function InventoryScreen({ navigation }) {
   };
 
   // ── ค้นหา ──
+  const inCat = (p) => {
+    if (!cat) return true;
+    if (cat === 'other') return !MAIN_CODES.includes(p.category);
+    return p.category === cat;
+  };
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return list;
     return list.filter(p => {
-      const cat = FORM_T[lang].categories[CAT_CODES.indexOf(p.category)] || '';
-      return [p.name, p.sku, cat].some(v => String(v || '').toLowerCase().includes(q));
+      if (!inCat(p)) return false;
+      if (!q) return true;
+      const c = FORM_T[lang].categories[CAT_CODES.indexOf(p.category)] || '';
+      return [p.name, p.sku, c].some(v => String(v || '').toLowerCase().includes(q));
     });
-  }, [list, query, lang]);
+  }, [list, query, cat, lang]);
 
   const catLabel = (code) => FORM_T[lang].categories[CAT_CODES.indexOf(code)] || '—';
 
@@ -198,6 +212,23 @@ export default function InventoryScreen({ navigation }) {
 
   const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
+  // แถบปุ่มฟิลเตอร์หมวดหมู่ — วางใต้ช่องค้นหา (จอแคบ) / ใต้แถบเครื่องมือ (จอกว้าง)
+  const catBar = (
+      <View style={s.catBar}>
+        {[{ code: '', label: t.allCats }, ...FILTER_CODES.map(code => ({
+          code, label: FORM_T[lang].categories[CAT_CODES.indexOf(code)] || code,
+        }))].map(({ code, label }) => {
+          const on = cat === code;
+          return (
+            <TouchableOpacity key={code || 'all'} dataSet={{ hov: 'btn' }} onPress={() => setCat(code)}
+              style={[s.catBtn, on && s.catBtnOn]}>
+              <Text style={[s.catBtnText, on && s.catBtnTextOn]}>{label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
       <Header title={t.title} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang}
@@ -217,6 +248,8 @@ export default function InventoryScreen({ navigation }) {
         )}
       </View>
       )}
+
+      {!wide && catBar}
 
       <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
         <View style={s.tagHint}>
@@ -240,6 +273,7 @@ export default function InventoryScreen({ navigation }) {
             </TouchableOpacity>
           </Toolbar>
         )}
+        {wide && catBar}
 
         {/* เครื่องมือ — จอแคบ */}
         {!wide && (<>
@@ -513,6 +547,11 @@ const baseStyles = {
   content: { padding: 14, paddingBottom: 30 },
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 4, marginHorizontal: 14, marginTop: 14 },
   searchInput: { flex: 1, paddingVertical: 9, fontSize: 13, color: '#2c1015' },
+  catBar: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginHorizontal: 14, marginTop: 10 },
+  catBtn: { borderWidth: 0.5, borderColor: '#e8d5d9', backgroundColor: '#f9f4f5', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  catBtnOn: { borderColor: '#550a19', backgroundColor: '#550a19' },
+  catBtnText: { fontSize: 11.5, color: '#a07080' },
+  catBtnTextOn: { color: '#f5e0e5' },
   tagHint: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, backgroundColor: '#fdf0f2', borderWidth: 1, borderColor: '#f0d3da', borderRadius: 10, padding: 11, marginBottom: 10 },
   tagHintText: { flex: 1, fontSize: 10.5, color: '#8c1b2f', lineHeight: 15 },
   toolRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 8 },
