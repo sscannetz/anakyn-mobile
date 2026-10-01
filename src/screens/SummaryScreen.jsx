@@ -13,11 +13,16 @@ import { api } from '../api';
 import { useScaledStyles } from '../responsive';
 import { printSummary } from '../print';
 import { useWide, Chip } from '../components/DataPanel';
+import ShellModal from '../components/ShellModal';
+import DateInput from '../components/DateInput';
 
 const T = {
   th: {
     periods: ['วันนี้','สัปดาห์นี้','เดือนนี้','ปีนี้'],
     periodKeys: ['today','week','month','year'],
+    custom: 'เลือกช่วงวันที่', pickRange: 'เลือกช่วงวันที่',
+    dFrom: 'ตั้งแต่วันที่', dTo: 'ถึงวันที่', apply: 'ตกลง', cancel: 'ยกเลิก',
+    unitPcs: 'ชิ้น',
     revenue: 'รายได้รวม', orders: 'จำนวนออเดอร์',
     profit: 'กำไรสุทธิ', profitMargin: 'อัตรากำไร',
     vatCollected: 'VAT ที่เก็บได้',
@@ -31,6 +36,9 @@ const T = {
   en: {
     periods: ['Today','This week','This month','This year'],
     periodKeys: ['today','week','month','year'],
+    custom: 'Date range', pickRange: 'Select date range',
+    dFrom: 'From', dTo: 'To', apply: 'Apply', cancel: 'Cancel',
+    unitPcs: 'pcs',
     revenue: 'Total revenue', orders: 'Orders',
     profit: 'Net profit', profitMargin: 'Margin',
     vatCollected: 'VAT collected',
@@ -46,7 +54,7 @@ const T = {
 const fmt    = (n) => { const x = Number(n); return Math.round(Number.isFinite(x) ? x : 0).toLocaleString('th-TH'); };
 const fmtCp  = (n) => { n = Number(n); if (!Number.isFinite(n)) n = 0; return n >= 1000000 ? `${(n/1000000).toFixed(1)}M` : n >= 1000 ? `${(n/1000).toFixed(0)}k` : String(Math.round(n)); };
 
-function KPICard({ label, value, sub, icon, col, bg, subUp, wide }) {
+function KPICard({ label, value, sub, icon, col, bg, subUp, wide, unit }) {
   const { styles: s, sc, center } = useScaledStyles(baseStyles);
   return (
     <View style={[s.kpiCard, wide && s.kpiCardWide]}>
@@ -56,7 +64,8 @@ function KPICard({ label, value, sub, icon, col, bg, subUp, wide }) {
           <MaterialCommunityIcons name={icon} size={sc(13)} color={col} />
         </View>
       </View>
-      <Text style={s.kpiVal}>฿{fmtCp(value)}</Text>
+      {/* ใส่ unit มา = เป็นจำนวนนับ ไม่ใช่เงิน (ห้ามขึ้น ฿ หน้าเลข) */}
+      <Text style={s.kpiVal}>{unit ? `${fmt(value)} ${unit}` : `฿${fmtCp(value)}`}</Text>
       {sub && (
         <Text style={[s.kpiSub, { color: subUp ? '#2e7d32' : '#c62828' }]}>
           {subUp ? '▲' : '▼'} {sub}
@@ -71,7 +80,9 @@ export default function SummaryScreen({ navigation }) {
   const insets  = useSafeAreaInsets();
   const wide    = useWide(1000);
   const [lang, setLang]   = useState('th');
-  const [period, setPeriod] = useState(2);
+  const [period, setPeriod] = useState(2);   // 0-3 = ชิปช่วงเวลา, 4 = ช่วงวันที่ที่เลือกเอง
+  const [range, setRange]   = useState(null); // { from, to } = 'YYYY-MM-DD' เมื่อเลือกช่วงเอง
+  const [pick, setPick]     = useState(null); // ค่าที่กำลังกรอกในกล่องปฏิทิน
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   // แถบ "กำลังเชื่อมต่อ" โชว์แค่รอบแรก — สลับช่วงเวลาแล้วโหลดใหม่ไม่ต้องโชว์ซ้ำ
@@ -80,8 +91,9 @@ export default function SummaryScreen({ navigation }) {
 
   useEffect(() => {
     setLoading(true);
-    api.getSummary(t.periodKeys[period]).then(setSummary).catch(() => setSummary(null)).finally(() => { setLoading(false); setFirstLoad(false); });
-  }, [period, lang]);
+    const arg = (period === 4 && range) ? range : (t.periodKeys[period] || 'month');
+    api.getSummary(arg).then(setSummary).catch(() => setSummary(null)).finally(() => { setLoading(false); setFirstLoad(false); });
+  }, [period, range, lang]);
 
   const d = summary || { total_sales: 0, order_count: 0, estimated_profit: 0, vat_collected: 0, top_items: [], payment_breakdown: {}, daily_chart: [], pending_po: 0, pending_service: 0, pending_quotation: 0 };
   const margin = d.total_sales > 0 ? ((d.estimated_profit / d.total_sales) * 100).toFixed(1) : '0.0';
@@ -92,6 +104,11 @@ export default function SummaryScreen({ navigation }) {
   const payTotal   = payEntries.reduce((s, [, v]) => s + v, 0) || 1;
   const PAY_COL = { cash: '#2e7d32', qr: '#1a3a60', card: '#550a19', mobile: '#854F0B' };
   const PAY_LABEL = { cash: lang === 'th' ? 'เงินสด' : 'Cash', qr: lang === 'th' ? 'โอน / QR' : 'Transfer', card: lang === 'th' ? 'บัตรเครดิต' : 'Card', mobile: lang === 'th' ? 'Mobile' : 'Mobile' };
+
+  const dLocale  = lang === 'th' ? 'th-TH' : 'en-GB';
+  const dShort   = (v) => (v ? new Date(v).toLocaleDateString(dLocale, { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+  const rangeText  = range ? `${dShort(range.from)} – ${dShort(range.to)}` : t.custom;
+  const periodLabel = (period === 4 && range) ? rangeText : t.periods[period];
 
   const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -105,7 +122,8 @@ export default function SummaryScreen({ navigation }) {
         {t.periods.map((p, i) => (
           <Chip key={p} label={p} on={period === i} onPress={() => setPeriod(i)} />
         ))}
-        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printSummary(d, t.periods[period])} style={s.exportBtn}>
+        <Chip label={rangeText} on={period === 4} onPress={() => setPick(range || { from: '', to: '' })} />
+        <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printSummary(d, periodLabel)} style={s.exportBtn}>
           <MaterialCommunityIcons name="tray-arrow-down" size={sc(15)} color="#550a19" />
           <Text style={s.exportText}>{lang === 'th' ? 'ส่งออกเป็นไฟล์' : 'Export'}</Text>
         </TouchableOpacity>
@@ -118,7 +136,7 @@ export default function SummaryScreen({ navigation }) {
         {/* KPI GRID */}
         <View style={s.kpiGrid}>
           <KPICard wide={wide} label={t.revenue} value={d.total_sales} icon="currency-usd" col="#550a19" bg="#fdf0f2" />
-          <KPICard wide={wide} label={t.orders} value={d.order_count} icon="cart" col="#2e7d32" bg="#e8f5e9" />
+          <KPICard wide={wide} label={t.orders} value={d.order_count} unit={t.unitPcs} icon="cart" col="#2e7d32" bg="#e8f5e9" />
           <KPICard wide={wide} label={t.profit} value={d.estimated_profit} sub={`${margin}% ${t.profitMargin}`} subUp={d.estimated_profit >= 0} icon="trending-up" col="#1a3a60" bg="#e0f0ff" />
           <KPICard wide={wide} label={t.vatCollected} value={d.vat_collected} icon="receipt" col="#854F0B" bg="#fff8e1" />
         </View>
@@ -218,6 +236,29 @@ export default function SummaryScreen({ navigation }) {
 
         <View style={{ height: 20 }} />
       </ScrollView>
+
+      {/* กล่องเลือกช่วงวันที่ — มีผลทั้งหน้าจอและไฟล์ที่ส่งออก */}
+      <ShellModal visible={!!pick} animationType="fade" transparent onRequestClose={() => setPick(null)}>
+        <View style={s.overlay}>
+          <View style={s.rangeBox}>
+            <Text style={s.rangeTitle}>{t.pickRange}</Text>
+            <Text style={s.rangeLabel}>{t.dFrom}</Text>
+            <DateInput value={pick?.from} onChangeText={(v) => setPick(q => ({ ...q, from: v }))} placeholder="YYYY-MM-DD" style={s.rangeInput} />
+            <Text style={s.rangeLabel}>{t.dTo}</Text>
+            <DateInput value={pick?.to} onChangeText={(v) => setPick(q => ({ ...q, to: v }))} placeholder="YYYY-MM-DD" style={s.rangeInput} />
+            <View style={s.rangeBtns}>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setPick(null)} style={[s.rangeBtn, { backgroundColor: '#f9f4f5' }]}>
+                <Text style={[s.rangeBtnText, { color: '#806070' }]}>{t.cancel}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} disabled={!(pick?.from && pick?.to)}
+                onPress={() => { setRange({ from: pick.from, to: pick.to }); setPeriod(4); setPick(null); }}
+                style={[s.rangeBtn, { backgroundColor: (pick?.from && pick?.to) ? '#550a19' : '#d8c3c8' }]}>
+                <Text style={[s.rangeBtnText, { color: '#fff' }]}>{t.apply}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </ShellModal>
     </View>
   );
 }
@@ -262,4 +303,12 @@ const baseStyles = {
   pendingCard:{ flex: 1, borderRadius: 10, padding: 10, alignItems: 'center', gap: 4 },
   pendingCount:{ fontSize: 22, fontWeight: '500' },
   pendingLabel:{ fontSize: 10, textAlign: 'center' },
+  overlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
+  rangeBox:   { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: 300 },
+  rangeTitle: { fontSize: 14, fontWeight: '600', color: '#550a19', marginBottom: 12, textAlign: 'center' },
+  rangeLabel: { fontSize: 11, color: '#a07080', marginBottom: 4 },
+  rangeInput: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14, color: '#2c1015', marginBottom: 10 },
+  rangeBtns:  { flexDirection: 'row', gap: 10, marginTop: 6 },
+  rangeBtn:   { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  rangeBtnText: { fontSize: 13, fontWeight: '500' },
 };

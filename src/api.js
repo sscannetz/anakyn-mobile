@@ -140,5 +140,11 @@ export const api = {
   createCustomer: (data) => request('/customers', { method: 'POST', body: data }),
 
   // ── Summary ──
-  getSummary: (period) => request(`/summary?period=${period || 'month'}`),
+  // ส่ง period เป็นสตริง (today|week|month|year) หรือส่ง { from, to } = 'YYYY-MM-DD' เลือกช่วงวันที่เอง
+  getSummary: (period) => {
+    if (period && typeof period === 'object' && period.from && period.to) {
+      return request(`/summary?from=${period.from}&to=${period.to}`);
+    }
+    return request(`/summary?period=${period || 'month'}`);
+  },
 };

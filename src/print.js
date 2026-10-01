@@ -82,6 +82,16 @@ const STYLE = `
   .grand .gl { font-size:12px; color:#550a19; font-weight:600; letter-spacing:.5px; }
   .grand .gv { font-size:19px; font-weight:800; color:#550a19; }
 
+  /* ── กล่องสถิติแยกกรอบ (หน้าสรุปยอดขาย) ── */
+  .stats { display:flex; gap:9px; margin-top:16px; }
+  .stat { flex:1; border:1px solid #e6d7dc; border-radius:7px; padding:12px 10px; text-align:center; }
+  .stat .sn { font-size:9px; letter-spacing:.5px; color:#9a6b78; text-transform:uppercase; }
+  .stat .sv { font-size:17px; font-weight:800; color:#550a19; margin-top:5px; }
+
+  /* ── แถวรวมยอดท้ายตาราง ── */
+  tbody tr.sum td { background:#fdf2f5 !important; font-weight:800; color:#550a19;
+                    border-top:1.5px solid #550a19; border-bottom:none; font-size:12px; }
+
   /* ── กล่องข้อมูล (เช่น สินค้าที่ซ่อม / อาการ) ── */
   .fields { border:1px solid #e6d7dc; border-radius:7px; overflow:hidden; }
   .field { display:flex; padding:9px 13px; border-bottom:1px solid #f1e8eb; }
@@ -120,7 +130,7 @@ function totals(rows, grandLabel, grandValue) {
 }
 
 // ── แม่แบบเอกสาร ──
-function renderDoc({ badge, docNo, meta = [], parties, sections = '', sectionsBottom = '', signatures }) {
+function renderDoc({ badge, docNo, docNoLabel = 'เลขที่', meta = [], parties, sections = '', sectionsBottom = '', signatures }) {
   const metaHtml = meta.length
     ? `<div class="meta">${meta.map(([l, v]) => `<div><div class="ml">${esc(l)}</div><div class="mv">${esc(v)}</div></div>`).join('')}</div>`
     : '';
@@ -144,7 +154,7 @@ function renderDoc({ badge, docNo, meta = [], parties, sections = '', sectionsBo
         </div>
         <div class="title-wrap">
           <div class="title">${esc(badge)}</div>
-          <div class="docno">เลขที่ <b>${esc(docNo || '—')}</b></div>
+          <div class="docno">${esc(docNoLabel)} <b>${esc(docNo || '—')}</b></div>
         </div>
       </div>
       ${metaHtml}
@@ -462,24 +472,46 @@ function buildReceipt(rc = {}) {
 }
 
 function buildSummary(d = {}, periodLabel = '') {
-  const kpi = [
-    ['ยอดขาย', baht(d.total_sales)], ['จำนวนออเดอร์', `${num(d.order_count)} รายการ`],
-    ['กำไรโดยประมาณ', baht(d.estimated_profit)], ['VAT ที่เก็บ', baht(d.vat_collected)],
-  ].map(([l, v]) => `<div class="field"><div class="fl">${esc(l)}</div><div class="fv">${v}</div></div>`).join('');
-  const top = (d.top_items || []).map((it, i) =>
+  // ต้นทุนรวม: backend ส่ง total_cost มาให้ ถ้าเป็นเวอร์ชันเก่าถอยไปคำนวณจาก ยอดขาย − กำไร
+  const cost = d.total_cost != null ? num(d.total_cost) : num(d.total_sales) - num(d.estimated_profit);
+  // กำไร = ราคาขาย(ไม่รวม VAT) − ต้นทุนรวม → ตรงกับ estimated_profit ที่ backend คิดมาแล้ว
+  const stats = [
+    ['รายได้รวม', baht(d.total_sales)],
+    ['จำนวนออเดอร์', `${num(d.order_count)} ชิ้น`],
+    ['ต้นทุน', baht(cost)],
+    ['กำไร', baht(d.estimated_profit)],
+  ].map(([l, v]) => `<div class="stat"><div class="sn">${esc(l)}</div><div class="sv">${v}</div></div>`).join('');
+
+  // sales_items = ทุกรายการที่ขายได้ในช่วงนี้ (ถ้า backend ยังเป็นเวอร์ชันเก่าถอยไปใช้ 5 อันดับ)
+  const items  = d.sales_items || d.top_items || [];
+  const sumQty = items.reduce((a, it) => a + num(it.qty), 0);
+  const sumAmt = items.reduce((a, it) => a + num(it.amount), 0);
+  const rows = items.map((it, i) =>
     `<tr><td class="c">${i + 1}</td><td class="iname">${esc(it.name)}</td><td class="isub">${esc(it.sku)}</td>
       <td class="c">${num(it.qty)}</td><td class="r price">${baht(it.amount)}</td></tr>`).join('');
+  // แถวรวมยอด — ใส่เฉพาะเมื่อมีรายการ ไม่งั้นจะชนกับแถว "ไม่มีรายการ" ของ table()
+  const sumRow = items.length
+    ? `<tr class="sum"><td colspan="3" class="r">รวมทั้งสิ้น</td><td class="c">${sumQty}</td><td class="r">${baht(sumAmt)}</td></tr>`
+    : '';
+
   const pending = [
-    ['PO ค้างอยู่', num(d.pending_po)], ['งานซ่อมค้าง', num(d.pending_service)], ['ใบเสนอราคาค้าง', num(d.pending_quotation)],
+    ['PO ค้างอยู่', num(d.pending_po)], ['งานซ่อมค้าง', num(d.pending_service)],
+    ['ใบเสนอราคาค้าง', num(d.pending_quotation)], ['ใบสั่งทำค้าง', num(d.pending_work)],
   ].map(([l, v]) => `<div class="field"><div class="fl">${esc(l)}</div><div class="fv">${v}</div></div>`).join('');
-  const sections = `<div class="sec"><div class="sl">ตัวชี้วัดหลัก</div><div class="fields">${kpi}</div></div>
-    <div class="sec"><div class="sl">สินค้าขายดี</div>
+
+  const sections = `<div class="stats">${stats}</div>
+    <div class="sec"><div class="sl">รายงานยอดขาย</div>
     ${table(
-      [{ label: '#', align: 'c' }, { label: 'สินค้า' }, { label: 'SKU' }, { label: 'ขาย', align: 'c' }, { label: 'ยอด', align: 'r' }],
-      top
+      [{ label: 'ลำดับ', align: 'c' }, { label: 'สินค้า' }, { label: 'รหัสสินค้า' }, { label: 'จำนวน', align: 'c' }, { label: 'ยอด', align: 'r' }],
+      rows + sumRow
     )}</div>
     <div class="sec"><div class="sl">รายการค้างอยู่</div><div class="fields">${pending}</div></div>`;
-  return renderDoc({ badge: 'สรุปรายงาน', docNo: periodLabel || new Date().toLocaleDateString('th-TH'), sections });
+  return renderDoc({
+    badge: 'สรุปยอดขาย',
+    docNoLabel: 'ช่วงวันที่',
+    docNo: periodLabel || new Date().toLocaleDateString('th-TH'),
+    sections,
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
