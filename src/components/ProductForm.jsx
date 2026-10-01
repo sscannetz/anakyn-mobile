@@ -49,6 +49,7 @@ export const T = {
     photoMax: 'สูงสุด 4 รูป', photoMain: 'รูปหลัก',
     photoMainHint: 'กดดาวเพื่อเลือกรูปที่จะโชว์ในหน้าสต๊อก',
     photoAdd: 'เพิ่มรูป', photoLoading: 'กำลังโหลดรูป...',
+    photoGalleryMulti: 'เลือกจากคลัง (เลือกได้หลายรูป)', photoWorking: 'กำลังย่อรูป...',
     infoSection: 'ข้อมูลทั่วไป',
     itemName: 'ชื่อสินค้า', itemNamePh: 'เช่น แหวนเพชร Solitaire',
     category: 'หมวดหมู่', stockQty: 'จำนวนในสต๊อก', laborCost: 'ค่าแรงช่าง (บาท)',
@@ -92,6 +93,7 @@ export const T = {
     photoMax: 'Up to 4 photos', photoMain: 'Main',
     photoMainHint: 'Tap the star to pick the photo shown in stock list',
     photoAdd: 'Add photo', photoLoading: 'Loading photos...',
+    photoGalleryMulti: 'Choose from gallery (multiple)', photoWorking: 'Resizing...',
     infoSection: 'General Info',
     itemName: 'Product Name', itemNamePh: 'e.g. Solitaire Diamond Ring',
     category: 'Category', stockQty: 'Stock Qty', laborCost: 'Labor Cost (THB)',
@@ -216,7 +218,7 @@ export default function ProductForm({
   const [photos, setPhotos]         = useState([]);
   const [photosOrig, setPhotosOrig] = useState([]);   // ของเดิมจาก database — ใช้เช็คว่าแตะรูปหรือยัง
   const [mainIdx, setMainIdx]       = useState(0);
-  const [photoBusy, setPhotoBusy]   = useState(false);
+  const [photoBusy, setPhotoBusy]   = useState('');   // '' | 'load' (ดึงรูปเดิม) | 'resize' (ย่อรูปใหม่)
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
   const PHOTO_MAX  = 4;
   // กันคำตอบเก่ามาทับ: สลับสินค้าเร็ว ๆ แล้วคำตอบของชิ้นก่อนมาทีหลัง จะเขียนทับรูปชิ้นใหม่
@@ -256,7 +258,7 @@ export default function ProductForm({
     setPhotos(first); setPhotosOrig(first); setMainIdx(0);
     if (product.id) {
       const token = ++photoReq.current;
-      setPhotoBusy(true);
+      setPhotoBusy('load');
       api.getProduct(product.id)
         .then(full => {
           if (token !== photoReq.current) return;
@@ -265,7 +267,7 @@ export default function ProductForm({
           setPhotos(next); setPhotosOrig(next); setMainIdx(0);
         })
         .catch(() => {})
-        .finally(() => { if (token === photoReq.current) setPhotoBusy(false); });
+        .finally(() => { if (token === photoReq.current) setPhotoBusy(''); });
     }
     setItemName(str(product.name));
     setCatCode(CAT_CODES.includes(product.category) ? product.category : 'other');
@@ -315,23 +317,43 @@ export default function ProductForm({
     setPhotos([]); setPhotosOrig([]); setMainIdx(0); setSaveError(''); setSaveSuccess(false);
   };
 
+  // เลือกจากคลัง = เลือกทีเดียวได้หลายรูป (เท่าที่เหลือช่อง) · กล้อง = ทีละรูปตามปกติ
   const pickPhoto = async (fromCamera) => {
     setPhotoMenuOpen(false);
+    const room = PHOTO_MAX - photos.length;
+    if (room <= 0) return;
+
     const perm = fromCamera
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return;
+
     const result = fromCamera
       ? await ImagePicker.launchCameraAsync({ quality: 0.8 })
-      : await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
-    if (!result.canceled && result.assets[0]) {
+      : await ImagePicker.launchImageLibraryAsync({
+          quality: 0.8,
+          allowsMultipleSelection: true,
+          selectionLimit: room,          // กันเลือกเกินช่องที่เหลือ
+        });
+    if (result.canceled || !result.assets?.length) return;
+
+    // บางแพลตฟอร์มไม่สน selectionLimit — ตัดซ้ำที่นี่อีกชั้นกันพลาด
+    const picked = result.assets.slice(0, room);
+    setPhotoBusy('resize');
+    try {
       // ย่อ 450px / คุณภาพ 0.7 ≈ 40-60KB ต่อรูป — 4 รูปแล้วยังไม่ทำให้แถวใน database บวมเกินไป
-      const manipResult = await ImageManipulator.manipulateAsync(
-        result.assets[0].uri,
-        [{ resize: { width: 450 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      setPhotos(prev => (prev.length >= PHOTO_MAX ? prev : [...prev, manipResult.uri]));
+      // ย่อทีละรูปตามลำดับ ไม่ยิงพร้อมกัน เพราะรูปใหญ่ ๆ หลายรูปพร้อมกันทำให้เครื่องช้าหน่วง
+      const out = [];
+      for (const a of picked) {
+        const m = await ImageManipulator.manipulateAsync(
+          a.uri, [{ resize: { width: 450 } }],
+          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+        );
+        out.push(m.uri);
+      }
+      setPhotos(prev => [...prev, ...out].slice(0, PHOTO_MAX));
+    } finally {
+      setPhotoBusy('');
     }
   };
 
@@ -695,7 +717,9 @@ export default function ProductForm({
           })}
         </View>
         <Text style={s.photoGridNote}>
-          {photoBusy ? t.photoLoading : `${t.photoMax} · ${t.photoMainHint}`}
+          {photoBusy === 'load'   ? t.photoLoading
+         : photoBusy === 'resize' ? t.photoWorking
+         : `${t.photoMax} · ${t.photoMainHint}`}
         </Text>
       </Sec>
 
@@ -739,7 +763,7 @@ export default function ProductForm({
             </TouchableOpacity>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => pickPhoto(false)} style={s.sheetBtn}>
               <MaterialCommunityIcons name="image" size={sc(18)} color="#550a19" />
-              <Text style={s.sheetBtnText}>{t.photoGallery}</Text>
+              <Text style={s.sheetBtnText}>{t.photoGalleryMulti}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
