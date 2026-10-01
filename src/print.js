@@ -99,14 +99,20 @@ const STYLE = `
   .doc.summary .price,
   .doc.summary tbody td,
   .doc.summary .field .fv,
-  .doc.summary .stat .sv,
   .doc.summary .docno b,
+  .doc.summary .stat .sv,
   .doc.summary tbody tr.sum td       { font-weight:400; }
   .doc.summary .sl,
   .doc.summary thead th,
   .doc.summary .stat .sn,
   .doc.summary .field .fl,
   .doc.summary tbody tr.sum td.lbl   { font-weight:700; }
+
+  /* ฟอนต์เอกสารสรุปยอดขาย — TH Sarabun New (มีในเครื่อง Windows ที่ลงฟอนต์ราชการไว้)
+     สำรองลงมา: TH SarabunPSK (ชื่อเก่า) -> Sarabun -> Tahoma -> ฟอนต์ระบบ
+     เครื่องที่ไม่มีฟอนต์นี้ (มือถือ/แท็บเล็ต) จะตกไปใช้ตัวสำรองเอง เอกสารไม่พัง
+     ตั้งที่ .doc.summary ตัวเดียว ใบเสร็จ/ใบกำกับ/ใบสั่งซื้อ ยังเป็นฟอนต์เดิม */
+  .doc.summary, .doc.summary * { font-family: 'TH Sarabun New', 'TH SarabunPSK', 'Sarabun', Tahoma, sans-serif; }
 
   /* ── กล่องข้อมูล (เช่น สินค้าที่ซ่อม / อาการ) ── */
   .fields { border:1px solid #e6d7dc; border-radius:7px; overflow:hidden; }
