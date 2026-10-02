@@ -225,7 +225,7 @@ export default function ReceiptScreen({ navigation, route }) {
                   ['ชำระโดย', payLabel(selRc.payment_method, lang)],
                 ]} />
               <Parties
-                seller={{ label: lang === 'th' ? 'ผู้รับเงิน' : 'RECEIVED BY', name: 'Anakyn Gems Co., Ltd.', sub: '123 ถ.สีลม กรุงเทพฯ 10500' }}
+                seller={{ label: lang === 'th' ? 'ผู้รับเงิน' : 'RECEIVED BY', name: 'Anakyn Gems Co., Ltd.', sub: '131/5-6 ถ.นิตโย ต.หมากแข้ง อ.เมือง อุดรธานี 41000' }}
                 buyer={{ label: lang === 'th' ? 'ผู้ชำระเงิน' : 'PAID BY', name: selRc.customer_name || 'ไม่ระบุ', sub: selRc.phone || '—' }}
               />
               <Sec>

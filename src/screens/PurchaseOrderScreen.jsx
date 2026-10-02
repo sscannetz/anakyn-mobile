@@ -245,7 +245,7 @@ export default function PurchaseOrderScreen({ navigation }) {
                       ]} />
                     <Parties
                       seller={{ label: lang === 'th' ? 'ผู้ขาย (ซัพพลายเออร์)' : 'SUPPLIER', name: selPO.supplier_name || 'ไม่ระบุ', sub: selPO.phone || '—' }}
-                      buyer={{ label: lang === 'th' ? 'ผู้สั่งซื้อ' : 'BUYER', name: 'Anakyn Gems Co., Ltd.', sub: '123 ถ.สีลม กรุงเทพฯ 10500' }}
+                      buyer={{ label: lang === 'th' ? 'ผู้สั่งซื้อ' : 'BUYER', name: 'Anakyn Gems Co., Ltd.', sub: '131/5-6 ถ.นิตโย ต.หมากแข้ง อ.เมือง อุดรธานี 41000' }}
                     />
                     <Sec>
                       <SL>{lang === 'th' ? 'รายการสั่งซื้อ' : 'ITEMS'}</SL>

@@ -242,7 +242,7 @@ export default function InvoiceScreen({ navigation }) {
                         ['VAT', dVatOn ? `${rate}%` : 'ไม่มี'],
                       ]} />
                     <Parties
-                      seller={{ label: t.seller, name: 'Anakyn Gems Co., Ltd.', sub: '123 ถ.สีลม กรุงเทพฯ 10500' }}
+                      seller={{ label: t.seller, name: 'Anakyn Gems Co., Ltd.', sub: '131/5-6 ถ.นิตโย ต.หมากแข้ง อ.เมือง อุดรธานี 41000' }}
                       buyer={{ label: t.buyer, name: selInvoice.customer_name || 'ไม่ระบุ', sub: selInvoice.customer_phone || '—' }}
                     />
                     <Sec>

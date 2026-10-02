@@ -21,7 +21,7 @@ const dateTH = (v) => { const d = new Date(v); return isNaN(d) ? '—' : d.toLoc
 // ── ข้อมูลบริษัท (ผู้ออกเอกสาร) ──
 const COMPANY = {
   name: 'Anakyn Gems Co., Ltd.',
-  addr: '123 ถ.สีลม แขวงสีลม เขตบางรัก กรุงเทพฯ 10500',
+  addr: '131/5-6 ถ.นิตโย ต.หมากแข้ง อ.เมือง อุดรธานี 41000',
 };
 
 // ฟอนต์เอกสาร A4 ทุกใบ (ใบกำกับ/ใบเสร็จ/ใบเสนอราคา/ใบสั่งซื้อ/ใบสั่งซ่อม/ใบสั่งทำ/สรุปยอดขาย)
@@ -473,13 +473,19 @@ function buildReceipt(rc = {}) {
       <td class="c">${qty}</td><td class="r">${baht(unit)}</td><td class="r price">${baht(amt)}</td></tr>`;
   }).join('');
   const amount = rc.amount ?? rc.grand_total ?? rc.total;
+  // ส่วนลดของบิลขาย (ส่วนลด VIP + ส่วนลดเพิ่ม) — โชว์เฉพาะเมื่อมีจริง
+  // ใบเสร็จเก่า/backend เวอร์ชันเก่าไม่ส่งสองช่องนี้มา จะได้ 0 แล้วแถวนี้ไม่ขึ้น เหมือนเดิม
+  const discount = num(rc.vip_discount) + num(rc.extra_discount);
   const sections = `<div class="sec"><div class="sl">รายการสินค้า</div>
     ${table(
       [{ label: '#', align: 'c' }, { label: 'รายการ' }, { label: 'จำนวน', align: 'c' }, { label: 'ราคา/หน่วย', align: 'r' }, { label: 'จำนวนเงิน', align: 'r' }],
       rows
     )}</div>`;
   const sectionsBottom = `${totals(
-      [['ชำระโดย', PAY_LABELS[rc.payment_method] || rc.payment_method || '—']],
+      [
+        ...(discount > 0 ? [['ส่วนลด', `-${baht(discount)}`]] : []),
+        ['ชำระโดย', PAY_LABELS[rc.payment_method] || rc.payment_method || '—'],
+      ],
       'จำนวนเงินที่รับ', baht(amount)
     )}
     ${rc.note ? `<div class="sec"><div class="sl">หมายเหตุ</div><div class="ps">${esc(rc.note)}</div></div>` : ''}`;
