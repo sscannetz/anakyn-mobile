@@ -66,6 +66,19 @@ export default function App() {
     const ICON_TTF = 'https://unpkg.com/@expo/vector-icons@15.1.1/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf';
     style.textContent = `
       @font-face { font-family: 'material-community'; src: url('${ICON_TTF}') format('truetype'); font-display: swap; }
+
+      /* ── ฟอนต์ทั้งแอป: TH Sarabun New ──
+         react-native-web ใส่ฟอนต์ให้ <Text> ผ่านคลาสของตัวเอง (.css-xxxx ความจำเพาะ 0,1,0)
+         กฎนี้ใช้ #root นำหน้า (ความจำเพาะ 1,0,1) จึงชนะคลาสนั้นได้โดยไม่ต้องใช้ !important
+         ★ ห้ามใส่ !important เด็ดขาด — ไอคอน MaterialCommunityIcons ตั้ง font-family
+           มาทาง inline style ถ้าใส่ !important จะทับไอคอนจนกลายเป็นสี่เหลี่ยม
+           (ไม่ใส่ = inline ของไอคอนชนะเอง ไอคอนปลอดภัย ทดสอบบน production แล้ว)
+         เครื่องที่ไม่มี TH Sarabun New จะไล่ลงไปใช้ตัวสำรองเอง */
+      #root div, #root span, #root p, #root a, #root li,
+      #root input, #root textarea, #root select, #root button, #root label {
+        font-family: 'TH Sarabun New', 'TH SarabunPSK', 'Sarabun', Tahoma, -apple-system, 'Segoe UI', Arial, sans-serif;
+      }
+
       html { height: 100%; }
       body { height: auto !important; min-height: 100%; overflow-y: auto !important; }
       /* เต็มความกว้างหน้าจอ — ความอ่านง่ายบนจอใหญ่จัดการด้วย src/responsive.js

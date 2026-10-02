@@ -24,10 +24,15 @@ const COMPANY = {
   addr: '123 ถ.สีลม แขวงสีลม เขตบางรัก กรุงเทพฯ 10500',
 };
 
+// ฟอนต์เอกสาร A4 ทุกใบ (ใบกำกับ/ใบเสร็จ/ใบเสนอราคา/ใบสั่งซื้อ/ใบสั่งซ่อม/ใบสั่งทำ/สรุปยอดขาย)
+// TH Sarabun New เป็นฟอนต์ราชการ มีในเครื่อง Windows ที่ลงไว้ — เครื่องที่ไม่มีจะไล่ลงไปใช้ตัวสำรองเอง
+// ★ ป้ายสินค้า (TAG_STYLE) ไม่ใช้ฟอนต์นี้ เพราะคาลิเบรตขนาดกับสติกเกอร์ 50x15mm ไว้แล้ว เปลี่ยนฟอนต์ = ข้อความล้นป้าย
+const DOC_FONT = `'TH Sarabun New', 'TH SarabunPSK', 'Sarabun', Tahoma, -apple-system, 'Helvetica Neue', Arial, sans-serif`;
+
 const STYLE = `
   @page { size: A4; margin: 14mm 13mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Sarabun', -apple-system, 'Helvetica Neue', Arial, sans-serif; color:#2b2226; font-size:12px; line-height:1.5; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body { font-family: ${DOC_FONT}; color:#2b2226; font-size:12px; line-height:1.5; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   /* สูงอย่างน้อยเกือบเต็มหน้า A4 (269mm − ขอบล่างกันไว้) + เป็น flex column
      → .signs ใช้ margin-top:auto ดันตัวเองกับ .foot ลงไปอยู่ท้ายหน้าเสมอ
      เอกสารที่มีไม่กี่รายการจะได้ไม่ลอยค้างกลางหน้า */
@@ -107,12 +112,6 @@ const STYLE = `
   .doc.summary .stat .sn,
   .doc.summary .field .fl,
   .doc.summary tbody tr.sum td.lbl   { font-weight:700; }
-
-  /* ฟอนต์เอกสารสรุปยอดขาย — TH Sarabun New (มีในเครื่อง Windows ที่ลงฟอนต์ราชการไว้)
-     สำรองลงมา: TH SarabunPSK (ชื่อเก่า) -> Sarabun -> Tahoma -> ฟอนต์ระบบ
-     เครื่องที่ไม่มีฟอนต์นี้ (มือถือ/แท็บเล็ต) จะตกไปใช้ตัวสำรองเอง เอกสารไม่พัง
-     ตั้งที่ .doc.summary ตัวเดียว ใบเสร็จ/ใบกำกับ/ใบสั่งซื้อ ยังเป็นฟอนต์เดิม */
-  .doc.summary, .doc.summary * { font-family: 'TH Sarabun New', 'TH SarabunPSK', 'Sarabun', Tahoma, sans-serif; }
 
   /* ── กล่องข้อมูล (เช่น สินค้าที่ซ่อม / อาการ) ── */
   .fields { border:1px solid #e6d7dc; border-radius:7px; overflow:hidden; }
@@ -889,7 +888,7 @@ const WO_METAL_TYPE = { '9K': '9K', '14K': '14K', '18K': '18K', silver: 'Silver 
 const WO_STYLE = `
   @page { size: A4; margin: 12mm 11mm; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:'Sarabun',-apple-system,'Helvetica Neue',Arial,sans-serif;
+  body { font-family:${DOC_FONT};
          color:#241016; font-size:12px; line-height:1.5;
          -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 
