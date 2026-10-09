@@ -27,11 +27,11 @@ const fmt = (n) => {
 
 // ป้ายสถานะ: ใบที่ยังต้องตาม = แดงอ่อน · ใบที่จบแล้ว = ขาวเส้นบาง
 const STATUS_STYLE = {
-  draft:    { bg: th.card, col: th.muted },
-  sent:     { bg: th.soft, col: th.brand2 },
-  accepted: { bg: th.card, col: th.muted },
-  rejected: { bg: th.card, col: th.dim },
-  expired:  { bg: th.soft, col: th.brand2 },
+  draft:    { bg: '#ffffff', col: '#9b7d86' },
+  sent:     { bg: '#fdf0f2', col: '#8c1b2f' },
+  accepted: { bg: '#ffffff', col: '#9b7d86' },
+  rejected: { bg: '#ffffff', col: '#b08090' },
+  expired:  { bg: '#fdf0f2', col: '#8c1b2f' },
 };
 
 const STATUS_LABELS = {

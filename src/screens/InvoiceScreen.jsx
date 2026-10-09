@@ -50,10 +50,10 @@ const fmt = (n) => {
 
 // ป้ายสถานะ: ใบที่ยังต้องตามเก็บเงิน = แดงอ่อน · ใบที่จบแล้ว = ขาวเส้นบาง
 const STATUS_STYLE = {
-  draft:  { bg: th.card, col: th.muted, label: 'Draft'  },
-  issued: { bg: th.soft, col: th.brand2, label: 'Issued' },
-  paid:   { bg: th.card, col: th.muted, label: 'Paid'   },
-  void:   { bg: th.card, col: th.dim, label: 'Void'   },
+  draft:  { bg: '#ffffff', col: '#9b7d86', label: 'Draft'  },
+  issued: { bg: '#fdf0f2', col: '#8c1b2f', label: 'Issued' },
+  paid:   { bg: '#ffffff', col: '#9b7d86', label: 'Paid'   },
+  void:   { bg: '#ffffff', col: '#b08090', label: 'Void'   },
 };
 
 const FILTERS = [

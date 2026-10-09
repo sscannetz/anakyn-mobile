@@ -27,10 +27,10 @@ const fmt = (n) => {
 
 // ป้ายสถานะ: ใบที่ของยังไม่เข้า = แดงอ่อน · ใบที่จบแล้ว = ขาวเส้นบาง
 const STATUS_STYLE = {
-  pending:   { bg: th.soft, col: th.brand2 },
-  sent:      { bg: th.soft, col: th.brand2 },
-  received:  { bg: th.card, col: th.muted },
-  cancelled: { bg: th.card, col: th.dim },
+  pending:   { bg: '#fdf0f2', col: '#8c1b2f' },
+  sent:      { bg: '#fdf0f2', col: '#8c1b2f' },
+  received:  { bg: '#ffffff', col: '#9b7d86' },
+  cancelled: { bg: '#ffffff', col: '#b08090' },
 };
 
 const STATUS_LABELS = {

@@ -23,10 +23,10 @@ const GOLD_OPTIONS = [
   { key: '18K', factor: 0.90 },
 ];
 export const METAL_TABS = [
-  { key: '9K',     label: '9K',     col: th.brand, bg: th.soft, border: th.line3 },
-  { key: '14K',    label: '14K',    col: th.brand, bg: th.soft, border: th.line3 },
-  { key: '18K',    label: '18K',    col: th.brand, bg: th.soft, border: th.line3 },
-  { key: 'silver', label: 'Silver', col: th.brand, bg: th.soft, border: th.line3 },
+  { key: '9K',     label: '9K',     col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
+  { key: '14K',    label: '14K',    col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
+  { key: '18K',    label: '18K',    col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
+  { key: 'silver', label: 'Silver', col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
 ];
 // ใช้ร่วมกับหน้าใบสั่งทำด้วย — แหล่งเดียวจะได้ไม่มีทางหลุดกัน
 export const SHAPES = [

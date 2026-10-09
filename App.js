@@ -42,7 +42,7 @@ function routeScannedSku() {
 }
 
 function AppInner() {
-  const { t, mourn } = useTheme();
+  const { t: th, mourn } = useTheme();
   const [initialRoute, setInitialRoute] = useState(null);
   // ชื่อหน้าที่เปิดอยู่ — AppShell ใช้ไฮไลท์เมนู และซ่อนตัวเองตอนอยู่หน้า Login
   const [routeName, setRouteName] = useState(null);
