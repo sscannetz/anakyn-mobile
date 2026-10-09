@@ -12,7 +12,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function QrScanner({ visible, onClose, onScan, note, count = 0, lang = 'th' }) {
-  const { styles: s, sc, center } = useScaledStyles(baseStyles);
+  const { styles: s, sc, center, t: thm } = useScaledStyles(baseStyles);
   const [perm, requestPerm] = useCameraPermissions();
   const last = useRef({ code: '', at: 0 });
   const th = lang === 'th';
@@ -41,7 +41,7 @@ export default function QrScanner({ visible, onClose, onScan, note, count = 0, l
         <View style={s.head}>
           <Text style={s.title}>{th ? 'สแกน QR บนป้ายสินค้า' : 'Scan tag QR'}</Text>
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <MaterialCommunityIcons name="close" size={sc(24)} color="#fff" />
+            <MaterialCommunityIcons name="close" size={sc(24)} color={thm.brandOn} />
           </TouchableOpacity>
         </View>
 
@@ -49,12 +49,12 @@ export default function QrScanner({ visible, onClose, onScan, note, count = 0, l
         <View style={s.camWrap}>
           {!perm ? null : !perm.granted ? (
             <View style={s.center}>
-              <MaterialCommunityIcons name="camera-off-outline" size={sc(44)} color="#8a7d83" />
+              <MaterialCommunityIcons name="camera-off-outline" size={sc(44)} color={thm.muted} />
               <Text style={s.permText}>
                 {th ? 'ต้องอนุญาตให้ใช้กล้องก่อนถึงจะสแกนได้' : 'Camera permission is required'}
               </Text>
               <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={requestPerm} style={s.permBtn}>
-                <MaterialCommunityIcons name="camera" size={sc(16)} color="#fff" />
+                <MaterialCommunityIcons name="camera" size={sc(16)} color={thm.brandOn} />
                 <Text style={s.permBtnText}>{th ? 'อนุญาตใช้กล้อง' : 'Allow camera'}</Text>
               </TouchableOpacity>
               {Platform.OS === 'web' && (
@@ -83,10 +83,10 @@ export default function QrScanner({ visible, onClose, onScan, note, count = 0, l
         {/* แถบสถานะล่าง */}
         <View style={s.foot}>
           <View style={[s.noteBox, !noteOk && s.noteBoxErr]}>
-            <Text style={[s.noteText, !noteOk && { color: '#ffd7d7' }]} numberOfLines={2}>{noteText()}</Text>
+            <Text style={[s.noteText, !noteOk && { color: thm.brandOn }]} numberOfLines={2}>{noteText()}</Text>
           </View>
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onClose} style={s.doneBtn}>
-            <MaterialCommunityIcons name="cart-check" size={sc(17)} color="#550a19" />
+            <MaterialCommunityIcons name="cart-check" size={sc(17)} color={thm.brand} />
             <Text style={s.doneText}>
               {th ? `เสร็จแล้ว (${count} ชิ้น)` : `Done (${count})`}
             </Text>
@@ -97,21 +97,21 @@ export default function QrScanner({ visible, onClose, onScan, note, count = 0, l
   );
 }
 
-const baseStyles = {
+const baseStyles = (thm) => ({
   root:     { flex: 1, backgroundColor: '#1a0d11' },
   head:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
-  title:    { fontSize: 15, fontWeight: '600', color: '#fff' },
-  camWrap:  { flex: 1, backgroundColor: '#000', overflow: 'hidden' },
+  title:    { fontSize: 15, fontWeight: '600', color: thm.brandOn },
+  camWrap:  { flex: 1, backgroundColor: thm.shadow, overflow: 'hidden' },
   center:   { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 24 },
   frame:    { width: 210, height: 210, borderWidth: 3, borderColor: 'rgba(255,255,255,0.9)', borderRadius: 20 },
-  permText: { fontSize: 13, color: '#e0d0d5', textAlign: 'center' },
-  permBtn:  { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 11 },
-  permBtnText: { fontSize: 13, fontWeight: '600', color: '#fff' },
-  hint:     { fontSize: 11, color: '#8a7d83', textAlign: 'center', lineHeight: 17 },
+  permText: { fontSize: 13, color: thm.dim, textAlign: 'center' },
+  permBtn:  { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: thm.brandBg, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 11 },
+  permBtnText: { fontSize: 13, fontWeight: '600', color: thm.brandOn },
+  hint:     { fontSize: 11, color: thm.muted, textAlign: 'center', lineHeight: 17 },
   foot:     { padding: 14, gap: 10 },
   noteBox:  { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
   noteBoxErr: { backgroundColor: 'rgba(198,40,40,0.35)' },
-  noteText: { fontSize: 12.5, color: '#fff', lineHeight: 18 },
-  doneBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: '#fff', borderRadius: 14, paddingVertical: 13 },
-  doneText: { fontSize: 14, fontWeight: '700', color: '#550a19' },
-};
+  noteText: { fontSize: 12.5, color: thm.brandOn, lineHeight: 18 },
+  doneBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: thm.card, borderRadius: 14, paddingVertical: 13 },
+  doneText: { fontSize: 14, fontWeight: '700', color: thm.brand },
+});

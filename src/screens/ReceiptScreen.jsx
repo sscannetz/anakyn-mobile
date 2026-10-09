@@ -50,7 +50,7 @@ const COLS = [
 ];
 
 export default function ReceiptScreen({ navigation, route }) {
-  const { styles: s, sc, center } = useScaledStyles(baseStyles);
+  const { styles: s, sc, center, t: th } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang]         = useState('th');
   const [q, setQ] = useState('');
@@ -120,7 +120,7 @@ export default function ReceiptScreen({ navigation, route }) {
   const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: th.bg, paddingTop: insets.top }}>
       <Header title={lang === 'th' ? 'ใบเสร็จรับเงิน' : 'Receipt'} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading} lang={lang} />
       <ScrollView contentContainerStyle={s.content}>
@@ -130,7 +130,7 @@ export default function ReceiptScreen({ navigation, route }) {
           <PrimaryButton label={lang === 'th' ? 'ออกใบเสร็จ' : 'New receipt'} onPress={() => setShowNew(true)} />
         </Toolbar>
 
-        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20, marginBottom: 12 }} />}
+        {loading && <ActivityIndicator color={th.brand} style={{ marginTop: 20, marginBottom: 12 }} />}
 
         <Panel title={lang === 'th' ? 'ใบเสร็จทั้งหมด' : 'All receipts'}
           right={`${shown.length} ${lang === 'th' ? 'ใบ' : 'receipts'}`}>
@@ -175,15 +175,15 @@ export default function ReceiptScreen({ navigation, route }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'ออกใบเสร็จใหม่' : 'New Receipt'}</Text>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(false)}>
-              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color={th.brand} />
             </TouchableOpacity>
           </View>
           {!!error && <View style={s.errBox}><Text style={s.errText}>{error}</Text></View>}
           <Text style={s.fieldLabel}>{lang === 'th' ? 'เลือกรายการขาย' : 'Select a sale'}</Text>
-          <ScrollView style={{ maxHeight: 260, marginBottom: 12, borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10 }}>
+          <ScrollView style={{ maxHeight: 260, marginBottom: 12, borderWidth: 0.5, borderColor: th.line2, borderRadius: 10 }}>
             {sales.map(sa => (
               <TouchableOpacity dataSet={{ hov: 'btn' }} key={sa.id} onPress={() => setSelSaleId(sa.id)}
-                style={[s.saleRow, { backgroundColor: selSaleId === sa.id ? '#fdf0f2' : '#fff' }]}>
+                style={[s.saleRow, { backgroundColor: selSaleId === sa.id ? th.soft : th.card }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={s.cardNo}>{sa.sale_no}</Text>
                   <Text style={s.cardSub}>{sa.customer_name || 'ไม่ระบุ'}</Text>
@@ -197,16 +197,16 @@ export default function ReceiptScreen({ navigation, route }) {
           <View style={s.payRow}>
             {PAY_OPTIONS.map(p => (
               <TouchableOpacity dataSet={{ hov: 'btn' }} key={p.key} onPress={() => setPayMethod(p.key)}
-                style={[s.payBtn, { backgroundColor: payMethod === p.key ? '#550a19' : '#f9f4f5', borderColor: payMethod === p.key ? '#550a19' : '#e8d5d9' }]}>
-                <Text style={[s.payBtnText, { color: payMethod === p.key ? '#f5e0e5' : '#a07080' }]}>{lang === 'th' ? p.th : p.en}</Text>
+                style={[s.payBtn, { backgroundColor: payMethod === p.key ? th.brandBg : th.card2, borderColor: payMethod === p.key ? th.brandBg : th.softer }]}>
+                <Text style={[s.payBtnText, { color: payMethod === p.key ? th.brandOn : th.muted2 }]}>{lang === 'th' ? p.th : p.en}</Text>
               </TouchableOpacity>
             ))}
           </View>
           <TextInput dataSet={{ hov: 'field' }} style={s.input} value={note} onChangeText={setNote}
-            placeholder={lang === 'th' ? 'หมายเหตุ (ถ้ามี)' : 'Note (optional)'} placeholderTextColor="#c0a0a8" />
+            placeholder={lang === 'th' ? 'หมายเหตุ (ถ้ามี)' : 'Note (optional)'} placeholderTextColor={th.faint} />
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleIssue} disabled={issuing}
             style={[s.issueBtn, { opacity: issuing ? 0.7 : 1 }]}>
-            {issuing ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="receipt" size={sc(18)} color="#fff5f7" />}
+            {issuing ? <ActivityIndicator color={th.brandOn} size="small" /> : <MaterialCommunityIcons name="receipt" size={sc(18)} color={th.brandOn} />}
             <Text style={s.issueBtnText}>{issuing ? (lang === 'th' ? 'กำลังออก...' : 'Issuing...') : (lang === 'th' ? 'ออกใบเสร็จ' : 'Issue receipt')}</Text>
           </TouchableOpacity>
         </View>
@@ -235,7 +235,7 @@ export default function ReceiptScreen({ navigation, route }) {
                   <ItemRow key={i} name={it.product_name || it.name || `รายการที่ ${i + 1}`} sub={it.sku}
                     qty={Number(it.qty) || 1} price={it.line_total ?? it.unit_price} />
                 ))}
-                {(selRc.items || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
+                {(selRc.items || []).length === 0 && <Text style={{ fontSize: 11, color: th.muted2 }}>— ไม่มีรายการ —</Text>}
               </Sec>
               {!!selRc.note && (
                 <Sec>
@@ -247,8 +247,8 @@ export default function ReceiptScreen({ navigation, route }) {
             </DocWrapper>
             <DocActions lang={lang} onPrint={() => printReceipt(selRc)} onSavePdf={() => saveReceipt(selRc)} />
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleDelete} style={[s.delBtn, confirmDel && s.delBtnConfirm]} activeOpacity={0.85}>
-              <MaterialCommunityIcons name="trash-can-outline" size={sc(16)} color={confirmDel ? '#fff' : '#a32d2d'} />
-              <Text style={[s.delBtnText, confirmDel && { color: '#fff' }]}>
+              <MaterialCommunityIcons name="trash-can-outline" size={sc(16)} color={confirmDel ? th.brandOn : th.danger} />
+              <Text style={[s.delBtnText, confirmDel && { color: th.brandOn }]}>
                 {confirmDel
                   ? (lang === 'th' ? 'แตะอีกครั้งเพื่อยืนยันลบ' : 'Tap again to confirm')
                   : (lang === 'th' ? 'ลบใบเสร็จ' : 'Delete')}
@@ -261,37 +261,37 @@ export default function ReceiptScreen({ navigation, route }) {
   );
 }
 
-const baseStyles = {
+const baseStyles = (th) => ({
   toolbar:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 14 },
-  toolbarCount: { flex: 1, fontSize: 12, color: '#9b7d86' },
-  primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
-  primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: '#fff5f7' },
+  toolbarCount: { flex: 1, fontSize: 12, color: th.muted },
+  primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: th.brandBg, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
+  primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: th.brandOn },
   content:    { padding: 14, paddingBottom: 30 },
-  mrow:       { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
-  listTitle:  { fontSize: 12, fontWeight: '500', color: '#550a19', marginBottom: 10 },
-  emptyText:  { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
-  card:       { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
-  cardNo:     { fontSize: 12, fontWeight: '500', color: '#550a19' },
-  cardSub:    { fontSize: 11, color: '#a07080', marginTop: 2 },
-  cardSale:   { fontSize: 10, color: '#806070', marginTop: 2, fontWeight: '500' },
-  cardAmt:    { fontSize: 13, fontWeight: '500', color: '#2c1015' },
-  payBadge:   { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2.5, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3' },
-  payBadgeText: { fontSize: 9.5, fontWeight: '500', color: '#9b7d86' },
+  mrow:       { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: th.hair },
+  listTitle:  { fontSize: 12, fontWeight: '500', color: th.brand, marginBottom: 10 },
+  emptyText:  { fontSize: 12, color: th.muted2, textAlign: 'center', paddingVertical: 20 },
+  card:       { backgroundColor: th.card, borderRadius: 12, borderWidth: 1, borderColor: th.line, padding: 13, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  cardNo:     { fontSize: 12, fontWeight: '500', color: th.brand },
+  cardSub:    { fontSize: 11, color: th.muted2, marginTop: 2 },
+  cardSale:   { fontSize: 10, color: th.dim, marginTop: 2, fontWeight: '500' },
+  cardAmt:    { fontSize: 13, fontWeight: '500', color: th.ink },
+  payBadge:   { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2.5, backgroundColor: th.card, borderWidth: 1, borderColor: th.line },
+  payBadgeText: { fontSize: 9.5, fontWeight: '500', color: th.muted },
   iconBtn:    { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  modal:      { flex: 1, backgroundColor: '#fff', padding: 16 },
+  modal:      { flex: 1, backgroundColor: th.card, padding: 16 },
   modalHeader:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { fontSize: 16, fontWeight: '500', color: '#550a19' },
-  errBox:     { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 12 },
-  errText:    { fontSize: 12, color: '#a32d2d' },
-  fieldLabel: { fontSize: 11, color: '#a07080', marginBottom: 4 },
-  saleRow:    { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
+  modalTitle: { fontSize: 16, fontWeight: '500', color: th.brand },
+  errBox:     { backgroundColor: th.soft, borderWidth: 0.5, borderColor: th.line3, borderRadius: 8, padding: 10, marginBottom: 12 },
+  errText:    { fontSize: 12, color: th.danger },
+  fieldLabel: { fontSize: 11, color: th.muted2, marginBottom: 4 },
+  saleRow:    { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: th.hair },
   payRow:     { flexDirection: 'row', gap: 8, marginBottom: 12 },
   payBtn:     { flex: 1, borderWidth: 0.5, borderRadius: 10, paddingVertical: 9, alignItems: 'center' },
   payBtnText: { fontSize: 12, fontWeight: '500' },
-  input:      { backgroundColor: '#f9f4f5', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10, padding: 10, fontSize: 14, color: '#2c1015', marginBottom: 14 },
-  issueBtn:   { backgroundColor: '#550a19', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  issueBtnText: { fontSize: 15, fontWeight: '500', color: '#fff5f7' },
-  delBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e8c0c8', backgroundColor: '#fff' },
-  delBtnConfirm: { backgroundColor: '#a32d2d', borderColor: '#a32d2d' },
-  delBtnText: { fontSize: 13, fontWeight: '600', color: '#a32d2d' },
-};
+  input:      { backgroundColor: th.card2, borderWidth: 0.5, borderColor: th.line2, borderRadius: 10, padding: 10, fontSize: 14, color: th.ink, marginBottom: 14 },
+  issueBtn:   { backgroundColor: th.brandBg, borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  issueBtnText: { fontSize: 15, fontWeight: '500', color: th.brandOn },
+  delBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: th.line3, backgroundColor: th.card },
+  delBtnConfirm: { backgroundColor: th.danger, borderColor: th.danger },
+  delBtnText: { fontSize: 13, fontWeight: '600', color: th.danger },
+});

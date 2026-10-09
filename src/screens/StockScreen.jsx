@@ -16,7 +16,7 @@ import { useWide } from '../components/DataPanel';
 const TITLE = { th: 'เพิ่มสต๊อกสินค้า', en: 'Add Stock' };
 
 export default function StockScreen({ navigation }) {
-  const { styles: s } = useScaledStyles(baseStyles);
+  const { styles: s, t: th } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const wide   = useWide(1000);
   const [lang, setLang] = useState('th');
@@ -49,7 +49,7 @@ export default function StockScreen({ navigation }) {
   const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: th.bg, paddingTop: insets.top }}>
       <Header title={TITLE[lang]} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang}
         onLangToggle={() => setLang(l => (l === 'th' ? 'en' : 'th'))} />
       <ConnectingBar visible={loading} lang={lang} />
@@ -69,7 +69,7 @@ export default function StockScreen({ navigation }) {
   );
 }
 
-const baseStyles = {
+const baseStyles = (th) => ({
   content: { padding: 14, paddingBottom: 30 },
   contentWide: { maxWidth: 1180, width: '100%', alignSelf: 'center', paddingHorizontal: 0, paddingTop: 18 },
-};
+});

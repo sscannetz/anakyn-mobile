@@ -7,9 +7,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { openDrawer } from '../navRef';
 import { SHELL_BP } from './AppShell';
+import { useTheme } from '../theme';
 
 export default function Header({ title, subtitle, onBack, lang, onLangToggle, rightComponent }) {
-  const { styles, sc, center } = useScaledStyles(baseStyles);
+  const { styles, sc, center, t: th } = useScaledStyles(baseStyles);
+  const { mourn, toggle } = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   // จอกว้างมีแถบเมนูค้างอยู่ซ้ายมือแล้ว ไม่ต้องมีปุ่มขีดสามขีดและโลโก้ซ้ำ
@@ -20,11 +22,11 @@ export default function Header({ title, subtitle, onBack, lang, onLangToggle, ri
       <View style={styles.row}>
         {onBack ? (
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onBack} style={styles.backBtn}>
-            <MaterialCommunityIcons name="arrow-left" size={sc(19)} color="#550a19" />
+            <MaterialCommunityIcons name="arrow-left" size={sc(19)} color={th.brand} />
           </TouchableOpacity>
         ) : hasSide ? null : (
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={openDrawer} style={styles.backBtn}>
-            <MaterialCommunityIcons name="menu" size={sc(19)} color="#550a19" />
+            <MaterialCommunityIcons name="menu" size={sc(19)} color={th.brand} />
           </TouchableOpacity>
         )}
 
@@ -36,10 +38,16 @@ export default function Header({ title, subtitle, onBack, lang, onLangToggle, ri
         <View style={styles.rightGroup}>
           {onLangToggle && (
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onLangToggle} style={styles.langBtn}>
-              <MaterialCommunityIcons name="translate" size={sc(13)} color="#550a19" />
+              <MaterialCommunityIcons name="translate" size={sc(13)} color={th.brand} />
               <Text style={styles.langText}>{lang === 'th' ? 'EN' : 'ไทย'}</Text>
             </TouchableOpacity>
           )}
+          <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={toggle} style={styles.themeBtn}
+            accessibilityRole="button"
+            accessibilityLabel={mourn ? 'กลับสู่โหมดปกติ' : 'เปิดโหมดไว้อาลัย'}>
+            <MaterialCommunityIcons name={mourn ? 'palette' : 'ribbon'}
+              size={sc(14)} color={th.brand} />
+          </TouchableOpacity>
           {rightComponent}
         </View>
       </View>
@@ -47,13 +55,13 @@ export default function Header({ title, subtitle, onBack, lang, onLangToggle, ri
   );
 }
 
-const baseStyles = {
+const baseStyles = (th) => ({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: th.card,
     paddingHorizontal: 18,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#ece0e3',
+    borderBottomColor: th.line,
   },
   row: {
     flexDirection: 'row',
@@ -64,9 +72,9 @@ const baseStyles = {
     width: 32,
     height: 32,
     borderRadius: 9,
-    backgroundColor: '#ffffff',
+    backgroundColor: th.card,
     borderWidth: 1,
-    borderColor: '#ece0e3',
+    borderColor: th.line,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -76,17 +84,17 @@ const baseStyles = {
   logoText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#f5e8eb',
+    color: th.brandOn,
     letterSpacing: 2,
   },
   logoSub: {
     fontSize: 8,
-    color: '#d4a0ac',
+    color: th.dim,
     letterSpacing: 3,
   },
   titleWrap: { flex: 1, flexDirection: 'row', alignItems: 'baseline', gap: 10, minWidth: 0 },
-  title: { fontSize: 15.5, fontWeight: '600', color: '#2c1015' },
-  subtitle: { fontSize: 11.5, color: '#9b7d86', flexShrink: 1 },
+  title: { fontSize: 15.5, fontWeight: '600', color: th.ink },
+  subtitle: { fontSize: 11.5, color: th.muted, flexShrink: 1 },
   rightGroup: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -96,9 +104,9 @@ const baseStyles = {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#ffffff',
+    backgroundColor: th.card,
     borderWidth: 1,
-    borderColor: '#ece0e3',
+    borderColor: th.line,
     borderRadius: 9,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -106,6 +114,12 @@ const baseStyles = {
   langText: {
     fontSize: 11.5,
     fontWeight: '600',
-    color: '#550a19',
+    color: th.brand,
   },
-};
+  themeBtn: {
+    width: 30, height: 30, borderRadius: 9,
+    backgroundColor: th.card,
+    borderWidth: 1, borderColor: th.line,
+    alignItems: 'center', justifyContent: 'center',
+  },
+});

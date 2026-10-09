@@ -59,7 +59,7 @@ const T = {
 const nameOf = (u) => u?.full_name || u?.name || '';
 
 export default function AddUserScreen({ navigation }) {
-  const { styles: s, sc, center } = useScaledStyles(baseStyles);
+  const { styles: s, sc, center, t: th } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const wide   = useWide(1000);
   const [q, setQ]             = useState('');
@@ -181,10 +181,10 @@ export default function AddUserScreen({ navigation }) {
 
   if (!isAdmin && !loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
+      <View style={{ flex: 1, backgroundColor: th.bg, paddingTop: insets.top }}>
         <Header title={t.pageTitle} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
         <View style={s.center}>
-          <MaterialCommunityIcons name="lock" size={sc(40)} color="#d4a0ac" />
+          <MaterialCommunityIcons name="lock" size={sc(40)} color={th.dim} />
           <Text style={s.adminOnlyText}>{t.adminOnly}</Text>
         </View>
       </View>
@@ -193,7 +193,7 @@ export default function AddUserScreen({ navigation }) {
 
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: th.bg, paddingTop: insets.top }}>
       <Header title={t.pageTitle} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading} lang={lang} />
 
@@ -204,7 +204,7 @@ export default function AddUserScreen({ navigation }) {
             {users.length} {lang === 'th' ? 'คน' : 'users'}
           </Text>
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={openNew} style={s.primaryBtn}>
-            <MaterialCommunityIcons name="plus" size={sc(15)} color="#fff5f7" />
+            <MaterialCommunityIcons name="plus" size={sc(15)} color={th.brandOn} />
             <Text style={s.primaryBtnText}>{lang === 'th' ? 'เพิ่มผู้ใช้' : 'Add user'}</Text>
           </TouchableOpacity>
         </View>
@@ -227,8 +227,8 @@ export default function AddUserScreen({ navigation }) {
               <TableRow key={u.id} cols={USER_COLS} last={i === shownUsers.length - 1}
                 onPress={() => openEdit(u)} cells={[
                   <View style={s.rowMain}>
-                    <View style={[s.avatarSm, { backgroundColor: u.role === 'admin' ? '#fdf0f2' : '#f6f2f3' }]}>
-                      <Text style={[s.avatarSmText, { color: u.role === 'admin' ? '#550a19' : '#9b7d86' }]}>
+                    <View style={[s.avatarSm, { backgroundColor: u.role === 'admin' ? th.soft : th.softer }]}>
+                      <Text style={[s.avatarSmText, { color: u.role === 'admin' ? th.brand : th.muted }]}>
                         {(nameOf(u) || u.email || '?').slice(0, 1).toUpperCase()}
                       </Text>
                     </View>
@@ -241,10 +241,10 @@ export default function AddUserScreen({ navigation }) {
                     tone={u.is_active === false ? 'dim' : 'done'} />,
                   <View style={s.rowActs}>
                     <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => openEdit(u)} style={s.actBtn}>
-                      <MaterialCommunityIcons name="pencil-outline" size={sc(17)} color="#550a19" />
+                      <MaterialCommunityIcons name="pencil-outline" size={sc(17)} color={th.brand} />
                     </TouchableOpacity>
                     <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setDelError(''); setDelTarget(u); }} style={s.actBtn}>
-                      <MaterialCommunityIcons name="trash-can-outline" size={sc(17)} color="#c0a0a8" />
+                      <MaterialCommunityIcons name="trash-can-outline" size={sc(17)} color={th.faint} />
                     </TouchableOpacity>
                   </View>,
                 ]} />
@@ -252,12 +252,12 @@ export default function AddUserScreen({ navigation }) {
           </Panel>
         )}
 
-        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
+        {loading && <ActivityIndicator color={th.brand} style={{ marginTop: 20 }} />}
         {!loading && users.length === 0 && <Text style={s.emptyText}>{t.noUsers}</Text>}
         {!wide && users.map(u => (
           <TouchableOpacity dataSet={{ hov: 'btn' }} key={u.id} activeOpacity={0.7} onPress={() => openEdit(u)} style={s.card}>
-            <View style={[s.avatar, { backgroundColor: u.role === 'admin' ? '#fdf0f2' : '#f6f2f3' }]}>
-              <Text style={[s.avatarText, { color: u.role === 'admin' ? '#550a19' : '#9b7d86' }]}>
+            <View style={[s.avatar, { backgroundColor: u.role === 'admin' ? th.soft : th.softer }]}>
+              <Text style={[s.avatarText, { color: u.role === 'admin' ? th.brand : th.muted }]}>
                 {(nameOf(u) || u.email || '?').slice(0, 1).toUpperCase()}
               </Text>
             </View>
@@ -269,21 +269,21 @@ export default function AddUserScreen({ navigation }) {
               <Text style={s.userEmail}>{u.email}</Text>
               {!!u.phone && <Text style={s.userEmail}>{u.phone}</Text>}
               <View style={s.tagRow}>
-                <View style={[s.tag, { backgroundColor: u.role === 'admin' ? '#fdf0f2' : '#f6f2f3' }]}>
-                  <Text style={[s.tagText, { color: u.role === 'admin' ? '#550a19' : '#9b7d86' }]}>{t.roles[u.role] || u.role}</Text>
+                <View style={[s.tag, { backgroundColor: u.role === 'admin' ? th.soft : th.softer }]}>
+                  <Text style={[s.tagText, { color: u.role === 'admin' ? th.brand : th.muted }]}>{t.roles[u.role] || u.role}</Text>
                 </View>
-                <View style={[s.tag, { backgroundColor: u.is_active === false ? '#f5f5f5' : '#e8f5e9' }]}>
-                  <Text style={[s.tagText, { color: u.is_active === false ? '#888' : '#1a5c28' }]}>
+                <View style={[s.tag, { backgroundColor: u.is_active === false ? th.softer : th.okBg }]}>
+                  <Text style={[s.tagText, { color: u.is_active === false ? '#888' : th.ok }]}>
                     {u.is_active === false ? t.statusInactive : t.statusActive}
                   </Text>
                 </View>
               </View>
             </View>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => openEdit(u)} style={s.actBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <MaterialCommunityIcons name="pencil-outline" size={sc(18)} color="#550a19" />
+              <MaterialCommunityIcons name="pencil-outline" size={sc(18)} color={th.brand} />
             </TouchableOpacity>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setDelError(''); setDelTarget(u); }} style={s.actBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <MaterialCommunityIcons name="trash-can-outline" size={sc(18)} color="#c0a0a8" />
+              <MaterialCommunityIcons name="trash-can-outline" size={sc(18)} color={th.faint} />
             </TouchableOpacity>
           </TouchableOpacity>
         ))}
@@ -296,36 +296,36 @@ export default function AddUserScreen({ navigation }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{isEdit ? t.editUser : t.addUser}</Text>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setForm(null)}>
-              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color={th.brand} />
             </TouchableOpacity>
           </View>
           <ScrollView keyboardShouldPersistTaps="handled">
             {!!error && <View style={s.errBox}><Text style={s.errText}>{error}</Text></View>}
 
             <Text style={s.fieldLabel}>{t.name}</Text>
-            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={fullName} onChangeText={setFullName} autoCapitalize="words" placeholderTextColor="#c0a0a8" />
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={fullName} onChangeText={setFullName} autoCapitalize="words" placeholderTextColor={th.faint} />
 
             <View style={s.row2}>
               <View style={{ flex: 1 }}>
                 <Text style={s.fieldLabel}>{t.nickname} <Text style={s.optional}>{t.optional}</Text></Text>
-                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={nickname} onChangeText={setNickname} placeholderTextColor="#c0a0a8" />
+                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={nickname} onChangeText={setNickname} placeholderTextColor={th.faint} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.fieldLabel}>{t.phone} <Text style={s.optional}>{t.optional}</Text></Text>
-                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholderTextColor="#c0a0a8" />
+                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholderTextColor={th.faint} />
               </View>
             </View>
 
             <Text style={s.fieldLabel}>{t.email}</Text>
-            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor="#c0a0a8" />
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor={th.faint} />
 
             <Text style={s.fieldLabel}>{t.password}</Text>
             <View style={s.pwRow}>
               <TextInput dataSet={{ hov: 'field' }} style={[s.input, { flex: 1, marginBottom: 0 }]} value={password} onChangeText={setPassword}
                 secureTextEntry={!showPw} autoCapitalize="none"
-                placeholder={isEdit ? '••••••••' : ''} placeholderTextColor="#c0a0a8" />
+                placeholder={isEdit ? '••••••••' : ''} placeholderTextColor={th.faint} />
               <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowPw(v => !v)} style={s.eyeBtn}>
-                <MaterialCommunityIcons name={showPw ? 'eye-off' : 'eye'} size={sc(18)} color="#c0a0a8" />
+                <MaterialCommunityIcons name={showPw ? 'eye-off' : 'eye'} size={sc(18)} color={th.faint} />
               </TouchableOpacity>
             </View>
             <Text style={s.hint}>{isEdit ? t.pwHintEdit : t.pwHintNew}</Text>
@@ -334,7 +334,7 @@ export default function AddUserScreen({ navigation }) {
               <>
                 <Text style={[s.fieldLabel, { marginTop: 8 }]}>{t.confirmPw}</Text>
                 <TextInput dataSet={{ hov: 'field' }} style={s.input} value={confirmPw} onChangeText={setConfirmPw}
-                  secureTextEntry={!showPw} autoCapitalize="none" placeholderTextColor="#c0a0a8" />
+                  secureTextEntry={!showPw} autoCapitalize="none" placeholderTextColor={th.faint} />
               </>
             )}
 
@@ -342,11 +342,11 @@ export default function AddUserScreen({ navigation }) {
             <View style={s.roleRow}>
               {['staff', 'admin'].map(r => (
                 <TouchableOpacity dataSet={{ hov: 'btn' }} key={r} onPress={() => setRole(r)}
-                  style={[s.roleBtn, { backgroundColor: role === r ? '#550a19' : '#f9f4f5', borderColor: role === r ? '#550a19' : '#e8d5d9' }]}>
+                  style={[s.roleBtn, { backgroundColor: role === r ? th.brandBg : th.card2, borderColor: role === r ? th.brandBg : th.softer }]}>
                   <MaterialCommunityIcons
                     name={r === 'admin' ? 'crown' : 'account'}
-                    size={sc(14)} color={role === r ? '#f5e0e5' : '#a07080'} />
-                  <Text style={[s.roleBtnText, { color: role === r ? '#f5e0e5' : '#a07080' }]}>{t.roles[r]}</Text>
+                    size={sc(14)} color={role === r ? th.brandOn : th.muted2} />
+                  <Text style={[s.roleBtnText, { color: role === r ? th.brandOn : th.muted2 }]}>{t.roles[r]}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -358,15 +358,15 @@ export default function AddUserScreen({ navigation }) {
                   <Text style={s.hint}>{isActive ? t.statusActive : t.statusInactive}</Text>
                 </View>
                 <Switch value={isActive} onValueChange={setIsActive}
-                  trackColor={{ false: '#e0d0d5', true: '#a8d5b5' }}
-                  thumbColor={isActive ? '#1a5c28' : '#fff'} />
+                  trackColor={{ false: th.softer, true: th.okBg }}
+                  thumbColor={isActive ? th.ok : th.brandOn} />
               </View>
             )}
 
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleSave} disabled={saving} style={[s.saveBtn, { opacity: saving ? 0.7 : 1, marginTop: 16 }]}>
               {saving
-                ? <ActivityIndicator color="#fff5f7" size="small" />
-                : <MaterialCommunityIcons name={isEdit ? 'content-save' : 'account-plus'} size={sc(18)} color="#fff5f7" />}
+                ? <ActivityIndicator color={th.brandOn} size="small" />
+                : <MaterialCommunityIcons name={isEdit ? 'content-save' : 'account-plus'} size={sc(18)} color={th.brandOn} />}
               <Text style={s.saveBtnText}>{saving ? t.saving : (isEdit ? t.saveEditBtn : t.saveBtn)}</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -377,16 +377,16 @@ export default function AddUserScreen({ navigation }) {
       <ShellModal visible={!!delTarget} animationType="fade" transparent onRequestClose={() => setDelTarget(null)}>
         <View style={s.overlay}>
           <View style={s.confirmBox}>
-            <MaterialCommunityIcons name="trash-can" size={sc(28)} color="#c62828" style={{ marginBottom: 8 }} />
+            <MaterialCommunityIcons name="trash-can" size={sc(28)} color={th.danger} style={{ marginBottom: 8 }} />
             <Text style={s.confirmMsg}>{t.deleteConfirm}</Text>
             {delTarget && <Text style={s.confirmName}>{nameOf(delTarget) || delTarget.email}</Text>}
             {!!delError && <Text style={s.confirmErr}>{delError}</Text>}
             <View style={s.confirmBtns}>
-              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setDelTarget(null)} style={[s.confirmBtn, { backgroundColor: '#f9f4f5' }]}>
-                <Text style={[s.confirmBtnText, { color: '#806070' }]}>{t.confirmNo}</Text>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setDelTarget(null)} style={[s.confirmBtn, { backgroundColor: th.card2 }]}>
+                <Text style={[s.confirmBtnText, { color: th.dim }]}>{t.confirmNo}</Text>
               </TouchableOpacity>
-              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleDelete} style={[s.confirmBtn, { backgroundColor: '#c62828' }]}>
-                <Text style={[s.confirmBtnText, { color: '#fff' }]}>{t.confirmYes}</Text>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleDelete} style={[s.confirmBtn, { backgroundColor: th.danger }]}>
+                <Text style={[s.confirmBtnText, { color: th.brandOn }]}>{t.confirmYes}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -396,56 +396,56 @@ export default function AddUserScreen({ navigation }) {
   );
 }
 
-const baseStyles = {
+const baseStyles = (th) => ({
   toolbar:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 14 },
-  toolbarCount: { flex: 1, fontSize: 12, color: '#9b7d86' },
-  primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
-  primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: '#fff5f7' },
+  toolbarCount: { flex: 1, fontSize: 12, color: th.muted },
+  primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: th.brandBg, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
+  primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: th.brandOn },
   content:    { padding: 14, paddingBottom: 30 },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-  adminOnlyText: { fontSize: 14, color: '#a07080', fontWeight: '500' },
-  emptyText:  { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
-  card:       { backgroundColor: '#fff', borderRadius: 12, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 12, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  adminOnlyText: { fontSize: 14, color: th.muted2, fontWeight: '500' },
+  emptyText:  { fontSize: 12, color: th.muted2, textAlign: 'center', paddingVertical: 20 },
+  card:       { backgroundColor: th.card, borderRadius: 12, borderWidth: 0.5, borderColor: th.line2, padding: 12, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
   rowMain:    { flexDirection: 'row', alignItems: 'center', gap: 9, minWidth: 0 },
   avatarSm:   { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
   avatarSmText: { fontSize: 13, fontWeight: '600' },
-  cellSub:    { fontSize: 11.5, color: '#806070' },
+  cellSub:    { fontSize: 11.5, color: th.dim },
   rowActs:    { flexDirection: 'row', gap: 2, justifyContent: 'flex-end' },
   avatar:     { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
   avatarText: { fontSize: 16, fontWeight: '500' },
-  userName:   { fontSize: 13, fontWeight: '500', color: '#2c1015' },
-  userNick:   { fontSize: 11, fontWeight: '400', color: '#a07080' },
-  userEmail:  { fontSize: 11, color: '#a07080', marginTop: 1 },
+  userName:   { fontSize: 13, fontWeight: '500', color: th.ink },
+  userNick:   { fontSize: 11, fontWeight: '400', color: th.muted2 },
+  userEmail:  { fontSize: 11, color: th.muted2, marginTop: 1 },
   tagRow:     { flexDirection: 'row', gap: 5, marginTop: 5 },
   tag:        { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 },
   tagText:    { fontSize: 9, fontWeight: '500' },
   actBtn:     { padding: 5 },
   iconBtn:    { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  modal:      { flex: 1, backgroundColor: '#fff', padding: 16 },
+  modal:      { flex: 1, backgroundColor: th.card, padding: 16 },
   modalHeader:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  modalTitle: { fontSize: 16, fontWeight: '500', color: '#550a19' },
-  errBox:     { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 12 },
-  errText:    { fontSize: 12, color: '#a32d2d' },
-  fieldLabel: { fontSize: 11, color: '#a07080', marginBottom: 4 },
-  optional:   { fontSize: 10, color: '#c0a0a8' },
-  hint:       { fontSize: 10, color: '#c0a0a8', marginTop: 4 },
-  input:      { backgroundColor: '#f9f4f5', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 8, padding: 9, fontSize: 13, color: '#2c1015', marginBottom: 10 },
+  modalTitle: { fontSize: 16, fontWeight: '500', color: th.brand },
+  errBox:     { backgroundColor: th.soft, borderWidth: 0.5, borderColor: th.line3, borderRadius: 8, padding: 10, marginBottom: 12 },
+  errText:    { fontSize: 12, color: th.danger },
+  fieldLabel: { fontSize: 11, color: th.muted2, marginBottom: 4 },
+  optional:   { fontSize: 10, color: th.faint },
+  hint:       { fontSize: 10, color: th.faint, marginTop: 4 },
+  input:      { backgroundColor: th.card2, borderWidth: 0.5, borderColor: th.line2, borderRadius: 8, padding: 9, fontSize: 13, color: th.ink, marginBottom: 10 },
   row2:       { flexDirection: 'row', gap: 10 },
   pwRow:      { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 0 },
   eyeBtn:     { padding: 8, marginLeft: -4 },
   roleRow:    { flexDirection: 'row', gap: 8, marginBottom: 6 },
   roleBtn:    { flex: 1, borderWidth: 0.5, borderRadius: 10, paddingVertical: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
   roleBtnText:{ fontSize: 12, fontWeight: '500' },
-  switchRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f9f4f5', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginTop: 12 },
-  switchLabel:{ fontSize: 12, fontWeight: '500', color: '#2c1015' },
-  saveBtn:    { backgroundColor: '#550a19', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 },
-  saveBtnText:{ fontSize: 15, fontWeight: '500', color: '#fff5f7' },
+  switchRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: th.card2, borderWidth: 0.5, borderColor: th.line2, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginTop: 12 },
+  switchLabel:{ fontSize: 12, fontWeight: '500', color: th.ink },
+  saveBtn:    { backgroundColor: th.brandBg, borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 },
+  saveBtnText:{ fontSize: 15, fontWeight: '500', color: th.brandOn },
   overlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
-  confirmBox: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: 280, alignItems: 'center' },
-  confirmMsg: { fontSize: 14, color: '#2c1015', textAlign: 'center', marginBottom: 4 },
-  confirmName:{ fontSize: 13, fontWeight: '500', color: '#550a19', textAlign: 'center', marginBottom: 16 },
-  confirmErr: { fontSize: 11, color: '#a32d2d', textAlign: 'center', marginBottom: 12 },
+  confirmBox: { backgroundColor: th.card, borderRadius: 16, padding: 24, width: 280, alignItems: 'center' },
+  confirmMsg: { fontSize: 14, color: th.ink, textAlign: 'center', marginBottom: 4 },
+  confirmName:{ fontSize: 13, fontWeight: '500', color: th.brand, textAlign: 'center', marginBottom: 16 },
+  confirmErr: { fontSize: 11, color: th.danger, textAlign: 'center', marginBottom: 12 },
   confirmBtns:{ flexDirection: 'row', gap: 10, width: '100%' },
   confirmBtn: { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   confirmBtnText: { fontSize: 13, fontWeight: '500' },
-};
+});

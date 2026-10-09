@@ -57,7 +57,7 @@ const fmt    = (n) => { const x = Number(n); return Math.round(Number.isFinite(x
 const fmtCp  = (n) => { n = Number(n); if (!Number.isFinite(n)) n = 0; return n >= 1000000 ? `${(n/1000000).toFixed(1)}M` : n >= 1000 ? `${(n/1000).toFixed(0)}k` : String(Math.round(n)); };
 
 function KPICard({ label, value, sub, icon, col, bg, subUp, wide, unit }) {
-  const { styles: s, sc, center } = useScaledStyles(baseStyles);
+  const { styles: s, sc, center, t: th } = useScaledStyles(baseStyles);
   return (
     <View style={[s.kpiCard, wide && s.kpiCardWide]}>
       <View style={s.kpiTop}>
@@ -69,7 +69,7 @@ function KPICard({ label, value, sub, icon, col, bg, subUp, wide, unit }) {
       {/* ใส่ unit มา = เป็นจำนวนนับ ไม่ใช่เงิน (ห้ามขึ้น ฿ หน้าเลข) */}
       <Text style={s.kpiVal}>{unit ? `${fmt(value)} ${unit}` : `฿${fmtCp(value)}`}</Text>
       {sub && (
-        <Text style={[s.kpiSub, { color: subUp ? '#2e7d32' : '#c62828' }]}>
+        <Text style={[s.kpiSub, { color: subUp ? th.ok : th.danger }]}>
           {subUp ? '▲' : '▼'} {sub}
         </Text>
       )}
@@ -78,7 +78,7 @@ function KPICard({ label, value, sub, icon, col, bg, subUp, wide, unit }) {
 }
 
 export default function SummaryScreen({ navigation }) {
-  const { styles: s, sc, center } = useScaledStyles(baseStyles);
+  const { styles: s, sc, center, t: th } = useScaledStyles(baseStyles);
   const insets  = useSafeAreaInsets();
   const wide    = useWide(1000);
   const [lang, setLang]   = useState('th');
@@ -110,7 +110,7 @@ export default function SummaryScreen({ navigation }) {
 
   const payEntries = Object.entries(d.payment_breakdown || {});
   const payTotal   = payEntries.reduce((s, [, v]) => s + v, 0) || 1;
-  const PAY_COL = { cash: '#2e7d32', qr: '#1a3a60', card: '#550a19', mobile: '#854F0B' };
+  const PAY_COL = { cash: th.ok, qr: th.info, card: th.brandBg, mobile: th.warn };
   const PAY_LABEL = { cash: lang === 'th' ? 'เงินสด' : 'Cash', qr: lang === 'th' ? 'โอน / QR' : 'Transfer', card: lang === 'th' ? 'บัตรเครดิต' : 'Card', mobile: lang === 'th' ? 'Mobile' : 'Mobile' };
 
   const dLocale  = lang === 'th' ? 'th-TH' : 'en-GB';
@@ -121,7 +121,7 @@ export default function SummaryScreen({ navigation }) {
   const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: th.bg, paddingTop: insets.top }}>
       <Header title={lang === 'th' ? 'สรุปรายงาน' : 'Summary'} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading && firstLoad} lang={lang} />
 
@@ -132,21 +132,21 @@ export default function SummaryScreen({ navigation }) {
         ))}
         <Chip label={rangeText} on={period === 4} onPress={() => setPick(range || { from: '', to: '' })} />
         <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printSummary(d, periodLabel)} style={s.exportBtn}>
-          <MaterialCommunityIcons name="tray-arrow-down" size={sc(15)} color="#550a19" />
+          <MaterialCommunityIcons name="tray-arrow-down" size={sc(15)} color={th.brand} />
           <Text style={s.exportText}>{lang === 'th' ? 'ส่งออกเป็นไฟล์' : 'Export'}</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20 }} />}
+        {loading && <ActivityIndicator color={th.brand} style={{ marginTop: 20 }} />}
 
 
         {/* KPI GRID */}
         <View style={s.kpiGrid}>
-          <KPICard wide={wide} label={t.revenue} value={d.total_sales} icon="currency-usd" col="#550a19" bg="#fdf0f2" />
-          <KPICard wide={wide} label={t.orders} value={d.order_count} unit={t.unitPcs} icon="cart" col="#2e7d32" bg="#e8f5e9" />
-          <KPICard wide={wide} label={t.profit} value={d.estimated_profit} sub={`${margin}% ${t.profitMargin}`} subUp={d.estimated_profit >= 0} icon="trending-up" col="#1a3a60" bg="#e0f0ff" />
-          <KPICard wide={wide} label={t.vatCollected} value={d.vat_collected} icon="receipt" col="#854F0B" bg="#fff8e1" />
+          <KPICard wide={wide} label={t.revenue} value={d.total_sales} icon="currency-usd" col={th.brandBg} bg={th.soft} />
+          <KPICard wide={wide} label={t.orders} value={d.order_count} unit={t.unitPcs} icon="cart" col="#2e7d32" bg={th.okBg} />
+          <KPICard wide={wide} label={t.profit} value={d.estimated_profit} sub={`${margin}% ${t.profitMargin}`} subUp={d.estimated_profit >= 0} icon="trending-up" col="#1a3a60" bg={th.infoBg} />
+          <KPICard wide={wide} label={t.vatCollected} value={d.vat_collected} icon="receipt" col="#854F0B" bg={th.warnBg} />
         </View>
 
         <View style={[s.cols, !wide && s.colsNarrow]}>
@@ -165,8 +165,8 @@ export default function SummaryScreen({ navigation }) {
                   const dayLabel = new Date(c.day).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US', { weekday: 'short' });
                   return (
                     <View key={c.day} style={{ flex: 1, alignItems: 'center', gap: 3 }}>
-                      <View style={{ width: '100%', borderRadius: 3, backgroundColor: isToday ? '#550a19' : '#f0d5d8', height: barH }} />
-                      <Text style={[s.barLabel, { color: isToday ? '#550a19' : '#a07080', fontWeight: isToday ? '500' : '400' }]}>{dayLabel}</Text>
+                      <View style={{ width: '100%', borderRadius: 3, backgroundColor: isToday ? th.brandBg : '#f0d5d8', height: barH }} />
+                      <Text style={[s.barLabel, { color: isToday ? th.brand : th.muted2, fontWeight: isToday ? '500' : '400' }]}>{dayLabel}</Text>
                     </View>
                   );
                 })}
@@ -183,8 +183,8 @@ export default function SummaryScreen({ navigation }) {
             : (<>
               {shownLines.map((item, i) => (
                 <View key={`${item.sale_no || ''}:${item.sku}:${i}`} style={s.topRow}>
-                  <View style={[s.rankBadge, { backgroundColor: i === 0 ? '#550a19' : i === 1 ? '#b87020' : '#f0e8f0' }]}>
-                    <Text style={[s.rankText, { color: i < 2 ? '#fff' : '#a07080' }]}>{i + 1}</Text>
+                  <View style={[s.rankBadge, { backgroundColor: i === 0 ? th.brandBg : i === 1 ? '#b87020' : th.softer }]}>
+                    <Text style={[s.rankText, { color: i < 2 ? th.brandOn : th.muted2 }]}>{i + 1}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={s.topName} numberOfLines={1}>{item.name}</Text>
@@ -261,13 +261,13 @@ export default function SummaryScreen({ navigation }) {
             <Text style={s.rangeLabel}>{t.dTo}</Text>
             <DateInput value={pick?.to} onChangeText={(v) => setPick(q => ({ ...q, to: v }))} placeholder="YYYY-MM-DD" style={s.rangeInput} />
             <View style={s.rangeBtns}>
-              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setPick(null)} style={[s.rangeBtn, { backgroundColor: '#f9f4f5' }]}>
-                <Text style={[s.rangeBtnText, { color: '#806070' }]}>{t.cancel}</Text>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setPick(null)} style={[s.rangeBtn, { backgroundColor: th.card2 }]}>
+                <Text style={[s.rangeBtnText, { color: th.dim }]}>{t.cancel}</Text>
               </TouchableOpacity>
               <TouchableOpacity dataSet={{ hov: 'btn' }} disabled={!(pick?.from && pick?.to)}
                 onPress={() => { setRange({ from: pick.from, to: pick.to }); setPeriod(4); setPick(null); }}
-                style={[s.rangeBtn, { backgroundColor: (pick?.from && pick?.to) ? '#550a19' : '#d8c3c8' }]}>
-                <Text style={[s.rangeBtnText, { color: '#fff' }]}>{t.apply}</Text>
+                style={[s.rangeBtn, { backgroundColor: (pick?.from && pick?.to) ? th.brandBg : '#d8c3c8' }]}>
+                <Text style={[s.rangeBtnText, { color: th.brandOn }]}>{t.apply}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -277,54 +277,54 @@ export default function SummaryScreen({ navigation }) {
   );
 }
 
-const baseStyles = {
-  bar: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#ece0e3', paddingHorizontal: 14, paddingVertical: 11 },
-  exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 'auto', backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
-  exportText: { fontSize: 12, color: '#550a19', fontWeight: '600' },
+const baseStyles = (th) => ({
+  bar: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', backgroundColor: th.card, borderBottomWidth: 1, borderBottomColor: th.line, paddingHorizontal: 14, paddingVertical: 11 },
+  exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 'auto', backgroundColor: th.card, borderWidth: 1, borderColor: th.line, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
+  exportText: { fontSize: 12, color: th.brand, fontWeight: '600' },
   cols:    { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   colMain: { flexGrow: 1.4, flexShrink: 1, flexBasis: 380, minWidth: 0 },
   colSide: { flexGrow: 1, flexShrink: 1, flexBasis: 300, minWidth: 0 },
   colsNarrow: { flexDirection: 'column', alignItems: 'stretch', gap: 0 },
   colFull:    { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: '100%', alignSelf: 'stretch' },
   kpiCardWide: { width: 'auto', flexGrow: 1, flexShrink: 1, flexBasis: 170, minWidth: 150 },
-  periodTabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#ece0e3' },
+  periodTabs: { flexDirection: 'row', backgroundColor: th.card, borderBottomWidth: 1, borderBottomColor: th.line },
   periodTab:  { flex: 1, paddingVertical: 10, alignItems: 'center' },
   periodTabText: { fontSize: 11 },
   content:    { padding: 14, paddingBottom: 30 },
   kpiGrid:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
-  kpiCard:    { width: '48%', backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13 },
+  kpiCard:    { width: '48%', backgroundColor: th.card, borderRadius: 12, borderWidth: 1, borderColor: th.line, padding: 13 },
   kpiTop:     { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  kpiLabel:   { fontSize: 10, color: '#a07080', flex: 1 },
+  kpiLabel:   { fontSize: 10, color: th.muted2, flex: 1 },
   kpiIcon:    { width: 22, height: 22, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
-  kpiVal:     { fontSize: 18, fontWeight: '500', color: '#2c1015' },
+  kpiVal:     { fontSize: 18, fontWeight: '500', color: th.ink },
   kpiSub:     { fontSize: 10, marginTop: 2 },
-  sec:        { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 10 },
-  secTitle:   { fontSize: 11, fontWeight: '500', color: '#550a19', letterSpacing: 1.5, marginBottom: 10 },
-  emptyText:  { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 10 },
+  sec:        { backgroundColor: th.card, borderRadius: 12, borderWidth: 1, borderColor: th.line, padding: 13, marginBottom: 10 },
+  secTitle:   { fontSize: 11, fontWeight: '500', color: th.brand, letterSpacing: 1.5, marginBottom: 10 },
+  emptyText:  { fontSize: 12, color: th.muted2, textAlign: 'center', paddingVertical: 10 },
   barLabel:   { fontSize: 9 },
-  topRow:     { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8, paddingBottom: 8, borderBottomWidth: 0.5, borderBottomColor: '#f9f4f5' },
+  topRow:     { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8, paddingBottom: 8, borderBottomWidth: 0.5, borderBottomColor: th.hair },
   rankBadge:  { width: 22, height: 22, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
   rankText:   { fontSize: 10, fontWeight: '500' },
-  topName:    { fontSize: 11, fontWeight: '500', color: '#2c1015' },
-  topSku:     { fontSize: 9, color: '#550a19', marginTop: 1 },
-  topBill:    { fontSize: 10, color: '#a07080', width: 72, textAlign: 'right' },
-  topQty:     { fontSize: 12, color: '#2c1015', width: 30, textAlign: 'center' },
-  topAmt:     { fontSize: 12, fontWeight: '500', color: '#550a19', width: 60, textAlign: 'right' },
-  moreText:   { fontSize: 10, color: '#a07080', textAlign: 'center', paddingTop: 4 },
+  topName:    { fontSize: 11, fontWeight: '500', color: th.ink },
+  topSku:     { fontSize: 9, color: th.brand, marginTop: 1 },
+  topBill:    { fontSize: 10, color: th.muted2, width: 72, textAlign: 'right' },
+  topQty:     { fontSize: 12, color: th.ink, width: 30, textAlign: 'center' },
+  topAmt:     { fontSize: 12, fontWeight: '500', color: th.brand, width: 60, textAlign: 'right' },
+  moreText:   { fontSize: 10, color: th.muted2, textAlign: 'center', paddingTop: 4 },
   payLabelRow:{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 },
-  payLabel:   { fontSize: 11, color: '#806070' },
-  payBar:     { height: 6, backgroundColor: '#f0e8e8', borderRadius: 3, overflow: 'hidden' },
+  payLabel:   { fontSize: 11, color: th.dim },
+  payBar:     { height: 6, backgroundColor: th.softer, borderRadius: 3, overflow: 'hidden' },
   payBarFill: { height: '100%', borderRadius: 3 },
   pendingGrid:{ flexDirection: 'row', gap: 8 },
   pendingCard:{ flex: 1, borderRadius: 10, padding: 10, alignItems: 'center', gap: 4 },
   pendingCount:{ fontSize: 22, fontWeight: '500' },
   pendingLabel:{ fontSize: 10, textAlign: 'center' },
   overlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
-  rangeBox:   { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: 300 },
-  rangeTitle: { fontSize: 14, fontWeight: '600', color: '#550a19', marginBottom: 12, textAlign: 'center' },
-  rangeLabel: { fontSize: 11, color: '#a07080', marginBottom: 4 },
-  rangeInput: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14, color: '#2c1015', marginBottom: 10 },
+  rangeBox:   { backgroundColor: th.card, borderRadius: 16, padding: 20, width: 300 },
+  rangeTitle: { fontSize: 14, fontWeight: '600', color: th.brand, marginBottom: 12, textAlign: 'center' },
+  rangeLabel: { fontSize: 11, color: th.muted2, marginBottom: 4 },
+  rangeInput: { backgroundColor: th.card, borderWidth: 1, borderColor: th.line, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14, color: th.ink, marginBottom: 10 },
   rangeBtns:  { flexDirection: 'row', gap: 10, marginTop: 6 },
   rangeBtn:   { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   rangeBtnText: { fontSize: 13, fontWeight: '500' },
-};
+});

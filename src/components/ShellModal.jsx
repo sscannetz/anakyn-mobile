@@ -18,13 +18,16 @@
 import { View, Modal, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SHELL_BP, SIDE_W } from './AppShell';
+import { useTheme } from '../theme';
 
 // กากบาทปิดมุมขวาบนของหน้าต่าง — ส่ง onClose มาเมื่อไหร่ก็ได้ปุ่มนี้
 function CloseX({ onPress }) {
+  const { t: th } = useTheme();
+  const ST = makeST(th);
   return (
     <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onPress} style={ST.x}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-      <MaterialCommunityIcons name="close" size={20} color="#550a19" />
+      <MaterialCommunityIcons name="close" size={20} color={th.brand} />
     </TouchableOpacity>
   );
 }
@@ -34,6 +37,8 @@ export default function ShellModal({
   animationType = 'slide', presentationStyle = 'pageSheet',
   maxWidth = 900,
 }) {
+  const { t: th } = useTheme();
+  const ST = makeST(th);
   const { width } = useWindowDimensions();
   const inShell = Platform.OS === 'web' && width >= SHELL_BP;
 
@@ -74,7 +79,7 @@ export default function ShellModal({
   );
 }
 
-const ST = {
+const makeST = (th) => ({
   plain: {
     position: 'fixed',
     top: 0, left: SIDE_W, right: 0, bottom: 0,
@@ -96,8 +101,8 @@ const ST = {
     position: 'absolute',
     top: 12, right: 12,
     width: 34, height: 34, borderRadius: 10,
-    backgroundColor: '#ffffff',
-    borderWidth: 1, borderColor: '#ece0e3',
+    backgroundColor: th.card,
+    borderWidth: 1, borderColor: th.line,
     alignItems: 'center', justifyContent: 'center',
     zIndex: 5,
   },
@@ -106,10 +111,10 @@ const ST = {
     height: '92%',
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#fdfbfb',
-    shadowColor: '#2c1015',
+    backgroundColor: th.bg,
+    shadowColor: th.shadow,
     shadowOffset: { width: 0, height: 18 },
     shadowOpacity: 0.22,
     shadowRadius: 46,
   },
-};
+});

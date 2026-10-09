@@ -76,21 +76,21 @@ const initials = (name) => {
 };
 
 function Sec({ children }) {
-  const { styles: s, sc, center } = useScaledStyles(baseStyles);
+  const { styles: s, sc, center, t: th } = useScaledStyles(baseStyles);
   return <View style={s.sec}>{children}</View>;
 }
 function SecHead({ icon, children }) {
-  const { styles: s, sc, center } = useScaledStyles(baseStyles);
+  const { styles: s, sc, center, t: th } = useScaledStyles(baseStyles);
   return (
     <View style={s.secHead}>
-      <MaterialCommunityIcons name={icon} size={sc(14)} color="#550a19" />
+      <MaterialCommunityIcons name={icon} size={sc(14)} color={th.brand} />
       <Text style={s.secHeadText}>{children}</Text>
     </View>
   );
 }
 
 export default function SaleScreen({ navigation, route }) {
-  const { styles: s, sc, center } = useScaledStyles(baseStyles);
+  const { styles: s, sc, center, t: th } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang] = useState('th');
   const t = T[lang];
@@ -332,7 +332,7 @@ export default function SaleScreen({ navigation, route }) {
   const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: th.bg, paddingTop: insets.top }}>
       <Header title={t.pageTitle} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loadingStock} lang={lang} />
 
@@ -357,10 +357,10 @@ export default function SaleScreen({ navigation, route }) {
           const good = scanNote.ok || scanNote.reason === 'busy';
           return (
             <View style={[s.scanBox, !good && s.scanBoxErr]}>
-              <MaterialCommunityIcons name={info.icon} size={sc(16)} color={good ? '#1a5c28' : '#a32d2d'} />
-              <Text style={[s.scanText, !good && { color: '#a32d2d' }]}>{info.msg}</Text>
+              <MaterialCommunityIcons name={info.icon} size={sc(16)} color={good ? th.ok : th.danger} />
+              <Text style={[s.scanText, !good && { color: th.danger }]}>{info.msg}</Text>
               <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setScanNote(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <MaterialCommunityIcons name="close" size={sc(14)} color={good ? '#1a5c28' : '#a32d2d'} />
+                <MaterialCommunityIcons name="close" size={sc(14)} color={good ? th.ok : th.danger} />
               </TouchableOpacity>
             </View>
           );
@@ -374,16 +374,16 @@ export default function SaleScreen({ navigation, route }) {
         <Sec>
           <SecHead icon="magnify">{t.addItem}</SecHead>
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowPicker(true)} style={s.searchBar}>
-            <MaterialCommunityIcons name="magnify" size={sc(15)} color="#b08090" />
+            <MaterialCommunityIcons name="magnify" size={sc(15)} color={th.dim} />
             <Text style={s.searchPh}>{t.searchItem}</Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowPicker(true)} style={[s.fromStockBtn, { flex: 1 }]}>
-              <MaterialCommunityIcons name="view-list" size={sc(16)} color="#550a19" />
+              <MaterialCommunityIcons name="view-list" size={sc(16)} color={th.brand} />
               <Text style={s.fromStockText}>{t.fromStock} ({stockList.length})</Text>
             </TouchableOpacity>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setScanNote(null); setScanOpen(true); }} style={s.scanBtn}>
-              <MaterialCommunityIcons name="qrcode-scan" size={sc(16)} color="#fff5f7" />
+              <MaterialCommunityIcons name="qrcode-scan" size={sc(16)} color={th.brandOn} />
               <Text style={s.scanBtnText}>{lang === 'th' ? 'สแกน QR' : 'Scan QR'}</Text>
             </TouchableOpacity>
           </View>
@@ -399,7 +399,7 @@ export default function SaleScreen({ navigation, route }) {
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setCartItems(prev => prev.filter((_, i) => i !== idx))} style={s.removeBtn}>
-                      <MaterialCommunityIcons name="close" size={sc(11)} color="#550a19" />
+                      <MaterialCommunityIcons name="close" size={sc(11)} color={th.brand} />
                     </TouchableOpacity>
                     <Text style={s.cartPrice}>฿{fmt(it.price)}</Text>
                   </View>
@@ -414,7 +414,7 @@ export default function SaleScreen({ navigation, route }) {
           }
 
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowPicker(true)} style={s.addMoreBtn}>
-            <MaterialCommunityIcons name="plus" size={sc(14)} color="#b08090" />
+            <MaterialCommunityIcons name="plus" size={sc(14)} color={th.dim} />
             <Text style={s.addMoreText}>{t.addMore}</Text>
           </TouchableOpacity>
         </Sec>
@@ -429,17 +429,17 @@ export default function SaleScreen({ navigation, route }) {
           {!selCust && !manualCust && (
             <>
               <View style={s.searchBar}>
-                <MaterialCommunityIcons name="magnify" size={sc(15)} color="#b08090" />
+                <MaterialCommunityIcons name="magnify" size={sc(15)} color={th.dim} />
                 <TextInput dataSet={{ hov: 'field' }}
                   style={s.searchInput}
                   value={custQuery}
                   onChangeText={setCustQuery}
                   placeholder={t.searchMember}
-                  placeholderTextColor="#b08090"
+                  placeholderTextColor={th.dim}
                 />
                 {!!custQuery && (
                   <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setCustQuery('')}>
-                    <MaterialCommunityIcons name="close-circle" size={sc(15)} color="#c0a0a8" />
+                    <MaterialCommunityIcons name="close-circle" size={sc(15)} color={th.faint} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -456,7 +456,7 @@ export default function SaleScreen({ navigation, route }) {
                   ))}
                   {/* ไม่มีในระบบ → ใช้ชื่อที่พิมพ์ */}
                   <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setManualCust(custQuery.trim()); setCustQuery(''); }} style={s.custAddRow}>
-                    <MaterialCommunityIcons name="account-plus" size={sc(15)} color="#550a19" />
+                    <MaterialCommunityIcons name="account-plus" size={sc(15)} color={th.brand} />
                     <Text style={s.custAddText}>
                       {lang === 'th' ? `ใช้ชื่อ "${custQuery.trim()}"` : `Use "${custQuery.trim()}"`}
                     </Text>
@@ -476,7 +476,7 @@ export default function SaleScreen({ navigation, route }) {
                 <Text style={s.custSub}>{lang === 'th' ? 'ลูกค้าใหม่ (พิมพ์เอง)' : 'New customer'}</Text>
               </View>
               <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setManualCust('')} style={s.removeBtn}>
-                <MaterialCommunityIcons name="close" size={sc(10)} color="#550a19" />
+                <MaterialCommunityIcons name="close" size={sc(10)} color={th.brand} />
               </TouchableOpacity>
             </View>
           )}
@@ -492,7 +492,7 @@ export default function SaleScreen({ navigation, route }) {
               <View style={{ alignItems: 'flex-end', gap: 4 }}>
                 {selCust.is_vip && <View style={s.vipBadge}><Text style={s.vipText}>VIP</Text></View>}
                 <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setSelCustId(null)} style={s.removeBtn}>
-                  <MaterialCommunityIcons name="close" size={sc(10)} color="#550a19" />
+                  <MaterialCommunityIcons name="close" size={sc(10)} color={th.brand} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -502,7 +502,7 @@ export default function SaleScreen({ navigation, route }) {
 
           {selCust?.is_vip && (
             <View style={s.toggleRow}>
-              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setVipOn(v => !v)} style={[s.toggle, { backgroundColor: vipOn ? '#550a19' : '#e0d8da' }]}>
+              <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setVipOn(v => !v)} style={[s.toggle, { backgroundColor: vipOn ? th.brandBg : th.line2 }]}>
                 <View style={[s.toggleKnob, { left: vipOn ? 18 : 2 }]} />
               </TouchableOpacity>
               <Text style={s.toggleLabel}>{t.vipDisc} ({selCust.vip_discount_pct}%)</Text>
@@ -523,9 +523,9 @@ export default function SaleScreen({ navigation, route }) {
         {/* PRICE SUMMARY */}
         <View style={s.priceSec}>
           {[
-            [t.priceItem,  `฿${fmt(subtotal)}`,                   '#2c1015'],
+            [t.priceItem,  `฿${fmt(subtotal)}`,                   th.ink],
             [t.priceVip,   vipAmt ? `− ฿${fmt(vipAmt)}` : '—',   '#2e7d32'],
-            [t.priceExtra, `− ฿${fmt(parseFloat(extraDisc)||0)}`, '#2c1015'],
+            [t.priceExtra, `− ฿${fmt(parseFloat(extraDisc)||0)}`, th.ink],
           ].map(([l, v, c]) => (
             <View key={l} style={s.priceRow}>
               <Text style={s.priceLabel}>{l}</Text>
@@ -539,14 +539,14 @@ export default function SaleScreen({ navigation, route }) {
               <View style={s.vatToggle}>
                 {[[t.vatOn, true],[t.vatOff, false]].map(([label, val]) => (
                   <TouchableOpacity dataSet={{ hov: 'btn' }} key={label} onPress={() => setVatOn(val)}
-                    style={[s.vatOption, { backgroundColor: vatOn === val ? '#550a19' : '#fff' }]}>
-                    <Text style={[s.vatOptionText, { color: vatOn === val ? '#f5e0e5' : '#a07080' }]}>{label}</Text>
+                    style={[s.vatOption, { backgroundColor: vatOn === val ? th.brandBg : th.card }]}>
+                    <Text style={[s.vatOptionText, { color: vatOn === val ? th.brandOn : th.muted2 }]}>{label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
           </View>
-          <View style={[s.priceRow, { borderTopWidth: 0.5, borderTopColor: '#e8c0c8', marginTop: 7, paddingTop: 7 }]}>
+          <View style={[s.priceRow, { borderTopWidth: 0.5, borderTopColor: th.line3, marginTop: 7, paddingTop: 7 }]}>
             <Text style={s.grandLabel}>{t.grandTotal}</Text>
             <Text style={s.grandVal}>฿{fmt(grandTotal)}</Text>
           </View>
@@ -561,10 +561,10 @@ export default function SaleScreen({ navigation, route }) {
               const on = selPay.includes(m.key);
               return (
                 <TouchableOpacity dataSet={{ hov: 'btn' }} key={m.key} onPress={() => setSelPay(p => p.includes(m.key) ? p.filter(k => k !== m.key) : [...p, m.key])}
-                  style={[s.payCard, { borderColor: on ? '#550a19' : '#e8d5d9', borderWidth: on ? 1.5 : 0.5, backgroundColor: on ? '#fdf0f2' : '#fff' }]}>
-                  <MaterialCommunityIcons name={m.icon} size={sc(18)} color={on ? '#550a19' : '#2e7d32'} />
-                  <Text style={[s.payCardLabel, { color: '#2c1015' }]}>{m.label}</Text>
-                  {on && <MaterialCommunityIcons name="check" size={sc(12)} color="#550a19" />}
+                  style={[s.payCard, { borderColor: on ? th.brandBg : th.softer, borderWidth: on ? 1.5 : 0.5, backgroundColor: on ? th.soft : th.card }]}>
+                  <MaterialCommunityIcons name={m.icon} size={sc(18)} color={on ? th.brand : th.ok} />
+                  <Text style={[s.payCardLabel, { color: th.ink }]}>{m.label}</Text>
+                  {on && <MaterialCommunityIcons name="check" size={sc(12)} color={th.brand} />}
                 </TouchableOpacity>
               );
             })}
@@ -575,21 +575,21 @@ export default function SaleScreen({ navigation, route }) {
               <Text style={s.splitTitle}>{t.splitTitle}</Text>
               {selPay.includes('cash') && (
                 <View style={s.splitRow}>
-                  <MaterialCommunityIcons name="cash" size={sc(18)} color="#2e7d32" />
+                  <MaterialCommunityIcons name="cash" size={sc(18)} color={th.ok} />
                   <Text style={s.splitLabel}>{lang === 'th' ? 'เงินสด' : 'Cash'}</Text>
                   <TextInput dataSet={{ hov: 'field' }} style={s.splitInput} value={splitCash} onChangeText={setSplitCash} keyboardType="numeric" />
                 </View>
               )}
               {selPay.includes('qr') && (
                 <View style={s.splitRow}>
-                  <MaterialCommunityIcons name="qrcode" size={sc(18)} color="#2e7d32" />
+                  <MaterialCommunityIcons name="qrcode" size={sc(18)} color={th.ok} />
                   <Text style={s.splitLabel}>{lang === 'th' ? 'โอน / QR' : 'Transfer'}</Text>
                   <TextInput dataSet={{ hov: 'field' }} style={s.splitInput} value={splitQr !== null ? String(splitQr) : String(qrVal)} onChangeText={setSplitQr} keyboardType="numeric" />
                 </View>
               )}
-              <View style={[s.splitRow, { borderTopWidth: 0.5, borderTopColor: '#e8d5d9', paddingTop: 7, marginTop: 2 }]}>
+              <View style={[s.splitRow, { borderTopWidth: 0.5, borderTopColor: th.line2, paddingTop: 7, marginTop: 2 }]}>
                 <Text style={s.splitLabel}>{t.remaining}</Text>
-                <Text style={[s.splitInput, { textAlign: 'right', fontWeight: '600', color: remaining <= 0 ? '#2e7d32' : '#c62828', borderWidth: 0 }]}>
+                <Text style={[s.splitInput, { textAlign: 'right', fontWeight: '600', color: remaining <= 0 ? th.ok : '#c62828', borderWidth: 0 }]}>
                   {remaining <= 0 ? `฿0 ${t.paid}` : `฿${fmt(remaining)}`}
                 </Text>
               </View>
@@ -600,7 +600,7 @@ export default function SaleScreen({ navigation, route }) {
         {/* CONFIRM BUTTON */}
         <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleConfirm} disabled={saving || cartItems.length === 0}
           style={[s.confirmBtn, { opacity: (saving || cartItems.length === 0) ? 0.6 : 1 }]}>
-          {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
+          {saving ? <ActivityIndicator color={th.brandOn} size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color={th.brandOn} />}
           <Text style={s.confirmBtnText}>{saving ? t.saving : t.confirmSale(fmt(grandTotal))}</Text>
         </TouchableOpacity>
 
@@ -616,7 +616,7 @@ export default function SaleScreen({ navigation, route }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{t.fromStock}</Text>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowPicker(false)}>
-              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color={th.brand} />
             </TouchableOpacity>
           </View>
           <TextInput dataSet={{ hov: 'field' }}
@@ -624,11 +624,11 @@ export default function SaleScreen({ navigation, route }) {
             value={pickerQuery}
             onChangeText={setPickerQuery}
             placeholder={t.searchItem}
-            placeholderTextColor="#b08090"
+            placeholderTextColor={th.dim}
             autoFocus
           />
           {loadingStock
-            ? <ActivityIndicator style={{ marginTop: 20 }} color="#550a19" />
+            ? <ActivityIndicator style={{ marginTop: 20 }} color={th.brand} />
             : (
               <FlatList
                 data={filteredStock}
@@ -651,7 +651,7 @@ export default function SaleScreen({ navigation, route }) {
                       <Text style={s.stockPrice}>฿{fmt(item.sale_price)}</Text>
                       <MaterialCommunityIcons
                         name={full ? 'check-circle' : 'plus-circle-outline'}
-                        size={sc(20)} color={full ? '#2e7d32' : '#550a19'} style={{ marginLeft: 10 }} />
+                        size={sc(20)} color={full ? th.ok : th.brand} style={{ marginLeft: 10 }} />
                     </TouchableOpacity>
                   );
                 }}
@@ -664,7 +664,7 @@ export default function SaleScreen({ navigation, route }) {
               {lang === 'th' ? `ในตะกร้า ${cartItems.length} ชิ้น` : `${cartItems.length} in cart`}
             </Text>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setShowPicker(false); setPickerQuery(''); }} style={s.pickDoneBtn}>
-              <MaterialCommunityIcons name="check" size={sc(16)} color="#fff5f7" />
+              <MaterialCommunityIcons name="check" size={sc(16)} color={th.brandOn} />
               <Text style={s.pickDoneText}>{lang === 'th' ? 'เสร็จแล้ว' : 'Done'}</Text>
             </TouchableOpacity>
           </View>
@@ -677,7 +677,7 @@ export default function SaleScreen({ navigation, route }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{t.customer}</Text>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowCustPicker(false)}>
-              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color={th.brand} />
             </TouchableOpacity>
           </View>
           <TextInput dataSet={{ hov: 'field' }}
@@ -685,7 +685,7 @@ export default function SaleScreen({ navigation, route }) {
             value={custQuery}
             onChangeText={setCustQuery}
             placeholder={t.searchMember}
-            placeholderTextColor="#b08090"
+            placeholderTextColor={th.dim}
             autoFocus
           />
           <FlatList
@@ -694,7 +694,7 @@ export default function SaleScreen({ navigation, route }) {
             ListEmptyComponent={<Text style={s.emptyText}>{lang === 'th' ? 'ไม่พบลูกค้า' : 'No customers'}</Text>}
             renderItem={({ item }) => (
               <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setSelCustId(item.id); setShowCustPicker(false); setCustQuery(''); }} style={s.stockRow}>
-                <Text style={{ flex: 1, fontSize: 14, color: '#2c1015' }}>{item.full_name}</Text>
+                <Text style={{ flex: 1, fontSize: 14, color: th.ink }}>{item.full_name}</Text>
                 {item.is_vip && <View style={s.vipBadge}><Text style={s.vipText}>VIP</Text></View>}
               </TouchableOpacity>
             )}
@@ -733,7 +733,7 @@ export default function SaleScreen({ navigation, route }) {
   );
 }
 
-const baseStyles = {
+const baseStyles = (th) => ({
   scroll: { flex: 1 },
   content: { padding: 14, paddingBottom: 30 },
   cols:    { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
@@ -742,82 +742,82 @@ const baseStyles = {
   // จอแคบ: เรียงลงมาและกว้างเต็มจอ — ไม่งั้น alignItems:'flex-start' จะบีบแต่ละกล่องให้หดตามเนื้อหา
   colsNarrow: { flexDirection: 'column', alignItems: 'stretch', gap: 0 },
   colFull:    { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: '100%', alignSelf: 'stretch' },
-  errBox: { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 10 },
-  errText: { fontSize: 12, color: '#a32d2d' },
-  okBox:  { backgroundColor: '#e8f5e9', borderWidth: 0.5, borderColor: '#a8d8b0', borderRadius: 8, padding: 10, marginBottom: 10 },
-  okText: { fontSize: 12, color: '#1a5c28' },
-  scanBox:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#e8f5e9', borderWidth: 0.5, borderColor: '#a8d8b0', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9, marginBottom: 10 },
-  scanBoxErr: { backgroundColor: '#fdf0f2', borderColor: '#e8c0c8' },
-  scanText:   { flex: 1, fontSize: 12, color: '#1a5c28', fontWeight: '500' },
-  sec: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 12, marginBottom: 10 },
+  errBox: { backgroundColor: th.soft, borderWidth: 0.5, borderColor: th.line3, borderRadius: 8, padding: 10, marginBottom: 10 },
+  errText: { fontSize: 12, color: th.danger },
+  okBox:  { backgroundColor: th.okBg, borderWidth: 0.5, borderColor: th.ok, borderRadius: 8, padding: 10, marginBottom: 10 },
+  okText: { fontSize: 12, color: th.ok },
+  scanBox:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: th.okBg, borderWidth: 0.5, borderColor: th.ok, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9, marginBottom: 10 },
+  scanBoxErr: { backgroundColor: th.soft, borderColor: th.line3 },
+  scanText:   { flex: 1, fontSize: 12, color: th.ok, fontWeight: '500' },
+  sec: { backgroundColor: th.card, borderRadius: 12, borderWidth: 0.5, borderColor: th.line2, padding: 12, marginBottom: 10 },
   secHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-  secHeadText: { fontSize: 11, fontWeight: '500', color: '#550a19', letterSpacing: 1.5 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#f9f4f5', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 10, marginBottom: 8 },
-  searchPh: { fontSize: 13, color: '#b08090' },
-  searchInput:   { flex: 1, fontSize: 13, color: '#2c1015', paddingVertical: 0 },
-  custResults:   { borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10, marginTop: 6, overflow: 'hidden', backgroundColor: '#fff' },
-  custResultRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
-  custAddRow:    { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, paddingVertical: 11, backgroundColor: '#fdf0f2' },
-  custAddText:   { fontSize: 13, fontWeight: '600', color: '#550a19' },
-  fromStockBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8c0c8', padding: 10, marginBottom: 10 },
-  fromStockText: { fontSize: 12, fontWeight: '500', color: '#550a19' },
-  scanBtn:     { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 10 },
-  scanBtnText: { fontSize: 12, fontWeight: '600', color: '#fff5f7' },
-  pickFoot:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, borderTopWidth: 0.5, borderTopColor: '#e8d5d9', paddingTop: 12, paddingBottom: 4, marginTop: 4 },
-  pickFootText:{ fontSize: 12.5, fontWeight: '600', color: '#2c1015' },
-  pickDoneBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#550a19', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 11 },
-  pickDoneText:{ fontSize: 13.5, fontWeight: '700', color: '#fff5f7' },
-  cartCard: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1.5, borderColor: '#550a19', padding: 12, marginBottom: 8 },
-  cartName: { fontSize: 13, fontWeight: '500', color: '#2c1015' },
-  cartSku: { fontSize: 10, color: '#a07080', marginTop: 2 },
-  cartPrice: { fontSize: 15, fontWeight: '500', color: '#550a19', marginTop: 4 },
-  removeBtn: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', justifyContent: 'center', alignItems: 'center' },
-  certTag: { marginTop: 6, backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
-  certTagText: { fontSize: 10, color: '#550a19' },
-  emptyText: { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 10 },
-  addMoreBtn: { borderWidth: 0.5, borderStyle: 'dashed', borderColor: '#e8c0c8', borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  addMoreText: { fontSize: 12, color: '#b08090' },
-  custCard: { backgroundColor: '#fdf0f2', borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  custAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#550a19', justifyContent: 'center', alignItems: 'center' },
-  custAvatarText: { fontSize: 12, fontWeight: '500', color: '#f5e0e5' },
-  custName: { fontSize: 13, fontWeight: '500', color: '#2c1015' },
-  custSub:  { fontSize: 11, color: '#a07080', marginTop: 1 },
-  vipBadge: { backgroundColor: '#550a19', borderRadius: 20, paddingHorizontal: 7, paddingVertical: 1 },
-  vipText:  { fontSize: 9, fontWeight: '500', color: '#f5e0e5' },
+  secHeadText: { fontSize: 11, fontWeight: '500', color: th.brand, letterSpacing: 1.5 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: th.card2, borderRadius: 10, borderWidth: 0.5, borderColor: th.line2, padding: 10, marginBottom: 8 },
+  searchPh: { fontSize: 13, color: th.dim },
+  searchInput:   { flex: 1, fontSize: 13, color: th.ink, paddingVertical: 0 },
+  custResults:   { borderWidth: 0.5, borderColor: th.line2, borderRadius: 10, marginTop: 6, overflow: 'hidden', backgroundColor: th.card },
+  custResultRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: th.hair },
+  custAddRow:    { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, paddingVertical: 11, backgroundColor: th.soft },
+  custAddText:   { fontSize: 13, fontWeight: '600', color: th.brand },
+  fromStockBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: th.card, borderRadius: 10, borderWidth: 0.5, borderColor: th.line3, padding: 10, marginBottom: 10 },
+  fromStockText: { fontSize: 12, fontWeight: '500', color: th.brand },
+  scanBtn:     { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: th.brandBg, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 10 },
+  scanBtnText: { fontSize: 12, fontWeight: '600', color: th.brandOn },
+  pickFoot:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, borderTopWidth: 0.5, borderTopColor: th.line2, paddingTop: 12, paddingBottom: 4, marginTop: 4 },
+  pickFootText:{ fontSize: 12.5, fontWeight: '600', color: th.ink },
+  pickDoneBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: th.brandBg, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 11 },
+  pickDoneText:{ fontSize: 13.5, fontWeight: '700', color: th.brandOn },
+  cartCard: { backgroundColor: th.card, borderRadius: 12, borderWidth: 1.5, borderColor: th.brandBg, padding: 12, marginBottom: 8 },
+  cartName: { fontSize: 13, fontWeight: '500', color: th.ink },
+  cartSku: { fontSize: 10, color: th.muted2, marginTop: 2 },
+  cartPrice: { fontSize: 15, fontWeight: '500', color: th.brand, marginTop: 4 },
+  removeBtn: { width: 22, height: 22, borderRadius: 11, backgroundColor: th.soft, borderWidth: 0.5, borderColor: th.line3, justifyContent: 'center', alignItems: 'center' },
+  certTag: { marginTop: 6, backgroundColor: th.soft, borderWidth: 0.5, borderColor: th.line3, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
+  certTagText: { fontSize: 10, color: th.brand },
+  emptyText: { fontSize: 12, color: th.muted2, textAlign: 'center', paddingVertical: 10 },
+  addMoreBtn: { borderWidth: 0.5, borderStyle: 'dashed', borderColor: th.line3, borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  addMoreText: { fontSize: 12, color: th.dim },
+  custCard: { backgroundColor: th.soft, borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  custAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: th.brandBg, justifyContent: 'center', alignItems: 'center' },
+  custAvatarText: { fontSize: 12, fontWeight: '500', color: th.brandOn },
+  custName: { fontSize: 13, fontWeight: '500', color: th.ink },
+  custSub:  { fontSize: 11, color: th.muted2, marginTop: 1 },
+  vipBadge: { backgroundColor: th.brandBg, borderRadius: 20, paddingHorizontal: 7, paddingVertical: 1 },
+  vipText:  { fontSize: 9, fontWeight: '500', color: th.brandOn },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   toggle: { width: 36, height: 20, borderRadius: 10, position: 'relative' },
-  toggleKnob: { position: 'absolute', top: 2, width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff' },
-  toggleLabel: { fontSize: 12, color: '#550a19', fontWeight: '500', flex: 1 },
-  discAmt: { fontSize: 13, fontWeight: '500', color: '#2e7d32' },
-  extraRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f9f4f5', borderRadius: 8, padding: 8 },
-  extraLabel: { fontSize: 11, color: '#a07080' },
-  smallInput: { backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 7, padding: 5, fontSize: 13, fontWeight: '500', color: '#550a19', width: 80, textAlign: 'right' },
-  priceSec: { backgroundColor: '#fdf5f7', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8c0c8', padding: 12, marginBottom: 10 },
+  toggleKnob: { position: 'absolute', top: 2, width: 16, height: 16, borderRadius: 8, backgroundColor: th.card },
+  toggleLabel: { fontSize: 12, color: th.brand, fontWeight: '500', flex: 1 },
+  discAmt: { fontSize: 13, fontWeight: '500', color: th.ok },
+  extraRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: th.card2, borderRadius: 8, padding: 8 },
+  extraLabel: { fontSize: 11, color: th.muted2 },
+  smallInput: { backgroundColor: th.card, borderWidth: 0.5, borderColor: th.line2, borderRadius: 7, padding: 5, fontSize: 13, fontWeight: '500', color: th.brand, width: 80, textAlign: 'right' },
+  priceSec: { backgroundColor: th.softer, borderRadius: 10, borderWidth: 0.5, borderColor: th.line3, padding: 12, marginBottom: 10 },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 3 },
-  priceLabel: { fontSize: 13, color: '#806070' },
+  priceLabel: { fontSize: 13, color: th.dim },
   priceVal:   { fontSize: 13, fontWeight: '500' },
-  grandLabel: { fontSize: 14, fontWeight: '500', color: '#550a19' },
-  grandVal:   { fontSize: 20, fontWeight: '500', color: '#550a19' },
-  vatToggle:  { flexDirection: 'row', borderRadius: 20, overflow: 'hidden', borderWidth: 0.5, borderColor: '#e8c0c8' },
+  grandLabel: { fontSize: 14, fontWeight: '500', color: th.brand },
+  grandVal:   { fontSize: 20, fontWeight: '500', color: th.brand },
+  vatToggle:  { flexDirection: 'row', borderRadius: 20, overflow: 'hidden', borderWidth: 0.5, borderColor: th.line3 },
   vatOption:  { paddingHorizontal: 11, paddingVertical: 4 },
   vatOptionText: { fontSize: 11, fontWeight: '500' },
-  payHint: { fontSize: 11, color: '#a07080', marginBottom: 8 },
+  payHint: { fontSize: 11, color: th.muted2, marginBottom: 8 },
   payRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   payCard: { flex: 1, borderRadius: 10, padding: 10, alignItems: 'center', gap: 4 },
   payCardLabel: { fontSize: 11, fontWeight: '500', textAlign: 'center' },
-  splitBox: { backgroundColor: '#fff', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8d5d9', padding: 10 },
-  splitTitle: { fontSize: 11, color: '#a07080', marginBottom: 8 },
+  splitBox: { backgroundColor: th.card, borderRadius: 10, borderWidth: 0.5, borderColor: th.line2, padding: 10 },
+  splitTitle: { fontSize: 11, color: th.muted2, marginBottom: 8 },
   splitRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  splitLabel: { fontSize: 12, color: '#806070', flex: 1 },
-  splitInput: { backgroundColor: '#f9f4f5', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 7, padding: 6, fontSize: 13, fontWeight: '500', color: '#550a19', width: 90, textAlign: 'right' },
-  confirmBtn: { backgroundColor: '#550a19', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 },
-  confirmBtnText: { fontSize: 15, fontWeight: '500', color: '#fff5f7' },
-  modal: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  splitLabel: { fontSize: 12, color: th.dim, flex: 1 },
+  splitInput: { backgroundColor: th.card2, borderWidth: 0.5, borderColor: th.line2, borderRadius: 7, padding: 6, fontSize: 13, fontWeight: '500', color: th.brand, width: 90, textAlign: 'right' },
+  confirmBtn: { backgroundColor: th.brandBg, borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 },
+  confirmBtnText: { fontSize: 15, fontWeight: '500', color: th.brandOn },
+  modal: { flex: 1, backgroundColor: th.card, padding: 16 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  modalTitle: { fontSize: 16, fontWeight: '500', color: '#550a19' },
-  modalSearch: { backgroundColor: '#f9f4f5', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10, padding: 10, fontSize: 14, color: '#2c1015', marginBottom: 10 },
-  stockRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
-  stockName: { fontSize: 13, fontWeight: '500', color: '#2c1015' },
-  stockSku: { fontSize: 10, color: '#a07080' },
-  stockPrice: { fontSize: 13, fontWeight: '500', color: '#550a19' },
-};
+  modalTitle: { fontSize: 16, fontWeight: '500', color: th.brand },
+  modalSearch: { backgroundColor: th.card2, borderWidth: 0.5, borderColor: th.line2, borderRadius: 10, padding: 10, fontSize: 14, color: th.ink, marginBottom: 10 },
+  stockRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: th.hair },
+  stockName: { fontSize: 13, fontWeight: '500', color: th.ink },
+  stockSku: { fontSize: 10, color: th.muted2 },
+  stockPrice: { fontSize: 13, fontWeight: '500', color: th.brand },
+});

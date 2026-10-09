@@ -27,11 +27,11 @@ const fmt = (n) => {
 
 // ป้ายสถานะ: ใบที่ยังต้องตาม = แดงอ่อน · ใบที่จบแล้ว = ขาวเส้นบาง
 const STATUS_STYLE = {
-  draft:    { bg: '#ffffff', col: '#9b7d86' },
-  sent:     { bg: '#fdf0f2', col: '#8c1b2f' },
-  accepted: { bg: '#ffffff', col: '#9b7d86' },
-  rejected: { bg: '#ffffff', col: '#c0a8ae' },
-  expired:  { bg: '#fdf0f2', col: '#8c1b2f' },
+  draft:    { bg: th.card, col: th.muted },
+  sent:     { bg: th.soft, col: th.brand2 },
+  accepted: { bg: th.card, col: th.muted },
+  rejected: { bg: th.card, col: th.dim },
+  expired:  { bg: th.soft, col: th.brand2 },
 };
 
 const STATUS_LABELS = {
@@ -54,7 +54,7 @@ const COLS = [
 ];
 
 export default function QuotationScreen({ navigation }) {
-  const { styles: s, sc, center } = useScaledStyles(baseStyles);
+  const { styles: s, sc, center, t: th } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang] = useState('th');
   const [q, setQ] = useState('');
@@ -149,7 +149,7 @@ export default function QuotationScreen({ navigation }) {
   const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: th.bg, paddingTop: insets.top }}>
       <Header title={lang === 'th' ? 'ใบเสนอราคา' : 'Quotation'} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading} lang={lang} />
       <ScrollView contentContainerStyle={s.content}>
@@ -162,7 +162,7 @@ export default function QuotationScreen({ navigation }) {
           <PrimaryButton label={lang === 'th' ? 'สร้างใบเสนอราคา' : 'New quotation'} onPress={() => setShowNew(true)} />
         </Toolbar>
 
-        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20, marginBottom: 12 }} />}
+        {loading && <ActivityIndicator color={th.brand} style={{ marginTop: 20, marginBottom: 12 }} />}
 
         <Panel title={lang === 'th' ? 'ใบเสนอราคาทั้งหมด' : 'All quotations'}
           right={`${shown.length} ${lang === 'th' ? 'ใบ' : 'quotations'}`}>
@@ -206,7 +206,7 @@ export default function QuotationScreen({ navigation }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'ออกใบเสนอราคาใหม่' : 'New Quotation'}</Text>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(false)}>
-              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color={th.brand} />
             </TouchableOpacity>
           </View>
           <ScrollView keyboardShouldPersistTaps="handled">
@@ -216,14 +216,14 @@ export default function QuotationScreen({ navigation }) {
               value={custName}
               onChangeText={(v) => { setCustName(v); setSelCustId(null); }}
               placeholder={lang === 'th' ? 'พิมพ์ชื่อลูกค้า หรือเลือกจากรายชื่อข้างล่าง' : 'Type a name or pick from the list'}
-              placeholderTextColor="#c0a0a8" />
+              placeholderTextColor={th.faint} />
 
             {/* พิมพ์แล้วยังไม่ตรงกับใคร = ลูกค้าใหม่ ใส่เบอร์ไว้ด้วยจะได้เก็บเข้าระบบเลย */}
             {!selCustId && !!custName.trim() && (
               <TextInput dataSet={{ hov: 'field' }} style={s.custInput}
                 value={custPhone} onChangeText={setCustPhone} keyboardType="phone-pad"
                 placeholder={lang === 'th' ? 'เบอร์โทร (ไม่บังคับ)' : 'Phone (optional)'}
-                placeholderTextColor="#c0a0a8" />
+                placeholderTextColor={th.faint} />
             )}
 
             {(() => {
@@ -239,7 +239,7 @@ export default function QuotationScreen({ navigation }) {
                       style={[s.custRow, selCustId === c.id && s.custRowOn]}>
                       <MaterialCommunityIcons
                         name={selCustId === c.id ? 'check-circle' : 'account-outline'}
-                        size={sc(15)} color={selCustId === c.id ? '#550a19' : '#c0a0a8'} />
+                        size={sc(15)} color={selCustId === c.id ? th.brand : th.faint} />
                       <Text style={s.custRowName} numberOfLines={1}>{c.full_name}</Text>
                       {!!c.phone && <Text style={s.custRowSub}>{c.phone}</Text>}
                     </TouchableOpacity>
@@ -260,7 +260,7 @@ export default function QuotationScreen({ navigation }) {
             })()}
             <Text style={s.fieldLabel}>{lang === 'th' ? 'สินค้า' : 'Items'}</Text>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowProdPicker(true)} style={s.addItemBtn}>
-              <MaterialCommunityIcons name="plus" size={sc(16)} color="#550a19" />
+              <MaterialCommunityIcons name="plus" size={sc(16)} color={th.brand} />
               <Text style={s.addItemText}>{lang === 'th' ? 'เพิ่มสินค้า' : 'Add item'}</Text>
             </TouchableOpacity>
             {selProds.map((sp, i) => (
@@ -268,14 +268,14 @@ export default function QuotationScreen({ navigation }) {
                 <Text style={[s.cardNo, { flex: 1 }]}>{sp.name}</Text>
                 <Text style={s.cardAmt}>฿{fmt(sp.price)}</Text>
                 <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setSelProds(prev => prev.filter((_, idx) => idx !== i))} style={{ marginLeft: 8 }}>
-                  <MaterialCommunityIcons name="close" size={sc(14)} color="#550a19" />
+                  <MaterialCommunityIcons name="close" size={sc(14)} color={th.brand} />
                 </TouchableOpacity>
               </View>
             ))}
             <View style={s.vatRow}>
               {[[lang === 'th' ? 'มี VAT' : 'Incl. VAT', true],[lang === 'th' ? 'ไม่มี VAT' : 'Excl. VAT', false]].map(([l, v]) => (
-                <TouchableOpacity dataSet={{ hov: 'btn' }} key={String(v)} onPress={() => setVatOn(v)} style={[s.vatBtn, { backgroundColor: vatOn === v ? '#550a19' : '#f9f4f5', borderColor: vatOn === v ? '#550a19' : '#e8d5d9' }]}>
-                  <Text style={[s.vatBtnText, { color: vatOn === v ? '#f5e0e5' : '#a07080' }]}>{l}</Text>
+                <TouchableOpacity dataSet={{ hov: 'btn' }} key={String(v)} onPress={() => setVatOn(v)} style={[s.vatBtn, { backgroundColor: vatOn === v ? th.brandBg : th.card2, borderColor: vatOn === v ? th.brandBg : th.softer }]}>
+                  <Text style={[s.vatBtnText, { color: vatOn === v ? th.brandOn : th.muted2 }]}>{l}</Text>
                 </TouchableOpacity>
               ))}
               {vatOn && (
@@ -289,15 +289,15 @@ export default function QuotationScreen({ navigation }) {
               {[[lang === 'th' ? 'รวม' : 'Subtotal', subtotal], [`VAT ${vatOn ? (parseFloat(vatRate) || 0) : 0}%`, vatAmt]].map(([l, v]) => (
                 <View key={l} style={s.totalRow}><Text style={s.totalLabel}>{l}</Text><Text style={s.totalVal}>฿{fmt(v)}</Text></View>
               ))}
-              <View style={[s.totalRow, { borderTopWidth: 0.5, borderTopColor: '#e8c0c8', marginTop: 6, paddingTop: 6 }]}>
-                <Text style={[s.totalLabel, { fontWeight: '600', color: '#550a19' }]}>{lang === 'th' ? 'ยอดรวม' : 'Total'}</Text>
-                <Text style={[s.totalVal, { fontSize: 18, color: '#550a19' }]}>฿{fmt(total)}</Text>
+              <View style={[s.totalRow, { borderTopWidth: 0.5, borderTopColor: th.line3, marginTop: 6, paddingTop: 6 }]}>
+                <Text style={[s.totalLabel, { fontWeight: '600', color: th.brand }]}>{lang === 'th' ? 'ยอดรวม' : 'Total'}</Text>
+                <Text style={[s.totalVal, { fontSize: 18, color: th.brand }]}>฿{fmt(total)}</Text>
               </View>
             </View>
             <TextInput dataSet={{ hov: 'field' }} style={[s.input, { height: 80, textAlignVertical: 'top' }]} value={notes} onChangeText={setNotes}
-              placeholder={lang === 'th' ? 'หมายเหตุ...' : 'Notes...'} placeholderTextColor="#c0a0a8" multiline />
+              placeholder={lang === 'th' ? 'หมายเหตุ...' : 'Notes...'} placeholderTextColor={th.faint} multiline />
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleCreate} disabled={saving} style={[s.createBtn, { opacity: saving ? 0.7 : 1 }]}>
-              {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
+              {saving ? <ActivityIndicator color={th.brandOn} size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color={th.brandOn} />}
               <Text style={s.createBtnText}>{saving ? (lang === 'th' ? 'กำลังบันทึก...' : 'Saving...') : (lang === 'th' ? 'สร้างใบเสนอราคา' : 'Create Quotation')}</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -310,10 +310,10 @@ export default function QuotationScreen({ navigation }) {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{lang === 'th' ? 'เลือกสินค้า' : 'Select Product'}</Text>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowProdPicker(false)}>
-              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color={th.brand} />
             </TouchableOpacity>
           </View>
-          <TextInput dataSet={{ hov: 'field' }} style={s.searchInput} value={prodQuery} onChangeText={setProdQuery} placeholder="ค้นหา..." placeholderTextColor="#b08090" autoFocus />
+          <TextInput dataSet={{ hov: 'field' }} style={s.searchInput} value={prodQuery} onChangeText={setProdQuery} placeholder="ค้นหา..." placeholderTextColor={th.dim} autoFocus />
           <FlatList
             data={filteredProds}
             keyExtractor={item => String(item.id)}
@@ -362,7 +362,7 @@ export default function QuotationScreen({ navigation }) {
                         <ItemRow key={i} name={it.name || it.product_name || `รายการที่ ${i + 1}`} sub={it.sku}
                           qty={Number(it.qty) || 1} price={it.unit_price ?? it.price} />
                       ))}
-                      {(selQt.items || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
+                      {(selQt.items || []).length === 0 && <Text style={{ fontSize: 11, color: th.muted2 }}>— ไม่มีรายการ —</Text>}
                     </Sec>
                     <Sec>
                       <TRow label={lang === 'th' ? 'มูลค่าก่อน VAT' : 'Subtotal'} value={fmtBaht(base)} />
@@ -378,7 +378,7 @@ export default function QuotationScreen({ navigation }) {
                       return (
                         <TouchableOpacity dataSet={{ hov: 'btn' }} key={st} onPress={() => handleUpdateStatus(selQt.id, st)}
                           style={[s.stBtn, { backgroundColor: selQt.status === st ? stStyle.col : stStyle.bg, borderColor: stStyle.col }]}>
-                          <Text style={[s.stBtnText, { color: selQt.status === st ? '#fff' : stStyle.col }]}>{slabs[st]}</Text>
+                          <Text style={[s.stBtnText, { color: selQt.status === st ? th.brandOn : stStyle.col }]}>{slabs[st]}</Text>
                         </TouchableOpacity>
                       );
                     })}
@@ -394,53 +394,53 @@ export default function QuotationScreen({ navigation }) {
   );
 }
 
-const baseStyles = {
-  custInput: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, padding: 10, fontSize: 13, color: '#2c1015', marginBottom: 8 },
+const baseStyles = (th) => ({
+  custInput: { backgroundColor: th.card, borderWidth: 1, borderColor: th.line, borderRadius: 10, padding: 10, fontSize: 13, color: th.ink, marginBottom: 8 },
   custRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: 'transparent' },
-  custRowOn: { backgroundColor: '#fdf0f2', borderColor: '#f0d3da' },
-  custRowName: { flex: 1, fontSize: 12.5, color: '#2c1015', minWidth: 0 },
-  custRowSub: { fontSize: 11, color: '#9b7d86' },
-  custHint: { fontSize: 11, color: '#9b7d86', marginTop: 4, marginLeft: 2, lineHeight: 17 },
+  custRowOn: { backgroundColor: th.soft, borderColor: th.hair },
+  custRowName: { flex: 1, fontSize: 12.5, color: th.ink, minWidth: 0 },
+  custRowSub: { fontSize: 11, color: th.muted },
+  custHint: { fontSize: 11, color: th.muted, marginTop: 4, marginLeft: 2, lineHeight: 17 },
   toolbar:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 14 },
-  toolbarCount: { flex: 1, fontSize: 12, color: '#9b7d86' },
-  primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
-  primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: '#fff5f7' },
+  toolbarCount: { flex: 1, fontSize: 12, color: th.muted },
+  primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: th.brandBg, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
+  primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: th.brandOn },
   content:    { padding: 14, paddingBottom: 30 },
-  mrow:       { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
-  emptyText:  { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
-  card:       { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
-  cardNo:     { fontSize: 12, fontWeight: '500', color: '#550a19' },
-  cardSub:    { fontSize: 11, color: '#a07080', marginTop: 2 },
-  cardAmt:    { fontSize: 13, fontWeight: '500', color: '#2c1015' },
-  badge:      { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2.5, borderWidth: 1, borderColor: '#ece0e3' },
+  mrow:       { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: th.hair },
+  emptyText:  { fontSize: 12, color: th.muted2, textAlign: 'center', paddingVertical: 20 },
+  card:       { backgroundColor: th.card, borderRadius: 12, borderWidth: 1, borderColor: th.line, padding: 13, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  cardNo:     { fontSize: 12, fontWeight: '500', color: th.brand },
+  cardSub:    { fontSize: 11, color: th.muted2, marginTop: 2 },
+  cardAmt:    { fontSize: 13, fontWeight: '500', color: th.ink },
+  badge:      { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2.5, borderWidth: 1, borderColor: th.line },
   badgeText:  { fontSize: 9, fontWeight: '500' },
   iconBtn:    { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  modal:      { flex: 1, backgroundColor: '#fff', padding: 16 },
+  modal:      { flex: 1, backgroundColor: th.card, padding: 16 },
   modalHeader:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  modalTitle: { fontSize: 16, fontWeight: '500', color: '#550a19' },
-  errBox:     { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 12 },
-  errText:    { fontSize: 12, color: '#a32d2d' },
-  fieldLabel: { fontSize: 11, color: '#a07080', marginBottom: 4 },
+  modalTitle: { fontSize: 16, fontWeight: '500', color: th.brand },
+  errBox:     { backgroundColor: th.soft, borderWidth: 0.5, borderColor: th.line3, borderRadius: 8, padding: 10, marginBottom: 12 },
+  errText:    { fontSize: 12, color: th.danger },
+  fieldLabel: { fontSize: 11, color: th.muted2, marginBottom: 4 },
   chip:       { borderWidth: 0.5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   chipText:   { fontSize: 12 },
-  addItemBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 10, padding: 10, marginBottom: 8 },
-  addItemText:{ fontSize: 12, fontWeight: '500', color: '#550a19' },
-  selectedProd: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9f4f5', borderRadius: 8, padding: 8, marginBottom: 6 },
+  addItemBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: th.soft, borderWidth: 0.5, borderColor: th.line3, borderRadius: 10, padding: 10, marginBottom: 8 },
+  addItemText:{ fontSize: 12, fontWeight: '500', color: th.brand },
+  selectedProd: { flexDirection: 'row', alignItems: 'center', backgroundColor: th.card2, borderRadius: 8, padding: 8, marginBottom: 6 },
   vatRow:     { flexDirection: 'row', gap: 8, marginBottom: 12, alignItems: 'stretch' },
   vatBtn:     { flex: 1, borderWidth: 0.5, borderRadius: 10, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' },
   vatBtnText: { fontSize: 12, fontWeight: '500' },
-  rateBox:    { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fdf5f7', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 10, paddingHorizontal: 10 },
-  rateInput:  { fontSize: 14, fontWeight: '600', color: '#550a19', minWidth: 28, textAlign: 'right', paddingVertical: 0 },
-  ratePct:    { fontSize: 12, color: '#a07080', marginLeft: 2 },
-  totalBox:   { backgroundColor: '#fdf5f7', borderRadius: 10, borderWidth: 0.5, borderColor: '#e8c0c8', padding: 12, marginBottom: 12 },
+  rateBox:    { flexDirection: 'row', alignItems: 'center', backgroundColor: th.softer, borderWidth: 0.5, borderColor: th.line3, borderRadius: 10, paddingHorizontal: 10 },
+  rateInput:  { fontSize: 14, fontWeight: '600', color: th.brand, minWidth: 28, textAlign: 'right', paddingVertical: 0 },
+  ratePct:    { fontSize: 12, color: th.muted2, marginLeft: 2 },
+  totalBox:   { backgroundColor: th.softer, borderRadius: 10, borderWidth: 0.5, borderColor: th.line3, padding: 12, marginBottom: 12 },
   totalRow:   { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
-  totalLabel: { fontSize: 12, color: '#806070' },
-  totalVal:   { fontSize: 12, fontWeight: '500', color: '#2c1015' },
-  input:      { backgroundColor: '#f9f4f5', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10, padding: 10, fontSize: 14, color: '#2c1015', marginBottom: 12 },
-  createBtn:  { backgroundColor: '#550a19', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 },
-  createBtnText: { fontSize: 15, fontWeight: '500', color: '#fff5f7' },
-  searchInput:{ backgroundColor: '#f9f4f5', borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10, padding: 10, fontSize: 14, color: '#2c1015', marginBottom: 10 },
-  prodRow:    { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
+  totalLabel: { fontSize: 12, color: th.dim },
+  totalVal:   { fontSize: 12, fontWeight: '500', color: th.ink },
+  input:      { backgroundColor: th.card2, borderWidth: 0.5, borderColor: th.line2, borderRadius: 10, padding: 10, fontSize: 14, color: th.ink, marginBottom: 12 },
+  createBtn:  { backgroundColor: th.brandBg, borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 },
+  createBtnText: { fontSize: 15, fontWeight: '500', color: th.brandOn },
+  searchInput:{ backgroundColor: th.card2, borderWidth: 0.5, borderColor: th.line2, borderRadius: 10, padding: 10, fontSize: 14, color: th.ink, marginBottom: 10 },
+  prodRow:    { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: th.hair },
   stBtn:      { borderWidth: 0.5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   stBtnText:  { fontSize: 12, fontWeight: '500' },
-};
+});

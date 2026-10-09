@@ -71,7 +71,7 @@ const emptyForm = () => ({
 });
 
 export default function ServiceOrderScreen({ navigation }) {
-  const { styles: s, sc } = useScaledStyles(baseStyles);
+  const { styles: s, sc, t: th } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const wide = useWide();
   const [lang, setLang] = useState('th');
@@ -239,13 +239,13 @@ export default function ServiceOrderScreen({ navigation }) {
   const EditBtn = ({ o }) => (
     <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => openEdit(o)} style={s.editBtn}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-      <MaterialCommunityIcons name="pencil-outline" size={sc(13)} color="#550a19" />
+      <MaterialCommunityIcons name="pencil-outline" size={sc(13)} color={th.brand} />
       <Text style={s.editText}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</Text>
     </TouchableOpacity>
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: th.bg, paddingTop: insets.top }}>
       <Header title={lang === 'th' ? 'ใบสั่งซ่อม' : 'Service Order'} subtitle={headDate}
         onBack={() => navigation.goBack()} lang={lang}
         onLangToggle={() => setLang(l => (l === 'th' ? 'en' : 'th'))} />
@@ -270,18 +270,18 @@ export default function ServiceOrderScreen({ navigation }) {
               <Text style={s.pickClearText}>{lang === 'th' ? 'ล้าง' : 'Clear'}</Text>
             </TouchableOpacity>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printPicked(false)} disabled={printing} style={s.pickBtn}>
-              {printing ? <ActivityIndicator size="small" color="#550a19" />
-                : <MaterialCommunityIcons name="printer" size={sc(15)} color="#550a19" />}
+              {printing ? <ActivityIndicator size="small" color={th.brand} />
+                : <MaterialCommunityIcons name="printer" size={sc(15)} color={th.brand} />}
               <Text style={s.pickBtnText}>{lang === 'th' ? 'ปริ้นที่เลือก' : 'Print selected'}</Text>
             </TouchableOpacity>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printPicked(true)} disabled={printing} style={s.pickBtn}>
-              <MaterialCommunityIcons name="file-pdf-box" size={sc(15)} color="#550a19" />
+              <MaterialCommunityIcons name="file-pdf-box" size={sc(15)} color={th.brand} />
               <Text style={s.pickBtnText}>{lang === 'th' ? 'PDF ที่เลือก' : 'Save PDF'}</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20, marginBottom: 12 }} />}
+        {loading && <ActivityIndicator color={th.brand} style={{ marginTop: 20, marginBottom: 12 }} />}
 
         <Panel title={lang === 'th' ? 'ใบสั่งซ่อมทั้งหมด' : 'All repairs'}
           right={`${shown.length} ${lang === 'th' ? 'ใบ' : 'orders'}`}>
@@ -295,7 +295,7 @@ export default function ServiceOrderScreen({ navigation }) {
                 <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => togglePick(o.id)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                   <View style={[s.box, picked[o.id] && s.boxOn]}>
-                    {picked[o.id] && <MaterialCommunityIcons name="check" size={sc(11)} color="#fff" />}
+                    {picked[o.id] && <MaterialCommunityIcons name="check" size={sc(11)} color={th.brandOn} />}
                   </View>
                 </TouchableOpacity>,
                 <TdNo text={o.service_no} />,
@@ -313,7 +313,7 @@ export default function ServiceOrderScreen({ navigation }) {
                 <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => togglePick(o.id)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 6 }}>
                   <View style={[s.box, picked[o.id] && s.boxOn]}>
-                    {picked[o.id] && <MaterialCommunityIcons name="check" size={sc(11)} color="#fff" />}
+                    {picked[o.id] && <MaterialCommunityIcons name="check" size={sc(11)} color={th.brandOn} />}
                   </View>
                 </TouchableOpacity>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -352,26 +352,26 @@ export default function ServiceOrderScreen({ navigation }) {
             <Field label={lang === 'th' ? 'รหัสงานซ่อม — รันให้เอง พิมพ์ทับได้' : 'Service code'} s={s}>
               <TextInput dataSet={{ hov: 'field' }} style={[s.input, s.codeIn]} value={form.service_no}
                 onChangeText={(v) => upd({ service_no: v })} placeholder="SERVICE#00001"
-                placeholderTextColor="#c0a0a8" autoCapitalize="characters" />
+                placeholderTextColor={th.faint} autoCapitalize="characters" />
             </Field>
 
             <View style={s.row2}>
               <Field label={lang === 'th' ? 'ชื่อลูกค้า' : 'Customer'} s={s} flex>
                 <TextInput dataSet={{ hov: 'field' }} style={s.input} value={form.customer_name}
                   onChangeText={(v) => upd({ customer_name: v })} placeholder="เช่น คุณณิชา รัตนพงศ์"
-                  placeholderTextColor="#c0a0a8" />
+                  placeholderTextColor={th.faint} />
               </Field>
               <Field label={lang === 'th' ? 'เบอร์โทร' : 'Phone'} s={s} flex>
                 <TextInput dataSet={{ hov: 'field' }} style={s.input} value={form.customer_phone}
                   onChangeText={(v) => upd({ customer_phone: v })} keyboardType="phone-pad"
-                  placeholder="081-234-5678" placeholderTextColor="#c0a0a8" />
+                  placeholder="081-234-5678" placeholderTextColor={th.faint} />
               </Field>
             </View>
 
             <Field label={lang === 'th' ? 'ประเภทงานซ่อม' : 'Repair type'} s={s}>
               <TextInput dataSet={{ hov: 'field' }} style={s.input} value={form.job_type}
                 onChangeText={(v) => upd({ job_type: v })} placeholder="เช่น แหวน"
-                placeholderTextColor="#c0a0a8" />
+                placeholderTextColor={th.faint} />
               <View style={s.chipRow}>
                 {JOB_TYPES.map(t => (
                   <TouchableOpacity dataSet={{ hov: 'btn' }} key={t} onPress={() => upd({ job_type: t })}
@@ -386,7 +386,7 @@ export default function ServiceOrderScreen({ navigation }) {
               <Field label={lang === 'th' ? 'จำนวน (ชิ้น)' : 'Qty'} s={s} flex>
                 <TextInput dataSet={{ hov: 'field' }} style={s.input} value={form.job_qty}
                   onChangeText={(v) => upd({ job_qty: v.replace(/[^0-9]/g, '') })} keyboardType="number-pad"
-                  placeholder="1" placeholderTextColor="#c0a0a8" />
+                  placeholder="1" placeholderTextColor={th.faint} />
               </Field>
               <Field label={lang === 'th' ? 'วันที่รับงาน' : 'Received'} s={s} flex>
                 <DateInput style={s.input} value={form.received_at} onChangeText={(v) => upd({ received_at: v })} />
@@ -404,13 +404,13 @@ export default function ServiceOrderScreen({ navigation }) {
                 <View key={i} style={s.photoBox}>
                   <Image source={{ uri: p }} style={s.photoImg} resizeMode="cover" />
                   <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => dropPhoto(i)} style={s.photoX}>
-                    <MaterialCommunityIcons name="close" size={sc(13)} color="#fff" />
+                    <MaterialCommunityIcons name="close" size={sc(13)} color={th.brandOn} />
                   </TouchableOpacity>
                 </View>
               ))}
               {form.photos.length < 4 && (
                 <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={pickPhoto} style={[s.photoBox, s.photoAdd]}>
-                  <MaterialCommunityIcons name="image-plus" size={sc(18)} color="#c0a0a8" />
+                  <MaterialCommunityIcons name="image-plus" size={sc(18)} color={th.faint} />
                   <Text style={s.photoAddText}>{lang === 'th' ? 'เพิ่มรูป' : 'Add'}</Text>
                 </TouchableOpacity>
               )}
@@ -419,13 +419,13 @@ export default function ServiceOrderScreen({ navigation }) {
             <Field label={lang === 'th' ? 'ข้อมูลการซ่อม' : 'Repair detail'} s={s}>
               <TextInput dataSet={{ hov: 'field' }} style={[s.input, { height: 74, textAlignVertical: 'top' }]}
                 value={form.repair_detail} onChangeText={(v) => upd({ repair_detail: v })} multiline
-                placeholder="อาการ · สิ่งที่ต้องซ่อม" placeholderTextColor="#c0a0a8" />
+                placeholder="อาการ · สิ่งที่ต้องซ่อม" placeholderTextColor={th.faint} />
             </Field>
 
             <Field label={lang === 'th' ? 'หมายเหตุ' : 'Notes'} s={s}>
               <TextInput dataSet={{ hov: 'field' }} style={[s.input, { height: 60, textAlignVertical: 'top' }]}
                 value={form.note} onChangeText={(v) => upd({ note: v })} multiline
-                placeholder="สิ่งที่ต้องระวัง" placeholderTextColor="#c0a0a8" />
+                placeholder="สิ่งที่ต้องระวัง" placeholderTextColor={th.faint} />
             </Field>
 
             <Text style={s.grpLabel}>{lang === 'th' ? 'ราคา' : 'Price'}</Text>
@@ -433,12 +433,12 @@ export default function ServiceOrderScreen({ navigation }) {
               <Field label={lang === 'th' ? 'ราคา' : 'Price'} s={s} flex>
                 <TextInput dataSet={{ hov: 'field' }} style={s.input} value={form.price}
                   onChangeText={(v) => upd({ price: v })} keyboardType="numeric"
-                  placeholder="0" placeholderTextColor="#c0a0a8" />
+                  placeholder="0" placeholderTextColor={th.faint} />
               </Field>
               <Field label={lang === 'th' ? 'มัดจำ' : 'Deposit'} s={s} flex>
                 <TextInput dataSet={{ hov: 'field' }} style={s.input} value={form.deposit}
                   onChangeText={(v) => upd({ deposit: v })} keyboardType="numeric"
-                  placeholder="0" placeholderTextColor="#c0a0a8" />
+                  placeholder="0" placeholderTextColor={th.faint} />
               </Field>
             </View>
             <View style={s.totalBox}>
@@ -448,7 +448,7 @@ export default function ServiceOrderScreen({ navigation }) {
 
             <Field label={lang === 'th' ? 'ผู้รับออเดอร์' : 'Received by'} s={s}>
               <View style={[s.input, s.lockBox]}>
-                <MaterialCommunityIcons name="account-check-outline" size={sc(14)} color="#550a19" />
+                <MaterialCommunityIcons name="account-check-outline" size={sc(14)} color={th.brand} />
                 <Text style={s.lockText}>{form.received_by || (lang === 'th' ? 'จากคนที่ล็อกอิน' : 'from login')}</Text>
               </View>
             </Field>
@@ -475,7 +475,7 @@ export default function ServiceOrderScreen({ navigation }) {
             {!!sel && (
               <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { const o = sel; setSel(null); openEdit(o); }}
                 style={s.editBtn}>
-                <MaterialCommunityIcons name="pencil-outline" size={sc(13)} color="#550a19" />
+                <MaterialCommunityIcons name="pencil-outline" size={sc(13)} color={th.brand} />
                 <Text style={s.editText}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</Text>
               </TouchableOpacity>
             )}
@@ -514,17 +514,17 @@ export default function ServiceOrderScreen({ navigation }) {
 
                 <View style={s.actRow}>
                   <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printServiceOrder(sel)} style={s.actBtn}>
-                    <MaterialCommunityIcons name="printer" size={sc(15)} color="#550a19" />
+                    <MaterialCommunityIcons name="printer" size={sc(15)} color={th.brand} />
                     <Text style={s.actText}>ปริ้น</Text>
                   </TouchableOpacity>
                   <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => saveServiceOrder(sel)} style={s.actBtn}>
-                    <MaterialCommunityIcons name="file-pdf-box" size={sc(15)} color="#550a19" />
+                    <MaterialCommunityIcons name="file-pdf-box" size={sc(15)} color={th.brand} />
                     <Text style={s.actText}>บันทึก PDF</Text>
                   </TouchableOpacity>
                 </View>
 
                 <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setAskDel(true)} style={s.delBtn}>
-                  <MaterialCommunityIcons name="trash-can-outline" size={sc(14)} color="#a32d2d" />
+                  <MaterialCommunityIcons name="trash-can-outline" size={sc(14)} color={th.danger} />
                   <Text style={s.delText}>{lang === 'th' ? 'ลบใบสั่งซ่อม' : 'Delete'}</Text>
                 </TouchableOpacity>
               </>
@@ -541,12 +541,12 @@ export default function ServiceOrderScreen({ navigation }) {
             <Text style={s.confirmMsg}>{sel?.service_no} — ลบแล้วเอากลับไม่ได้</Text>
             <View style={s.confirmBtns}>
               <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setAskDel(false)}
-                style={[s.confirmBtn, { backgroundColor: '#f9f4f5' }]}>
-                <Text style={[s.confirmBtnText, { color: '#806070' }]}>ยกเลิก</Text>
+                style={[s.confirmBtn, { backgroundColor: th.card2 }]}>
+                <Text style={[s.confirmBtnText, { color: th.dim }]}>ยกเลิก</Text>
               </TouchableOpacity>
               <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={remove}
-                style={[s.confirmBtn, { backgroundColor: '#a32d2d' }]}>
-                <Text style={[s.confirmBtnText, { color: '#fff5f7' }]}>ลบ</Text>
+                style={[s.confirmBtn, { backgroundColor: th.danger }]}>
+                <Text style={[s.confirmBtnText, { color: th.brandOn }]}>ลบ</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -573,84 +573,84 @@ function InfoLine({ k, v, s }) {
   );
 }
 
-const baseStyles = {
+const baseStyles = (th) => ({
   content: { padding: 14, paddingBottom: 30 },
-  box: { width: 17, height: 17, borderRadius: 4, borderWidth: 1, borderColor: '#d4bcc2', justifyContent: 'center', alignItems: 'center' },
-  boxOn: { backgroundColor: '#550a19', borderColor: '#550a19' },
+  box: { width: 17, height: 17, borderRadius: 4, borderWidth: 1, borderColor: th.line3, justifyContent: 'center', alignItems: 'center' },
+  boxOn: { backgroundColor: th.brandBg, borderColor: th.brandBg },
 
-  pickBar: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, backgroundColor: '#fdf0f2', borderWidth: 1, borderColor: '#f0d3da', borderRadius: 12, padding: 11, marginBottom: 12 },
-  pickCount: { flex: 1, minWidth: 100, fontSize: 13, color: '#550a19', fontWeight: '600' },
+  pickBar: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, backgroundColor: th.soft, borderWidth: 1, borderColor: th.hair, borderRadius: 12, padding: 11, marginBottom: 12 },
+  pickCount: { flex: 1, minWidth: 100, fontSize: 13, color: th.brand, fontWeight: '600' },
   pickClear: { paddingVertical: 6, paddingHorizontal: 10 },
-  pickClearText: { fontSize: 12.5, color: '#9b7d86' },
-  pickBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e8d5d9', borderRadius: 9, paddingVertical: 8, paddingHorizontal: 13 },
-  pickBtnText: { fontSize: 12.5, color: '#550a19', fontWeight: '500' },
+  pickClearText: { fontSize: 12.5, color: th.muted },
+  pickBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: th.card, borderWidth: 1, borderColor: th.line2, borderRadius: 9, paddingVertical: 8, paddingHorizontal: 13 },
+  pickBtnText: { fontSize: 12.5, color: th.brand, fontWeight: '500' },
 
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: '#e8d5d9', backgroundColor: '#fff', alignSelf: 'flex-start' },
-  editText: { fontSize: 12, color: '#550a19', fontWeight: '500' },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: th.line2, backgroundColor: th.card, alignSelf: 'flex-start' },
+  editText: { fontSize: 12, color: th.brand, fontWeight: '500' },
 
-  mrow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
-  cardNo: { fontSize: 12, color: '#9b7d86', letterSpacing: 0.4 },
-  cardTitle: { fontSize: 14, color: '#2c1015', fontWeight: '500', marginTop: 1 },
-  cardSub: { fontSize: 12, color: '#9b7d86', marginTop: 2 },
-  cardAmt: { fontSize: 14, color: '#550a19', fontWeight: '600' },
+  mrow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: th.hair },
+  cardNo: { fontSize: 12, color: th.muted, letterSpacing: 0.4 },
+  cardTitle: { fontSize: 14, color: th.ink, fontWeight: '500', marginTop: 1 },
+  cardSub: { fontSize: 12, color: th.muted, marginTop: 2 },
+  cardAmt: { fontSize: 14, color: th.brand, fontWeight: '600' },
 
-  modal: { flex: 1, backgroundColor: '#fdfbfb' },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingRight: 56, borderBottomWidth: 1, borderBottomColor: '#ece0e3', backgroundColor: '#fff' },
-  modalTitle: { fontSize: 16, fontWeight: '600', color: '#550a19' },
+  modal: { flex: 1, backgroundColor: th.bg },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingRight: 56, borderBottomWidth: 1, borderBottomColor: th.line, backgroundColor: th.card },
+  modalTitle: { fontSize: 16, fontWeight: '600', color: th.brand },
   modalBody: { padding: 16, paddingBottom: 40 },
 
-  grpLabel: { fontSize: 11, letterSpacing: 1.4, color: '#9b7d86', fontWeight: '600', marginTop: 18, marginBottom: 10 },
+  grpLabel: { fontSize: 11, letterSpacing: 1.4, color: th.muted, fontWeight: '600', marginTop: 18, marginBottom: 10 },
 
   field: { marginBottom: 12 },
-  fieldLabel: { fontSize: 12, color: '#9b7d86', marginBottom: 5 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, fontSize: 14, color: '#2c1015' },
-  codeIn: { fontWeight: '600', color: '#550a19', letterSpacing: 0.6 },
-  lockBox: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#fdf0f2', borderColor: '#f0d3da' },
-  lockText: { fontSize: 13.5, color: '#550a19', fontWeight: '500', flex: 1, minWidth: 0 },
+  fieldLabel: { fontSize: 12, color: th.muted, marginBottom: 5 },
+  input: { backgroundColor: th.card, borderWidth: 1, borderColor: th.line, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, fontSize: 14, color: th.ink },
+  codeIn: { fontWeight: '600', color: th.brand, letterSpacing: 0.6 },
+  lockBox: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: th.soft, borderColor: th.hair },
+  lockText: { fontSize: 13.5, color: th.brand, fontWeight: '500', flex: 1, minWidth: 0 },
 
   row2: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   row3: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', alignItems: 'flex-start' },
 
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 7 },
-  tChip: { paddingVertical: 7, paddingHorizontal: 13, borderRadius: 999, borderWidth: 1, borderColor: '#e8d5d9', backgroundColor: '#fff' },
-  tChipOn: { backgroundColor: '#550a19', borderColor: '#550a19' },
-  tChipText: { fontSize: 12.5, color: '#a07080' },
-  tChipTextOn: { color: '#fff5f7' },
+  tChip: { paddingVertical: 7, paddingHorizontal: 13, borderRadius: 999, borderWidth: 1, borderColor: th.line2, backgroundColor: th.card },
+  tChipOn: { backgroundColor: th.brandBg, borderColor: th.brandBg },
+  tChipText: { fontSize: 12.5, color: th.muted2 },
+  tChipTextOn: { color: th.brandOn },
 
   photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginBottom: 12 },
-  photoBox: { width: 96, height: 96, borderRadius: 9, overflow: 'hidden', borderWidth: 1, borderColor: '#ece0e3', backgroundColor: '#fff' },
+  photoBox: { width: 96, height: 96, borderRadius: 9, overflow: 'hidden', borderWidth: 1, borderColor: th.line, backgroundColor: th.card },
   photoImg: { width: '100%', height: '100%' },
   photoX: { position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(85,10,25,0.85)', alignItems: 'center', justifyContent: 'center' },
-  photoAdd: { borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 3, backgroundColor: '#fdfbfb' },
-  photoAddText: { fontSize: 11, color: '#9b7d86' },
+  photoAdd: { borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 3, backgroundColor: th.bg },
+  photoAddText: { fontSize: 11, color: th.muted },
 
-  totalBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, backgroundColor: '#fdf0f2', borderWidth: 1, borderColor: '#f0d3da', borderRadius: 12, padding: 14, marginBottom: 12 },
-  totalLabel: { fontSize: 12.5, color: '#8c1b2f' },
-  totalVal: { fontSize: 20, fontWeight: '700', color: '#550a19' },
+  totalBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, backgroundColor: th.soft, borderWidth: 1, borderColor: th.hair, borderRadius: 12, padding: 14, marginBottom: 12 },
+  totalLabel: { fontSize: 12.5, color: th.brand2 },
+  totalVal: { fontSize: 20, fontWeight: '700', color: th.brand },
 
-  saveBtn: { backgroundColor: '#550a19', borderRadius: 11, paddingVertical: 14, alignItems: 'center', marginTop: 6 },
-  saveText: { color: '#fff5f7', fontSize: 15, fontWeight: '600' },
+  saveBtn: { backgroundColor: th.brandBg, borderRadius: 11, paddingVertical: 14, alignItems: 'center', marginTop: 6 },
+  saveText: { color: th.brandOn, fontSize: 15, fontWeight: '600' },
 
-  errBox: { backgroundColor: '#fdf0f2', borderWidth: 1, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 10 },
-  errText: { fontSize: 12, color: '#a32d2d' },
+  errBox: { backgroundColor: th.soft, borderWidth: 1, borderColor: th.line3, borderRadius: 8, padding: 10, marginBottom: 10 },
+  errText: { fontSize: 12, color: th.danger },
 
-  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 12, padding: 14, marginBottom: 12 },
-  secTitle: { fontSize: 13.5, fontWeight: '600', color: '#550a19', marginBottom: 4 },
-  infoLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
-  infoK: { width: 116, fontSize: 12.5, color: '#9b7d86' },
-  infoV: { flex: 1, fontSize: 13, color: '#2c1015', minWidth: 0 },
+  card: { backgroundColor: th.card, borderWidth: 1, borderColor: th.line, borderRadius: 12, padding: 14, marginBottom: 12 },
+  secTitle: { fontSize: 13.5, fontWeight: '600', color: th.brand, marginBottom: 4 },
+  infoLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: th.hair },
+  infoK: { width: 116, fontSize: 12.5, color: th.muted },
+  infoV: { flex: 1, fontSize: 13, color: th.ink, minWidth: 0 },
 
   actRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginTop: 4 },
-  actBtn: { flex: 1, minWidth: 130, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e8d5d9', backgroundColor: '#fff' },
-  actText: { fontSize: 13.5, color: '#550a19', fontWeight: '500' },
+  actBtn: { flex: 1, minWidth: 130, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: th.line2, backgroundColor: th.card },
+  actText: { fontSize: 13.5, color: th.brand, fontWeight: '500' },
 
   delBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, marginTop: 12 },
-  delText: { fontSize: 13, color: '#a32d2d', fontWeight: '500' },
+  delText: { fontSize: 13, color: th.danger, fontWeight: '500' },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  confirmBox: { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '100%', maxWidth: 360 },
-  confirmMsg: { fontSize: 12.5, color: '#7d5f68', lineHeight: 20, marginTop: 8, marginBottom: 14 },
+  confirmBox: { backgroundColor: th.card, borderRadius: 16, padding: 20, width: '100%', maxWidth: 360 },
+  confirmMsg: { fontSize: 12.5, color: th.muted, lineHeight: 20, marginTop: 8, marginBottom: 14 },
   confirmBtns: { flexDirection: 'row', gap: 10, marginTop: 6 },
   confirmBtn: { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   confirmBtnText: { fontSize: 13.5, fontWeight: '600' },
-};
+});

@@ -17,22 +17,22 @@ const LABEL = {
 };
 
 export default function ConnectingBar({ visible, lang = 'th' }) {
-  const { styles: s } = useScaledStyles(baseStyles);
+  const { styles: s, t: th } = useScaledStyles(baseStyles);
   if (!visible) return null;
   return (
     <View style={s.bar}>
-      <ActivityIndicator size="small" color="#854F0B" />
+      <ActivityIndicator size="small" color={th.warn} />
       <Text style={s.text}>{LABEL[lang] || LABEL.th}</Text>
     </View>
   );
 }
 
-const baseStyles = {
+const baseStyles = (th) => ({
   bar: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#fff8e1',
-    borderBottomWidth: 0.5, borderBottomColor: '#f0e0b8',
+    backgroundColor: th.warnBg,
+    borderBottomWidth: 0.5, borderBottomColor: th.hair,
     paddingHorizontal: 16, paddingVertical: 9,
   },
-  text: { fontSize: 11.5, color: '#854F0B' },
-};
+  text: { fontSize: 11.5, color: th.warn },
+});

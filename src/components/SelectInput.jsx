@@ -15,6 +15,7 @@
 // ══════════════════════════════════════════════════════════════
 import { createElement, useState } from 'react';
 import { Platform, View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
+import { useTheme } from '../theme';
 
 const norm = (o) => (typeof o === 'object' && o !== null ? o : { value: o, label: String(o) });
 
@@ -29,6 +30,9 @@ export default function SelectInput({
   style,                 // สไตล์ของปุ่มบนมือถือ
   disabled = false,
 }) {
+  const { t: th } = useTheme();
+  const n = maken(th);
+
   const list = options.map(norm);
   const cur  = value == null ? '' : String(value);
 
@@ -43,13 +47,13 @@ export default function SelectInput({
         style: {
           width: '100%',
           boxSizing: 'border-box',
-          backgroundColor: '#fff',
+          backgroundColor: th.card,
           border: '1px solid #ece0e3',
           borderRadius: 10,
           padding: '9px 12px',
           fontSize: 14,
           lineHeight: '20px',
-          color: cur ? '#2c1015' : '#c0a0a8',
+          color: cur ? th.ink : th.faint,
           fontFamily: 'inherit',
           outline: 'none',
           cursor: disabled ? 'default' : 'pointer',
@@ -59,7 +63,7 @@ export default function SelectInput({
       [
         createElement('option', { key: '__ph', value: '' }, clearLabel || placeholder),
         ...list.map((o) =>
-          createElement('option', { key: o.value, value: o.value, style: { color: '#2c1015' } }, o.label)
+          createElement('option', { key: o.value, value: o.value, style: { color: th.ink } }, o.label)
         ),
       ]
     );
@@ -70,6 +74,9 @@ export default function SelectInput({
 
 // ── มือถือ: ปุ่มเปิดแผ่นรายการ ──────────────────────────────
 function NativeSelect({ list, cur, onChange, placeholder, title, clearLabel, style, disabled }) {
+  const { t: th } = useTheme();
+  const n = maken(th);
+
   const [open, setOpen] = useState(false);
   const label = list.find((o) => String(o.value) === cur)?.label;
 
@@ -103,14 +110,14 @@ function NativeSelect({ list, cur, onChange, placeholder, title, clearLabel, sty
   );
 }
 
-const n = StyleSheet.create({
-  box:      { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, justifyContent: 'center' },
-  text:     { fontSize: 14, color: '#2c1015' },
-  ph:       { color: '#c0a0a8' },
+const maken = (th) => StyleSheet.create({
+  box:      { backgroundColor: th.card, borderWidth: 1, borderColor: th.line, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, justifyContent: 'center' },
+  text:     { fontSize: 14, color: th.ink },
+  ph:       { color: th.faint },
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet:    { backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 14, paddingBottom: 30, maxHeight: '70%' },
-  title:    { fontSize: 13, fontWeight: '600', color: '#550a19', marginBottom: 8, paddingHorizontal: 4 },
-  row:      { paddingVertical: 12, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
-  rowText:  { fontSize: 14, color: '#2c1015' },
-  rowOn:    { color: '#550a19', fontWeight: '700' },
+  sheet:    { backgroundColor: th.card, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 14, paddingBottom: 30, maxHeight: '70%' },
+  title:    { fontSize: 13, fontWeight: '600', color: th.brand, marginBottom: 8, paddingHorizontal: 4 },
+  row:      { paddingVertical: 12, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: th.hair },
+  rowText:  { fontSize: 14, color: th.ink },
+  rowOn:    { color: th.brand, fontWeight: '700' },
 });

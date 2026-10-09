@@ -49,7 +49,7 @@ const T = {
 };
 
 export default function LoginScreen({ navigation }) {
-  const { styles, sc } = useScaledStyles(baseStyles);
+  const { styles, sc, t: th } = useScaledStyles(baseStyles);
   const { width } = useWindowDimensions();
   const wide = Platform.OS === 'web' && width >= WIDE;
 
@@ -82,8 +82,8 @@ export default function LoginScreen({ navigation }) {
       onPress={() => setLang(l => (l === 'th' ? 'en' : 'th'))}
       style={wide ? styles.langWide : styles.langBtnAbs}
     >
-      <MaterialCommunityIcons name="translate" size={sc(13)} color={wide ? '#550a19' : '#f5e0e5'} />
-      <Text style={[styles.langBtnText, wide && { color: '#550a19' }]}>{lang === 'th' ? 'EN' : 'ไทย'}</Text>
+      <MaterialCommunityIcons name="translate" size={sc(13)} color={wide ? th.brand : th.brandOn} />
+      <Text style={[styles.langBtnText, wide && { color: th.brand }]}>{lang === 'th' ? 'EN' : 'ไทย'}</Text>
     </TouchableOpacity>
   );
 
@@ -113,7 +113,7 @@ export default function LoginScreen({ navigation }) {
         value={email}
         onChangeText={setEmail}
         placeholder={t.emailPh}
-        placeholderTextColor="#c0a0a8"
+        placeholderTextColor={th.faint}
         autoCapitalize="none"
         keyboardType="email-address"
       />
@@ -126,12 +126,12 @@ export default function LoginScreen({ navigation }) {
           value={password}
           onChangeText={setPassword}
           placeholder={t.passPh}
-          placeholderTextColor="#c0a0a8"
+          placeholderTextColor={th.faint}
           secureTextEntry={!showPw}
           onSubmitEditing={handleLogin}
         />
         <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowPw(v => !v)} style={styles.eyeBtn}>
-          <MaterialCommunityIcons name={showPw ? 'eye' : 'eye-off'} size={sc(18)} color="#c0a0a8" />
+          <MaterialCommunityIcons name={showPw ? 'eye' : 'eye-off'} size={sc(18)} color={th.faint} />
         </TouchableOpacity>
       </View>
 
@@ -142,8 +142,8 @@ export default function LoginScreen({ navigation }) {
         style={[styles.loginBtn, { opacity: loading ? 0.7 : 1 }]}
       >
         {loading
-          ? <ActivityIndicator color="#fff5f7" size="small" />
-          : <MaterialCommunityIcons name="login" size={sc(18)} color="#fff5f7" />}
+          ? <ActivityIndicator color={th.brandOn} size="small" />
+          : <MaterialCommunityIcons name="login" size={sc(18)} color={th.brandOn} />}
         <Text style={styles.loginBtnText}>{loading ? t.loggingIn : t.loginBtn}</Text>
       </TouchableOpacity>
 
@@ -178,13 +178,13 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
-const baseStyles = {
-  safe: { flex: 1, backgroundColor: '#550a19' },
+const baseStyles = (th) => ({
+  safe: { flex: 1, backgroundColor: th.brandBg },
   scroll: { flexGrow: 1 },
 
   // ── จอแคบ ──
   hero: {
-    backgroundColor: '#550a19',
+    backgroundColor: th.brandBg,
     paddingTop: 44,
     paddingBottom: 34,
     paddingHorizontal: 24,
@@ -192,7 +192,7 @@ const baseStyles = {
   },
   logo: { width: 148, height: 44 },
   rule: { width: 54, height: 1, backgroundColor: 'rgba(232,199,207,0.7)', marginTop: 18, marginBottom: 12 },
-  heroTagline: { fontSize: 12, color: '#d9aebb' },
+  heroTagline: { fontSize: 12, color: th.brandOn },
   langBtnAbs: {
     position: 'absolute',
     top: 14, right: 16,
@@ -201,10 +201,10 @@ const baseStyles = {
     borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.3)',
     borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4,
   },
-  langBtnText: { fontSize: 12, fontWeight: '500', color: '#f5e0e5' },
+  langBtnText: { fontSize: 12, fontWeight: '500', color: th.brandOn },
   form: {
     flex: 1,
-    backgroundColor: '#f9f4f5',
+    backgroundColor: th.card2,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -213,10 +213,10 @@ const baseStyles = {
   },
 
   // ── จอกว้าง ──
-  wideWrap: { flex: 1, flexDirection: 'row', backgroundColor: '#f9f4f5', minHeight: '100%' },
+  wideWrap: { flex: 1, flexDirection: 'row', backgroundColor: th.card2, minHeight: '100%' },
   brandWide: {
     width: '46%',
-    backgroundColor: '#550a19',
+    backgroundColor: th.brandBg,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 54,
@@ -233,34 +233,34 @@ const baseStyles = {
     position: 'absolute',
     top: 22, right: 26,
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#fff',
-    borderWidth: 1, borderColor: '#e8d5d9',
+    backgroundColor: th.card,
+    borderWidth: 1, borderColor: th.line2,
     borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5,
   },
 
   // ── ฟอร์ม (ใช้ร่วมกัน) ──
   formInner: { width: '100%', maxWidth: 380 },
-  heading: { fontSize: 21, fontWeight: '600', color: '#2c1015' },
-  subHeading: { fontSize: 12.5, color: '#a07080', marginTop: 3, marginBottom: 18 },
+  heading: { fontSize: 21, fontWeight: '600', color: th.ink },
+  subHeading: { fontSize: 12.5, color: th.muted2, marginTop: 3, marginBottom: 18 },
   errorBox: {
-    backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8',
+    backgroundColor: th.soft, borderWidth: 0.5, borderColor: th.line3,
     borderRadius: 8, padding: 10, marginBottom: 12,
   },
-  errorText: { fontSize: 12, color: '#a32d2d' },
-  fieldLabel: { fontSize: 11, color: '#a07080', marginBottom: 4 },
+  errorText: { fontSize: 12, color: th.danger },
+  fieldLabel: { fontSize: 11, color: th.muted2, marginBottom: 4 },
   input: {
-    backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#e8d5d9',
+    backgroundColor: th.card, borderWidth: 0.5, borderColor: th.line2,
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11,
-    fontSize: 14, color: '#2c1015', marginBottom: 12,
+    fontSize: 14, color: th.ink, marginBottom: 12,
   },
   pwRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
   eyeBtn: { padding: 8 },
   loginBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, borderRadius: 14, paddingVertical: 14,
-    backgroundColor: '#550a19',
+    backgroundColor: th.brandBg,
   },
-  loginBtnText: { fontSize: 15, fontWeight: '500', color: '#fff5f7' },
-  help: { textAlign: 'center', fontSize: 11, color: '#b09090', marginTop: 16 },
-  version: { textAlign: 'center', fontSize: 10, color: '#c0a0a8', marginTop: 10 },
-};
+  loginBtnText: { fontSize: 15, fontWeight: '500', color: th.brandOn },
+  help: { textAlign: 'center', fontSize: 11, color: th.dim, marginTop: 16 },
+  version: { textAlign: 'center', fontSize: 10, color: th.faint, marginTop: 10 },
+});

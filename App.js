@@ -12,6 +12,7 @@ import { getToken } from './src/storage';
 import { getPendingSku, clearPendingSku } from './src/scan';
 import { navRef } from './src/navRef';
 import AppShell from './src/components/AppShell';
+import { ThemeProvider, useTheme } from './src/theme';
 
 import LoginScreen       from './src/screens/LoginScreen';
 import HomeScreen        from './src/screens/HomeScreen';
@@ -40,7 +41,8 @@ function routeScannedSku() {
   navRef.navigate('Sale', { scanSku: sku });
 }
 
-export default function App() {
+function AppInner() {
+  const { t, mourn } = useTheme();
   const [initialRoute, setInitialRoute] = useState(null);
   // ชื่อหน้าที่เปิดอยู่ — AppShell ใช้ไฮไลท์เมนู และซ่อนตัวเองตอนอยู่หน้า Login
   const [routeName, setRouteName] = useState(null);
@@ -139,9 +141,9 @@ export default function App() {
 
   if (!initialRoute) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#550a19', gap: 14 }}>
-        <ActivityIndicator color="#f0d0d8" size="large" />
-        <Text style={{ fontSize: 13, color: '#d4a0ac' }}>กำลังเชื่อมต่อเซิร์ฟเวอร์...</Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: th.brandBg, gap: 14 }}>
+        <ActivityIndicator color={th.brandOn} size="large" />
+        <Text style={{ fontSize: 13, color: th.dim }}>กำลังเชื่อมต่อเซิร์ฟเวอร์...</Text>
       </View>
     );
   }
@@ -154,11 +156,11 @@ export default function App() {
           onReady={() => { setRouteName(navRef.getCurrentRoute()?.name); routeScannedSku(); }}
           onStateChange={() => { setRouteName(navRef.getCurrentRoute()?.name); routeScannedSku(); }}
         >
-          <StatusBar style="light" backgroundColor="#550a19" />
+          <StatusBar style="light" backgroundColor={th.brandBg} />
           <AppShell routeName={routeName}>
           <Stack.Navigator
             initialRouteName={initialRoute}
-            screenOptions={{ headerShown: false, cardStyle: { backgroundColor: '#fdfbfb' } }}
+            screenOptions={{ headerShown: false, cardStyle: { backgroundColor: th.bg } }}
           >
             <Stack.Screen name="Login"         component={LoginScreen}          />
             <Stack.Screen name="Home"          component={HomeScreen}           />
@@ -178,5 +180,14 @@ export default function App() {
         </NavigationContainer>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+}
+
+// ★ ThemeProvider ต้องอยู่ชั้นนอกสุด — AppInner ถึงจะเรียก useTheme() ได้
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppInner />
+    </ThemeProvider>
   );
 }

@@ -50,10 +50,10 @@ const fmt = (n) => {
 
 // ป้ายสถานะ: ใบที่ยังต้องตามเก็บเงิน = แดงอ่อน · ใบที่จบแล้ว = ขาวเส้นบาง
 const STATUS_STYLE = {
-  draft:  { bg: '#ffffff', col: '#9b7d86', label: 'Draft'  },
-  issued: { bg: '#fdf0f2', col: '#8c1b2f', label: 'Issued' },
-  paid:   { bg: '#ffffff', col: '#9b7d86', label: 'Paid'   },
-  void:   { bg: '#ffffff', col: '#c0a8ae', label: 'Void'   },
+  draft:  { bg: th.card, col: th.muted, label: 'Draft'  },
+  issued: { bg: th.soft, col: th.brand2, label: 'Issued' },
+  paid:   { bg: th.card, col: th.muted, label: 'Paid'   },
+  void:   { bg: th.card, col: th.dim, label: 'Void'   },
 };
 
 const FILTERS = [
@@ -71,7 +71,7 @@ const COLS = [
 ];
 
 export default function InvoiceScreen({ navigation }) {
-  const { styles, sc, center } = useScaledStyles(baseStyles);
+  const { styles, sc, center, t: th } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const [lang, setLang] = useState('th');
   const [q, setQ] = useState('');
@@ -125,7 +125,7 @@ export default function InvoiceScreen({ navigation }) {
   const headDate = new Date().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: th.bg, paddingTop: insets.top }}>
       <Header title={t.pageTitle} subtitle={headDate} onBack={() => navigation.goBack()} lang={lang} onLangToggle={() => setLang(l => l === 'th' ? 'en' : 'th')} />
       <ConnectingBar visible={loading} lang={lang} />
       <ScrollView contentContainerStyle={styles.content}>
@@ -138,7 +138,7 @@ export default function InvoiceScreen({ navigation }) {
           <PrimaryButton label={lang === 'th' ? 'ออกใบกำกับภาษี' : 'New invoice'} onPress={() => setShowNew(true)} />
         </Toolbar>
 
-        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20, marginBottom: 12 }} />}
+        {loading && <ActivityIndicator color={th.brand} style={{ marginTop: 20, marginBottom: 12 }} />}
 
         <Panel title={t.listTitle} right={`${shown.length} ${lang === 'th' ? 'ใบ' : 'invoices'}`}>
           {wide && <TableHead cols={COLS} />}
@@ -181,15 +181,15 @@ export default function InvoiceScreen({ navigation }) {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t.newTitle}</Text>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setShowNew(false)}>
-              <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
+              <MaterialCommunityIcons name="close" size={sc(22)} color={th.brand} />
             </TouchableOpacity>
           </View>
           {!!error && <View style={styles.errBox}><Text style={styles.errText}>{error}</Text></View>}
           <Text style={styles.fieldLabel}>{t.selectSale}</Text>
-          <ScrollView style={{ maxHeight: 300, marginBottom: 12, borderWidth: 0.5, borderColor: '#e8d5d9', borderRadius: 10 }}>
+          <ScrollView style={{ maxHeight: 300, marginBottom: 12, borderWidth: 0.5, borderColor: th.line2, borderRadius: 10 }}>
             {sales.map(s => (
               <TouchableOpacity dataSet={{ hov: 'btn' }} key={s.id} onPress={() => setSelSaleId(s.id)}
-                style={[styles.saleRow, { backgroundColor: selSaleId === s.id ? '#fdf0f2' : '#fff' }]}>
+                style={[styles.saleRow, { backgroundColor: selSaleId === s.id ? th.soft : th.card }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardNo}>{s.sale_no}</Text>
                   <Text style={styles.cardSub}>{s.customer_name || 'ไม่ระบุ'}</Text>
@@ -202,8 +202,8 @@ export default function InvoiceScreen({ navigation }) {
           <View style={styles.vatRow}>
             {[[t.vatOn, true],[t.vatOff, false]].map(([label, val]) => (
               <TouchableOpacity dataSet={{ hov: 'btn' }} key={label} onPress={() => setVatOn(val)}
-                style={[styles.vatBtn, { backgroundColor: vatOn === val ? '#550a19' : '#f9f4f5', borderColor: vatOn === val ? '#550a19' : '#e8d5d9' }]}>
-                <Text style={[styles.vatBtnText, { color: vatOn === val ? '#f5e0e5' : '#a07080' }]}>{label}</Text>
+                style={[styles.vatBtn, { backgroundColor: vatOn === val ? th.brandBg : th.card2, borderColor: vatOn === val ? th.brandBg : th.softer }]}>
+                <Text style={[styles.vatBtnText, { color: vatOn === val ? th.brandOn : th.muted2 }]}>{label}</Text>
               </TouchableOpacity>
             ))}
             {vatOn && (
@@ -215,7 +215,7 @@ export default function InvoiceScreen({ navigation }) {
           </View>
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleIssue} disabled={issuing}
             style={[styles.issueBtn, { opacity: issuing ? 0.7 : 1 }]}>
-            {issuing ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="receipt" size={sc(18)} color="#fff5f7" />}
+            {issuing ? <ActivityIndicator color={th.brandOn} size="small" /> : <MaterialCommunityIcons name="receipt" size={sc(18)} color={th.brandOn} />}
             <Text style={styles.issueBtnText}>{issuing ? t.issuing : t.issueBtnLabel}</Text>
           </TouchableOpacity>
         </View>
@@ -251,7 +251,7 @@ export default function InvoiceScreen({ navigation }) {
                       {(selInvoice.items || []).map((item, i) => (
                         <ItemRow key={i} name={item.product_name || item.name} sub={item.sku} price={item.unit_price ?? item.line_total} />
                       ))}
-                      {(selInvoice.items || []).length === 0 && <Text style={{ fontSize: 11, color: '#a07080' }}>— ไม่มีรายการ —</Text>}
+                      {(selInvoice.items || []).length === 0 && <Text style={{ fontSize: 11, color: th.muted2 }}>— ไม่มีรายการ —</Text>}
                     </Sec>
                     <Sec>
                       <TRow label={t.subtotal} value={fmtBaht(base)} />
@@ -271,55 +271,55 @@ export default function InvoiceScreen({ navigation }) {
   );
 }
 
-const baseStyles = {
+const baseStyles = (th) => ({
   toolbar:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 14 },
-  toolbarCount: { flex: 1, fontSize: 12, color: '#9b7d86' },
-  primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#550a19', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
-  primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: '#fff5f7' },
+  toolbarCount: { flex: 1, fontSize: 12, color: th.muted },
+  primaryBtn:   { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: th.brandBg, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
+  primaryBtnText: { fontSize: 12.5, fontWeight: '600', color: th.brandOn },
   content:      { padding: 14, paddingBottom: 30 },
-  mrow:       { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
-  listTitle:    { fontSize: 12, fontWeight: '500', color: '#550a19', marginBottom: 10 },
-  emptyText:    { fontSize: 12, color: '#a07080', textAlign: 'center', paddingVertical: 20 },
-  card:         { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ece0e3', padding: 13, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
-  cardNo:       { fontSize: 12, fontWeight: '500', color: '#550a19' },
-  cardSub:      { fontSize: 11, color: '#a07080', marginTop: 2 },
-  cardAmt:      { fontSize: 13, fontWeight: '500', color: '#2c1015' },
-  badge:        { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2.5, borderWidth: 1, borderColor: '#ece0e3' },
+  mrow:       { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: th.hair },
+  listTitle:    { fontSize: 12, fontWeight: '500', color: th.brand, marginBottom: 10 },
+  emptyText:    { fontSize: 12, color: th.muted2, textAlign: 'center', paddingVertical: 20 },
+  card:         { backgroundColor: th.card, borderRadius: 12, borderWidth: 1, borderColor: th.line, padding: 13, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  cardNo:       { fontSize: 12, fontWeight: '500', color: th.brand },
+  cardSub:      { fontSize: 11, color: th.muted2, marginTop: 2 },
+  cardAmt:      { fontSize: 13, fontWeight: '500', color: th.ink },
+  badge:        { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2.5, borderWidth: 1, borderColor: th.line },
   badgeText:    { fontSize: 9, fontWeight: '500' },
   newBtn:       { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  modal:        { flex: 1, backgroundColor: '#fff', padding: 16 },
+  modal:        { flex: 1, backgroundColor: th.card, padding: 16 },
   modalHeader:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle:   { fontSize: 16, fontWeight: '500', color: '#550a19' },
-  errBox:       { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 12 },
-  errText:      { fontSize: 12, color: '#a32d2d' },
-  fieldLabel:   { fontSize: 11, color: '#a07080', marginBottom: 4 },
-  saleRow:      { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
+  modalTitle:   { fontSize: 16, fontWeight: '500', color: th.brand },
+  errBox:       { backgroundColor: th.soft, borderWidth: 0.5, borderColor: th.line3, borderRadius: 8, padding: 10, marginBottom: 12 },
+  errText:      { fontSize: 12, color: th.danger },
+  fieldLabel:   { fontSize: 11, color: th.muted2, marginBottom: 4 },
+  saleRow:      { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: th.hair },
   vatRow:       { flexDirection: 'row', gap: 8, marginBottom: 14, alignItems: 'stretch' },
   vatBtn:       { flex: 1, borderWidth: 0.5, borderRadius: 10, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
   vatBtnText:   { fontSize: 13, fontWeight: '500' },
-  rateBox:      { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fdf5f7', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 10, paddingHorizontal: 10 },
-  rateInput:    { fontSize: 15, fontWeight: '600', color: '#550a19', minWidth: 30, textAlign: 'right', paddingVertical: 0 },
-  ratePct:      { fontSize: 13, color: '#a07080', marginLeft: 2 },
-  issueBtn:     { backgroundColor: '#550a19', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  issueBtnText: { fontSize: 15, fontWeight: '500', color: '#fff5f7' },
-  docHeader:    { backgroundColor: '#550a19', padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginHorizontal: -16, marginBottom: 0 },
-  docBrandLg:   { fontSize: 18, fontWeight: '600', color: '#fff5f7', letterSpacing: 3 },
-  docBrandSm:   { fontSize: 8, color: '#d4a0ac', letterSpacing: 4 },
+  rateBox:      { flexDirection: 'row', alignItems: 'center', backgroundColor: th.softer, borderWidth: 0.5, borderColor: th.line3, borderRadius: 10, paddingHorizontal: 10 },
+  rateInput:    { fontSize: 15, fontWeight: '600', color: th.brand, minWidth: 30, textAlign: 'right', paddingVertical: 0 },
+  ratePct:      { fontSize: 13, color: th.muted2, marginLeft: 2 },
+  issueBtn:     { backgroundColor: th.brandBg, borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  issueBtnText: { fontSize: 15, fontWeight: '500', color: th.brandOn },
+  docHeader:    { backgroundColor: th.brandBg, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginHorizontal: -16, marginBottom: 0 },
+  docBrandLg:   { fontSize: 18, fontWeight: '600', color: th.brandOn, letterSpacing: 3 },
+  docBrandSm:   { fontSize: 8, color: th.dim, letterSpacing: 4 },
   docBadge:     { alignItems: 'flex-end' },
-  docBadgeText: { fontSize: 9, color: '#f0d0d8', letterSpacing: 2, backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20, marginBottom: 4 },
-  docNo:        { fontSize: 13, fontWeight: '500', color: '#fff5f7' },
-  docParties:   { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8', marginHorizontal: -16 },
+  docBadgeText: { fontSize: 9, color: th.brandOn, letterSpacing: 2, backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20, marginBottom: 4 },
+  docNo:        { fontSize: 13, fontWeight: '500', color: th.brandOn },
+  docParties:   { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: th.hair, marginHorizontal: -16 },
   docParty:     { flex: 1, padding: 12 },
-  docPartyLabel:{ fontSize: 9, color: '#a07080', letterSpacing: 1.5, marginBottom: 4 },
-  docPartyName: { fontSize: 12, fontWeight: '500', color: '#2c1015' },
-  docPartySub:  { fontSize: 10, color: '#a07080', lineHeight: 15, marginTop: 2 },
-  itemRow:      { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: '#f9f4f5' },
-  itemName:     { fontSize: 12, color: '#2c1015' },
-  itemAmt:      { fontSize: 12, fontWeight: '500', color: '#2c1015' },
+  docPartyLabel:{ fontSize: 9, color: th.muted2, letterSpacing: 1.5, marginBottom: 4 },
+  docPartyName: { fontSize: 12, fontWeight: '500', color: th.ink },
+  docPartySub:  { fontSize: 10, color: th.muted2, lineHeight: 15, marginTop: 2 },
+  itemRow:      { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: th.hair },
+  itemName:     { fontSize: 12, color: th.ink },
+  itemAmt:      { fontSize: 12, fontWeight: '500', color: th.ink },
   totalRow:     { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  totalLabel:   { fontSize: 12, color: '#806070' },
-  totalVal:     { fontSize: 12, fontWeight: '500', color: '#2c1015' },
-  grandRow:     { backgroundColor: '#550a19', marginHorizontal: -16, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 6 },
-  grandLabel:   { fontSize: 13, fontWeight: '500', color: '#f0d0d8' },
-  grandVal:     { fontSize: 20, fontWeight: '500', color: '#fff5f7' },
-};
+  totalLabel:   { fontSize: 12, color: th.dim },
+  totalVal:     { fontSize: 12, fontWeight: '500', color: th.ink },
+  grandRow:     { backgroundColor: th.brandBg, marginHorizontal: -16, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 6 },
+  grandLabel:   { fontSize: 13, fontWeight: '500', color: th.brandOn },
+  grandVal:     { fontSize: 20, fontWeight: '500', color: th.brandOn },
+});

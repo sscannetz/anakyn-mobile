@@ -13,11 +13,14 @@
 // ══════════════════════════════════════════════════════════════
 import { createElement } from 'react';
 import { Platform, TextInput } from 'react-native';
+import { useTheme } from '../theme';
 
 // ตัดให้เหลือ YYYY-MM-DD เสมอ — ค่าที่มาจาก API เป็น timestamp เต็มรูปแบบ
 const toDay = (v) => (v ? String(v).slice(0, 10) : '');
 
 export default function DateInput({ value, onChangeText, placeholder, style }) {
+  const { t: th } = useTheme();
+
   const day = toDay(value);
 
   if (Platform.OS === 'web') {
@@ -29,13 +32,13 @@ export default function DateInput({ value, onChangeText, placeholder, style }) {
       style: {
         width: '100%',
         boxSizing: 'border-box',
-        backgroundColor: '#fff',
+        backgroundColor: th.card,
         border: '1px solid #ece0e3',
         borderRadius: 10,
         padding: '9px 12px',
         fontSize: 14,
         lineHeight: '20px',
-        color: day ? '#2c1015' : '#c0a0a8',
+        color: day ? th.ink : th.faint,
         fontFamily: 'inherit',
         outline: 'none',
       },
@@ -49,7 +52,7 @@ export default function DateInput({ value, onChangeText, placeholder, style }) {
       value={day}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor="#c0a0a8"
+      placeholderTextColor={th.faint}
     />
   );
 }

@@ -10,6 +10,7 @@
 // ══════════════════════════════════════════════════════════════
 import { useMemo } from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';
+import { useTheme } from './theme';
 
 export const BP = { tablet: 768, desktop: 1180 };
 
@@ -128,7 +129,12 @@ export function useResponsive() {
  *   const { styles, sc, center } = useScaledStyles(baseStyles);
  */
 export function useScaledStyles(base) {
+  // base เป็นฟังก์ชัน (t) => ({...}) → เรียกด้วยธีมปัจจุบัน
+  // เป็น object ธรรมดา → ใช้ตามเดิม (ไฟล์ที่ยังไม่ได้ย้ายมาใช้ธีมก็ไม่พัง)
+  // คืน t ออกไปด้วย เพื่อให้ JSX ใช้สีได้โดยไม่ต้อง import useTheme ซ้ำทุกไฟล์
+  const { t, mourn } = useTheme();
   const r = useResponsive();
-  const styles = useMemo(() => scaleStyles(base, r.scale), [base, r.scale]);
-  return { ...r, styles };
+  const resolved = useMemo(() => (typeof base === 'function' ? base(t) : base), [base, t]);
+  const styles = useMemo(() => scaleStyles(resolved, r.scale), [resolved, r.scale]);
+  return { ...r, styles, t, mourn };
 }

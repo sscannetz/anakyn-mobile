@@ -23,10 +23,10 @@ const GOLD_OPTIONS = [
   { key: '18K', factor: 0.90 },
 ];
 export const METAL_TABS = [
-  { key: '9K',     label: '9K',     col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
-  { key: '14K',    label: '14K',    col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
-  { key: '18K',    label: '18K',    col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
-  { key: 'silver', label: 'Silver', col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
+  { key: '9K',     label: '9K',     col: th.brand, bg: th.soft, border: th.line3 },
+  { key: '14K',    label: '14K',    col: th.brand, bg: th.soft, border: th.line3 },
+  { key: '18K',    label: '18K',    col: th.brand, bg: th.soft, border: th.line3 },
+  { key: 'silver', label: 'Silver', col: th.brand, bg: th.soft, border: th.line3 },
 ];
 // ใช้ร่วมกับหน้าใบสั่งทำด้วย — แหล่งเดียวจะได้ไม่มีทางหลุดกัน
 export const SHAPES = [
@@ -167,15 +167,15 @@ function parseDiamonds(raw) {
 const str = (v) => (v == null ? '' : String(v));
 
 function Field({ label, children }) {
-  const { styles: s } = useScaledStyles(baseStyles);
+  const { styles: s, t: th } = useScaledStyles(baseStyles);
   return <View style={s.field}><Text style={s.fieldLabel}>{label}</Text>{children}</View>;
 }
 function Sec({ children }) {
-  const { styles: s } = useScaledStyles(baseStyles);
+  const { styles: s, t: th } = useScaledStyles(baseStyles);
   return <View style={s.sec}>{children}</View>;
 }
-function SecHead({ icon, children, col = '#550a19' }) {
-  const { styles: s, sc } = useScaledStyles(baseStyles);
+function SecHead({ icon, children, col = th.brand }) {
+  const { styles: s, sc, t: th } = useScaledStyles(baseStyles);
   return (
     <View style={s.secHead}>
       <MaterialCommunityIcons name={icon} size={sc(14)} color={col} />
@@ -184,9 +184,9 @@ function SecHead({ icon, children, col = '#550a19' }) {
   );
 }
 function Toggle({ on, onChange }) {
-  const { styles: s } = useScaledStyles(baseStyles);
+  const { styles: s, t: th } = useScaledStyles(baseStyles);
   return (
-    <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => onChange(!on)} style={[s.toggle, { backgroundColor: on ? '#550a19' : '#e0d8da' }]}>
+    <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => onChange(!on)} style={[s.toggle, { backgroundColor: on ? th.brandBg : th.line2 }]}>
       <View style={[s.toggleKnob, { left: on ? 18 : 2 }]} />
     </TouchableOpacity>
   );
@@ -204,7 +204,7 @@ export default function ProductForm({
   mode = 'create', lang = 'th', product = null,
   nextSkuNum = 1, stockCount = 0, onSubmit, wide = false,
 }) {
-  const { styles: s, sc } = useScaledStyles(baseStyles);
+  const { styles: s, sc, t: th } = useScaledStyles(baseStyles);
   const t = T[lang];
   const isEdit = mode === 'edit';
 
@@ -467,7 +467,7 @@ export default function ProductForm({
         <SecHead icon="barcode">{isEdit ? t.skuEditLabel : t.skuSection}</SecHead>
         {isEdit ? (
           <TextInput dataSet={{ hov: 'field' }} style={s.input} value={sku} onChangeText={setSku}
-            autoCapitalize="characters" placeholder="ANAKYN#0001" placeholderTextColor="#c0a0a8" />
+            autoCapitalize="characters" placeholder="ANAKYN#0001" placeholderTextColor={th.faint} />
         ) : (
           <View style={s.skuRow}>
             <View style={s.skuPrefix}><Text style={s.skuPrefixText}>ANAKYN</Text></View>
@@ -488,7 +488,7 @@ export default function ProductForm({
               maxLength={4} />
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setSkuEdit(null); setSkuNum(n => Math.max(1, n - 1)); }} style={s.skuBtn}><Text style={s.skuBtnText}>−1</Text></TouchableOpacity>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setSkuEdit(null); setSkuNum(stockCount + 1); }} style={s.skuBtn}><Text style={s.skuBtnText}>Reset</Text></TouchableOpacity>
-            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setSkuEdit(null); setSkuNum(n => n + 1); }} style={[s.skuBtn, s.skuBtnPlus]}><Text style={[s.skuBtnText, { color: '#550a19' }]}>+1</Text></TouchableOpacity>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setSkuEdit(null); setSkuNum(n => n + 1); }} style={[s.skuBtn, s.skuBtnPlus]}><Text style={[s.skuBtnText, { color: th.brand }]}>+1</Text></TouchableOpacity>
           </View>
         )}
       </Sec>
@@ -497,7 +497,7 @@ export default function ProductForm({
       <Sec>
         <SecHead icon="information">{t.infoSection}</SecHead>
         <Field label={t.itemName}>
-          <TextInput dataSet={{ hov: 'field' }} style={s.input} value={itemName} onChangeText={setItemName} placeholder={t.itemNamePh} placeholderTextColor="#c0a0a8" />
+          <TextInput dataSet={{ hov: 'field' }} style={s.input} value={itemName} onChangeText={setItemName} placeholder={t.itemNamePh} placeholderTextColor={th.faint} />
         </Field>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <View style={{ flex: 1 }}>
@@ -506,8 +506,8 @@ export default function ProductForm({
               <View style={{ flexDirection: 'row', gap: 6 }}>
                 {CAT_CODES.map((code, i) => (
                   <TouchableOpacity dataSet={{ hov: 'btn' }} key={code} onPress={() => setCatCode(code)}
-                    style={[s.catChip, { backgroundColor: catCode === code ? '#550a19' : '#f9f4f5', borderColor: catCode === code ? '#550a19' : '#e8d5d9' }]}>
-                    <Text style={[s.catChipText, { color: catCode === code ? '#f5e0e5' : '#a07080' }]}>{t.categories[i]}</Text>
+                    style={[s.catChip, { backgroundColor: catCode === code ? th.brandBg : th.card2, borderColor: catCode === code ? th.brandBg : th.softer }]}>
+                    <Text style={[s.catChipText, { color: catCode === code ? th.brandOn : th.muted2 }]}>{t.categories[i]}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -522,7 +522,7 @@ export default function ProductForm({
           </View>
           <View style={{ flex: 1 }}>
             <Field label={t.laborCost}>
-              <TextInput dataSet={{ hov: 'field' }} style={s.input} value={laborCost} onChangeText={setLaborCost} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
+              <TextInput dataSet={{ hov: 'field' }} style={s.input} value={laborCost} onChangeText={setLaborCost} keyboardType="numeric" placeholder="0" placeholderTextColor={th.faint} />
             </Field>
           </View>
         </View>
@@ -536,8 +536,8 @@ export default function ProductForm({
             const active = metalKey === tb.key;
             return (
               <TouchableOpacity dataSet={{ hov: 'btn' }} key={tb.key} onPress={() => { setMetalKey(tb.key); setMetalWeight(''); }}
-                style={[s.metalTab, { backgroundColor: active ? tb.col : '#fff', borderRightWidth: i < METAL_TABS.length - 1 ? 0.5 : 0, borderRightColor: '#e8d5d9' }]}>
-                <Text style={[s.metalTabText, { color: active ? '#fff' : tb.col }]}>{tb.label}</Text>
+                style={[s.metalTab, { backgroundColor: active ? tb.col : th.brandOn, borderRightWidth: i < METAL_TABS.length - 1 ? 0.5 : 0, borderRightColor: th.line2 }]}>
+                <Text style={[s.metalTabText, { color: active ? th.brandOn : tb.col }]}>{tb.label}</Text>
               </TouchableOpacity>
             );
           })}
@@ -552,13 +552,13 @@ export default function ProductForm({
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <View style={{ flex: 1 }}>
               <Field label={t.actualWeight}>
-                <TextInput dataSet={{ hov: 'field' }} style={[s.input, { borderColor: tab.border }]} value={metalWeight} onChangeText={setMetalWeight} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor="#c0a0a8" />
+                <TextInput dataSet={{ hov: 'field' }} style={[s.input, { borderColor: tab.border }]} value={metalWeight} onChangeText={setMetalWeight} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor={th.faint} />
               </Field>
             </View>
             <View style={{ flex: 1 }}>
               <Field label={t.adjWeight}>
-                <View style={[s.input, { backgroundColor: '#fdf0f2', borderColor: '#e8c0c8', justifyContent: 'center' }]}>
-                  <Text style={{ fontSize: 13, fontWeight: '500', color: '#550a19' }}>{wNum > 0 ? wAdj.toFixed(2) : '—'} g</Text>
+                <View style={[s.input, { backgroundColor: th.soft, borderColor: th.line3, justifyContent: 'center' }]}>
+                  <Text style={{ fontSize: 13, fontWeight: '500', color: th.brand }}>{wNum > 0 ? wAdj.toFixed(2) : '—'} g</Text>
                 </View>
               </Field>
             </View>
@@ -572,21 +572,21 @@ export default function ProductForm({
 
       {/* DIAMONDS */}
       <Sec>
-        <SecHead icon="diamond-outline" col="#550a19">{t.diamondSection}</SecHead>
+        <SecHead icon="diamond-outline" col={th.brand}>{t.diamondSection}</SecHead>
         {diamonds.map((d, idx) => (
           <View key={d.id} style={s.diamondBox}>
             <View style={s.diamondHeader}>
               <Text style={s.diamondTitle}>{lang === 'th' ? `เพชรเม็ดที่ ${idx + 1}` : `Diamond #${idx + 1}`} {idx === 0 ? '(หลัก)' : '(ข้าง)'}</Text>
               {idx > 0 && (
                 <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setDiamonds(ds => ds.filter(x => x.id !== d.id))} style={s.removeBtn}>
-                  <MaterialCommunityIcons name="close" size={sc(10)} color="#550a19" />
+                  <MaterialCommunityIcons name="close" size={sc(10)} color={th.brand} />
                 </TouchableOpacity>
               )}
             </View>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <View style={{ flex: 1 }}>
                 <Field label={t.dWeight}>
-                  <TextInput dataSet={{ hov: 'field' }} style={[s.input, s.dInput]} value={d.weight} onChangeText={v => updD(d.id, 'weight', v)} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor="#c0a0a8" />
+                  <TextInput dataSet={{ hov: 'field' }} style={[s.input, s.dInput]} value={d.weight} onChangeText={v => updD(d.id, 'weight', v)} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor={th.faint} />
                 </Field>
               </View>
               <View style={{ flex: 1 }}>
@@ -606,7 +606,7 @@ export default function ProductForm({
                       placeholder={t.selectPh}
                       title={t[field]}
                       style={[s.input, s.dInput]}
-                      css={{ backgroundColor: '#fdf0f2', border: '0.5px solid #ece0e3', borderRadius: 8, padding: 9, fontSize: 11, lineHeight: '15px' }}
+                      css={{ backgroundColor: th.soft, border: '0.5px solid #ece0e3', borderRadius: 8, padding: 9, fontSize: 11, lineHeight: '15px' }}
                     />
                   </Field>
                 </View>
@@ -614,30 +614,30 @@ export default function ProductForm({
             </View>
             <View style={s.certRow}>
               <Toggle on={d.hasCert} onChange={v => updD(d.id, 'hasCert', v)} />
-              <Text style={[s.toggleLabel, { color: d.hasCert ? '#550a19' : '#a07080' }]}>{d.hasCert ? t.hasCert : t.noCert}</Text>
+              <Text style={[s.toggleLabel, { color: d.hasCert ? th.brand : th.muted2 }]}>{d.hasCert ? t.hasCert : t.noCert}</Text>
             </View>
             {d.hasCert && (
               <View style={s.certBox}>
                 <View style={s.certLabRow}>
                   {['IGI','GIA'].map((lab, i) => (
                     <TouchableOpacity dataSet={{ hov: 'btn' }} key={lab} onPress={() => updD(d.id, 'certLab', lab)}
-                      style={[s.certLabBtn, { backgroundColor: d.certLab === lab ? '#550a19' : '#fff', borderRightWidth: i === 0 ? 0.5 : 0, borderRightColor: '#ece0e3' }]}>
-                      <Text style={[s.certLabText, { color: d.certLab === lab ? '#fff' : '#550a19' }]}>{lab}</Text>
+                      style={[s.certLabBtn, { backgroundColor: d.certLab === lab ? th.brandBg : th.card, borderRightWidth: i === 0 ? 0.5 : 0, borderRightColor: th.line }]}>
+                      <Text style={[s.certLabText, { color: d.certLab === lab ? th.brandOn : th.brand }]}>{lab}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
                 <Field label={t.reportNo}>
-                  <TextInput dataSet={{ hov: 'field' }} style={[s.input, s.dInput]} value={d.certNo} onChangeText={v => updD(d.id, 'certNo', v)} placeholder="e.g. 2486901234" placeholderTextColor="#c0a0a8" />
+                  <TextInput dataSet={{ hov: 'field' }} style={[s.input, s.dInput]} value={d.certNo} onChangeText={v => updD(d.id, 'certNo', v)} placeholder="e.g. 2486901234" placeholderTextColor={th.faint} />
                 </Field>
               </View>
             )}
             <Field label={t.dCost}>
-              <TextInput dataSet={{ hov: 'field' }} style={[s.input, s.dInput]} value={d.cost} onChangeText={v => updD(d.id, 'cost', v)} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
+              <TextInput dataSet={{ hov: 'field' }} style={[s.input, s.dInput]} value={d.cost} onChangeText={v => updD(d.id, 'cost', v)} keyboardType="numeric" placeholder="0" placeholderTextColor={th.faint} />
             </Field>
           </View>
         ))}
         <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setDiamonds(ds => [...ds, newDiamond()])} style={s.addDiamondBtn}>
-          <MaterialCommunityIcons name="plus" size={sc(14)} color="#550a19" />
+          <MaterialCommunityIcons name="plus" size={sc(14)} color={th.brand} />
           <Text style={s.addDiamondText}>{t.addDiamond}</Text>
         </TouchableOpacity>
       </Sec>
@@ -652,17 +652,17 @@ export default function ProductForm({
         ].map(([l, v]) => (
           <View key={l} style={s.priceRow}><Text style={s.priceLabel}>{l}</Text><Text style={s.priceVal}>฿{fmt(v)}</Text></View>
         ))}
-        <View style={[s.priceRow, { borderTopWidth: 0.5, borderTopColor: '#e8d5d9', marginTop: 8, paddingTop: 8 }]}>
+        <View style={[s.priceRow, { borderTopWidth: 0.5, borderTopColor: th.line2, marginTop: 8, paddingTop: 8 }]}>
           <Text style={s.totalLabel}>{t.totalCost}</Text>
           <Text style={s.totalVal}>฿{fmt(totalCost)}</Text>
         </View>
         <View style={s.sellingBox}>
           <Text style={s.fieldLabel}>{t.sellingPrice}</Text>
-          <TextInput dataSet={{ hov: 'field' }} style={s.input} value={sellingPrice} onChangeText={setSellingPrice} keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
+          <TextInput dataSet={{ hov: 'field' }} style={s.input} value={sellingPrice} onChangeText={setSellingPrice} keyboardType="numeric" placeholder="0" placeholderTextColor={th.faint} />
           {!!sellingPrice && totalCost > 0 && (
             <View style={s.profitRow}>
               <Text style={s.profitLabel}>{t.profit}</Text>
-              <Text style={[s.profitVal, { color: parseFloat(sellingPrice) >= totalCost ? '#2e7d32' : '#c62828' }]}>
+              <Text style={[s.profitVal, { color: parseFloat(sellingPrice) >= totalCost ? th.ok : th.danger }]}>
                 ฿{fmt(parseFloat(sellingPrice) - totalCost)} ({((parseFloat(sellingPrice) - totalCost) / totalCost * 100).toFixed(1)}%)
               </Text>
             </View>
@@ -688,7 +688,7 @@ export default function ProductForm({
                   onPress={() => setPhotoMenuOpen(true)}
                   style={[s.photoCell, s.photoCellEmpty, !isNext && s.photoCellIdle]}>
                   <MaterialCommunityIcons name={isNext ? 'plus' : 'image-outline'}
-                    size={sc(18)} color={isNext ? '#b08090' : '#e0cdd3'} />
+                    size={sc(18)} color={isNext ? th.dim : th.faint} />
                 </TouchableOpacity>
               );
             }
@@ -700,7 +700,7 @@ export default function ProductForm({
                 <View style={s.photoCellBtns}>
                   <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setMainIdx(i)} style={s.photoBtn}>
                     <MaterialCommunityIcons name={isMain ? 'star' : 'star-outline'}
-                      size={sc(13)} color={isMain ? '#ffd166' : '#fff'} />
+                      size={sc(13)} color={isMain ? th.warn : th.brandOn} />
                   </TouchableOpacity>
                   <TouchableOpacity dataSet={{ hov: 'btn' }} style={s.photoBtn}
                     onPress={() => setPhotos(prev => {
@@ -709,7 +709,7 @@ export default function ProductForm({
                       setMainIdx(m => (i === m ? 0 : i < m ? m - 1 : m));
                       return next;
                     })}>
-                    <MaterialCommunityIcons name="trash-can" size={sc(13)} color="#fff" />
+                    <MaterialCommunityIcons name="trash-can" size={sc(13)} color={th.brandOn} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -739,7 +739,7 @@ export default function ProductForm({
       <View style={s.saveRow}>
         <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleSave} disabled={saving}
           style={[s.saveBtn, { flex: 1, marginBottom: 0, opacity: saving ? 0.7 : 1 }]}>
-          {saving ? <ActivityIndicator color="#fff5f7" size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color="#fff5f7" />}
+          {saving ? <ActivityIndicator color={th.brandOn} size="small" /> : <MaterialCommunityIcons name="check" size={sc(18)} color={th.brandOn} />}
           <Text style={s.saveBtnText}>{saving ? t.saving : (isEdit ? t.updateBtn : t.saveBtn(skuLabel))}</Text>
         </TouchableOpacity>
         {!isEdit && (
@@ -758,11 +758,11 @@ export default function ProductForm({
           <View style={s.bottomSheet}>
             <View style={s.sheetHandle} />
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => pickPhoto(true)} style={s.sheetBtn}>
-              <MaterialCommunityIcons name="camera" size={sc(18)} color="#550a19" />
+              <MaterialCommunityIcons name="camera" size={sc(18)} color={th.brand} />
               <Text style={s.sheetBtnText}>{t.photoTakeNew}</Text>
             </TouchableOpacity>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => pickPhoto(false)} style={s.sheetBtn}>
-              <MaterialCommunityIcons name="image" size={sc(18)} color="#550a19" />
+              <MaterialCommunityIcons name="image" size={sc(18)} color={th.brand} />
               <Text style={s.sheetBtnText}>{t.photoGalleryMulti}</Text>
             </TouchableOpacity>
           </View>
@@ -791,7 +791,7 @@ export default function ProductForm({
               <Text style={s.tagAskCount}>{tagCopies}</Text>
               <TouchableOpacity dataSet={{ hov: 'btn' }} style={[s.tagAskStep, s.tagAskStepPlus]}
                 onPress={() => setTagCopies(n => Math.min(99, n + 1))}>
-                <Text style={[s.tagAskStepText, { color: '#550a19' }]}>+</Text>
+                <Text style={[s.tagAskStepText, { color: th.brand }]}>+</Text>
               </TouchableOpacity>
             </View>
 
@@ -801,7 +801,7 @@ export default function ProductForm({
               </TouchableOpacity>
               <TouchableOpacity dataSet={{ hov: 'btn' }} style={s.tagAskPrint} activeOpacity={0.85}
                 onPress={() => { printTags([{ ...tagAsk, copies: tagCopies }]); setTagAsk(null); }}>
-                <MaterialCommunityIcons name="printer" size={sc(16)} color="#fff5f7" />
+                <MaterialCommunityIcons name="printer" size={sc(16)} color={th.brandOn} />
                 <Text style={s.tagAskPrintText}>{t.tagPrintBtn}</Text>
               </TouchableOpacity>
             </View>
@@ -813,77 +813,77 @@ export default function ProductForm({
   );
 }
 
-const baseStyles = {
-  errBox:  { backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 10 },
-  errText: { fontSize: 12, color: '#a32d2d' },
-  okBox:   { backgroundColor: '#fdf0f2', borderWidth: 1, borderColor: '#f0d3da', borderRadius: 8, padding: 10, marginBottom: 10 },
-  okText:  { fontSize: 12, color: '#8c1b2f' },
-  sec:     { backgroundColor: '#fff', borderRadius: 12, borderWidth: 0.5, borderColor: '#ece0e3', padding: 12, marginBottom: 10 },
+const baseStyles = (th) => ({
+  errBox:  { backgroundColor: th.soft, borderWidth: 0.5, borderColor: th.line3, borderRadius: 8, padding: 10, marginBottom: 10 },
+  errText: { fontSize: 12, color: th.danger },
+  okBox:   { backgroundColor: th.soft, borderWidth: 1, borderColor: th.hair, borderRadius: 8, padding: 10, marginBottom: 10 },
+  okText:  { fontSize: 12, color: th.brand2 },
+  sec:     { backgroundColor: th.card, borderRadius: 12, borderWidth: 0.5, borderColor: th.line, padding: 12, marginBottom: 10 },
   secHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   secHeadText: { fontSize: 11, fontWeight: '500', letterSpacing: 1.5 },
   field: { marginBottom: 8 },
-  fieldLabel: { fontSize: 11, color: '#a07080', marginBottom: 3 },
-  input: { backgroundColor: '#fdfbfb', borderWidth: 0.5, borderColor: '#ece0e3', borderRadius: 8, padding: 9, fontSize: 13, fontWeight: '500', color: '#2c1015' },
+  fieldLabel: { fontSize: 11, color: th.muted2, marginBottom: 3 },
+  input: { backgroundColor: th.bg, borderWidth: 0.5, borderColor: th.line, borderRadius: 8, padding: 9, fontSize: 13, fontWeight: '500', color: th.ink },
   skuRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  skuPrefix: { backgroundColor: '#550a19', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
-  skuPrefixText: { fontSize: 12, fontWeight: '500', color: '#f5e0e5' },
-  skuHash: { fontSize: 16, fontWeight: '500', color: '#550a19' },
+  skuPrefix: { backgroundColor: th.brandBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+  skuPrefixText: { fontSize: 12, fontWeight: '500', color: th.brandOn },
+  skuHash: { fontSize: 16, fontWeight: '500', color: th.brand },
   // flex:1 → flex-basis 0 ทำให้ <input> ไม่ไปใช้ความกว้าง default ของเบราว์เซอร์
   skuNum: { flex: 1, minWidth: 0, paddingVertical: 4, paddingHorizontal: 0,
-            fontSize: 16, fontWeight: '500', color: '#550a19', textAlign: 'center' },
-  skuBtn: { backgroundColor: '#fdfbfb', borderWidth: 0.5, borderColor: '#ece0e3', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
-  skuBtnPlus: { backgroundColor: '#fdf0f2' },
-  skuBtnText: { fontSize: 12, color: '#a07080' },
-  photo: { width: '100%', height: 160, borderRadius: 10, borderWidth: 0.5, borderColor: '#ece0e3' },
+            fontSize: 16, fontWeight: '500', color: th.brand, textAlign: 'center' },
+  skuBtn: { backgroundColor: th.bg, borderWidth: 0.5, borderColor: th.line, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
+  skuBtnPlus: { backgroundColor: th.soft },
+  skuBtnText: { fontSize: 12, color: th.muted2 },
+  photo: { width: '100%', height: 160, borderRadius: 10, borderWidth: 0.5, borderColor: th.line },
   photoOverlay: { position: 'absolute', top: 8, right: 8, flexDirection: 'row', gap: 6 },
   photoBtn: { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 7, width: 28, height: 28, justifyContent: 'center', alignItems: 'center' },
-  photoPlaceholder: { backgroundColor: '#fdfbfb', borderRadius: 10, borderWidth: 0.5, borderStyle: 'dashed', borderColor: '#c8a0ac', height: 72, justifyContent: 'center', alignItems: 'center', gap: 6, flexDirection: 'row' },
-  photoHint: { fontSize: 12, color: '#b08090' },
+  photoPlaceholder: { backgroundColor: th.bg, borderRadius: 10, borderWidth: 0.5, borderStyle: 'dashed', borderColor: th.line3, height: 72, justifyContent: 'center', alignItems: 'center', gap: 6, flexDirection: 'row' },
+  photoHint: { fontSize: 12, color: th.dim },
 
   // กริดรูป 2x2
   photoGrid:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   photoCell:     { width: '47.5%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden',
-                   borderWidth: 0.5, borderColor: '#ece0e3', backgroundColor: '#fdfbfb' },
+                   borderWidth: 0.5, borderColor: th.line, backgroundColor: th.bg },
   photoCellImg:  { width: '100%', height: '100%' },
-  photoCellEmpty:{ borderStyle: 'dashed', borderColor: '#c8a0ac', alignItems: 'center', justifyContent: 'center' },
-  photoCellIdle: { borderColor: '#f0e4e7' },
+  photoCellEmpty:{ borderStyle: 'dashed', borderColor: th.line3, alignItems: 'center', justifyContent: 'center' },
+  photoCellIdle: { borderColor: th.hair },
   photoCellBtns: { position: 'absolute', top: 6, right: 6, flexDirection: 'row', gap: 5 },
   photoMainTag:  { position: 'absolute', bottom: 6, left: 6, backgroundColor: 'rgba(140,27,47,0.9)',
                    borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  photoMainTagText: { fontSize: 9.5, fontWeight: '700', color: '#fff5f7' },
-  photoGridNote: { fontSize: 10.5, color: '#9b7d86', marginTop: 8, lineHeight: 15 },
+  photoMainTagText: { fontSize: 9.5, fontWeight: '700', color: th.brandOn },
+  photoGridNote: { fontSize: 10.5, color: th.muted, marginTop: 8, lineHeight: 15 },
   catChip: { borderWidth: 0.5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
   catChipText: { fontSize: 11 },
-  metalTabs: { flexDirection: 'row', borderRadius: 10, overflow: 'hidden', borderWidth: 0.5, borderColor: '#ece0e3', marginBottom: 12 },
+  metalTabs: { flexDirection: 'row', borderRadius: 10, overflow: 'hidden', borderWidth: 0.5, borderColor: th.line, marginBottom: 12 },
   metalTab: { flex: 1, paddingVertical: 11, alignItems: 'center' },
   metalTabText: { fontSize: 13, fontWeight: '500' },
   metalBox: { borderRadius: 10, borderWidth: 0.5, padding: 12 },
   costBox: { borderRadius: 10, borderWidth: 0.5, padding: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   costBoxLabel: { fontSize: 12, fontWeight: '500' },
   costBoxValue: { fontSize: 16, fontWeight: '500' },
-  diamondBox: { backgroundColor: '#fdfbfb', borderRadius: 10, borderWidth: 0.5, borderColor: '#ece0e3', padding: 10, marginBottom: 8 },
+  diamondBox: { backgroundColor: th.bg, borderRadius: 10, borderWidth: 0.5, borderColor: th.line, padding: 10, marginBottom: 8 },
   diamondHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  diamondTitle: { fontSize: 10, fontWeight: '500', color: '#550a19', letterSpacing: 1 },
-  dInput: { backgroundColor: '#fdf0f2', borderColor: '#ece0e3' },
+  diamondTitle: { fontSize: 10, fontWeight: '500', color: th.brand, letterSpacing: 1 },
+  dInput: { backgroundColor: th.soft, borderColor: th.line },
   certRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   toggle: { width: 36, height: 20, borderRadius: 10, position: 'relative' },
-  toggleKnob: { position: 'absolute', top: 2, width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff' },
+  toggleKnob: { position: 'absolute', top: 2, width: 16, height: 16, borderRadius: 8, backgroundColor: th.card },
   toggleLabel: { fontSize: 12, fontWeight: '500' },
-  certBox: { backgroundColor: '#fdfbfb', borderRadius: 10, borderWidth: 0.5, borderColor: '#ece0e3', padding: 10, marginBottom: 8 },
-  certLabRow: { flexDirection: 'row', borderRadius: 8, overflow: 'hidden', borderWidth: 0.5, borderColor: '#ece0e3', marginBottom: 8 },
+  certBox: { backgroundColor: th.bg, borderRadius: 10, borderWidth: 0.5, borderColor: th.line, padding: 10, marginBottom: 8 },
+  certLabRow: { flexDirection: 'row', borderRadius: 8, overflow: 'hidden', borderWidth: 0.5, borderColor: th.line, marginBottom: 8 },
   certLabBtn: { flex: 1, paddingVertical: 9, alignItems: 'center' },
   certLabText: { fontSize: 13, fontWeight: '500' },
-  removeBtn: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fdf0f2', borderWidth: 0.5, borderColor: '#e8c0c8', justifyContent: 'center', alignItems: 'center' },
-  addDiamondBtn: { borderWidth: 0.5, borderStyle: 'dashed', borderColor: '#ece0e3', borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#fdfbfb' },
-  addDiamondText: { fontSize: 12, color: '#550a19' },
+  removeBtn: { width: 22, height: 22, borderRadius: 11, backgroundColor: th.soft, borderWidth: 0.5, borderColor: th.line3, justifyContent: 'center', alignItems: 'center' },
+  addDiamondBtn: { borderWidth: 0.5, borderStyle: 'dashed', borderColor: th.line, borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: th.bg },
+  addDiamondText: { fontSize: 12, color: th.brand },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  priceLabel: { fontSize: 13, color: '#806070' },
-  priceVal:   { fontSize: 13, fontWeight: '500', color: '#2c1015' },
-  totalLabel: { fontSize: 13, fontWeight: '500', color: '#550a19' },
-  totalVal:   { fontSize: 16, fontWeight: '500', color: '#550a19' },
-  sellingBox: { backgroundColor: '#fdfbfb', borderRadius: 8, padding: 10, marginTop: 8 },
+  priceLabel: { fontSize: 13, color: th.dim },
+  priceVal:   { fontSize: 13, fontWeight: '500', color: th.ink },
+  totalLabel: { fontSize: 13, fontWeight: '500', color: th.brand },
+  totalVal:   { fontSize: 16, fontWeight: '500', color: th.brand },
+  sellingBox: { backgroundColor: th.bg, borderRadius: 8, padding: 10, marginTop: 8 },
   profitRow:  { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-  profitLabel:{ fontSize: 12, color: '#608050' },
+  profitLabel:{ fontSize: 12, color: th.ok },
   profitVal:  { fontSize: 12, fontWeight: '500' },
   cols:       { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   colsNarrow: { flexDirection: 'column', alignItems: 'stretch', gap: 0 },
@@ -891,45 +891,45 @@ const baseStyles = {
   colSide:    { flexGrow: 1, flexShrink: 1, flexBasis: 330, minWidth: 0 },
   colFull:    { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: '100%', alignSelf: 'stretch' },
   tagHead:    { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  tagSize:    { fontSize: 10.5, color: '#9b7d86' },
-  tagStage:   { backgroundColor: '#fdfbfb', borderWidth: 1, borderColor: '#f2e6e9', borderRadius: 10, padding: 12, alignItems: 'center' },
-  tagNote:    { fontSize: 10.5, color: '#9b7d86', marginTop: 8, lineHeight: 15 },
+  tagSize:    { fontSize: 10.5, color: th.muted },
+  tagStage:   { backgroundColor: th.bg, borderWidth: 1, borderColor: th.hair, borderRadius: 10, padding: 12, alignItems: 'center' },
+  tagNote:    { fontSize: 10.5, color: th.muted, marginTop: 8, lineHeight: 15 },
 
   // popup ถามปริ้นป้าย tag หลังบันทึก
   tagAskWrap:     { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
   tagAskBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(44,16,21,0.42)' },
-  tagAskCard:     { width: '100%', maxWidth: 420, backgroundColor: '#fdfbfb', borderRadius: 16, padding: 18,
-                    borderWidth: 0.5, borderColor: '#ece0e3' },
-  tagAskTitle:    { fontSize: 15, fontWeight: '700', color: '#550a19' },
-  tagAskSub:      { fontSize: 12, color: '#9b7d86', marginTop: 3 },
+  tagAskCard:     { width: '100%', maxWidth: 420, backgroundColor: th.bg, borderRadius: 16, padding: 18,
+                    borderWidth: 0.5, borderColor: th.line },
+  tagAskTitle:    { fontSize: 15, fontWeight: '700', color: th.brand },
+  tagAskSub:      { fontSize: 12, color: th.muted, marginTop: 3 },
   tagAskStage:    { alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
   tagAskCopies:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  tagAskCopiesLabel: { fontSize: 12, color: '#3a2228', flex: 1 },
-  tagAskStep:     { width: 34, height: 34, borderRadius: 9, backgroundColor: '#fff', borderWidth: 0.5,
-                    borderColor: '#e8c0c8', alignItems: 'center', justifyContent: 'center' },
-  tagAskStepPlus: { backgroundColor: '#fdf0f2' },
-  tagAskStepText: { fontSize: 16, fontWeight: '700', color: '#9b7d86' },
-  tagAskCount:    { fontSize: 15, fontWeight: '700', color: '#550a19', minWidth: 30, textAlign: 'center' },
+  tagAskCopiesLabel: { fontSize: 12, color: th.ink, flex: 1 },
+  tagAskStep:     { width: 34, height: 34, borderRadius: 9, backgroundColor: th.card, borderWidth: 0.5,
+                    borderColor: th.line3, alignItems: 'center', justifyContent: 'center' },
+  tagAskStepPlus: { backgroundColor: th.soft },
+  tagAskStepText: { fontSize: 16, fontWeight: '700', color: th.muted },
+  tagAskCount:    { fontSize: 15, fontWeight: '700', color: th.brand, minWidth: 30, textAlign: 'center' },
   tagAskBtns:     { flexDirection: 'row', gap: 8, marginTop: 16 },
-  tagAskClose:    { flex: 1, height: 44, borderRadius: 11, backgroundColor: '#fff', borderWidth: 0.5,
-                    borderColor: '#e8c0c8', alignItems: 'center', justifyContent: 'center' },
-  tagAskCloseText:{ fontSize: 13, fontWeight: '500', color: '#9b7d86' },
-  tagAskPrint:    { flex: 2, height: 44, borderRadius: 11, backgroundColor: '#8c1b2f', flexDirection: 'row',
+  tagAskClose:    { flex: 1, height: 44, borderRadius: 11, backgroundColor: th.card, borderWidth: 0.5,
+                    borderColor: th.line3, alignItems: 'center', justifyContent: 'center' },
+  tagAskCloseText:{ fontSize: 13, fontWeight: '500', color: th.muted },
+  tagAskPrint:    { flex: 2, height: 44, borderRadius: 11, backgroundColor: th.brandBg, flexDirection: 'row',
                     alignItems: 'center', justifyContent: 'center', gap: 7 },
-  tagAskPrintText:{ fontSize: 13, fontWeight: '700', color: '#fff5f7' },
+  tagAskPrintText:{ fontSize: 13, fontWeight: '700', color: th.brandOn },
   saveRow:    { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  clearBtn:   { justifyContent: 'center', borderWidth: 1, borderColor: '#ece0e3', backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 16 },
-  clearBtnText: { fontSize: 13, fontWeight: '600', color: '#550a19' },
-  saveBtn: { backgroundColor: '#550a19', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 },
-  saveBtnText: { fontSize: 15, fontWeight: '500', color: '#fff5f7' },
+  clearBtn:   { justifyContent: 'center', borderWidth: 1, borderColor: th.line, backgroundColor: th.card, borderRadius: 14, paddingHorizontal: 16 },
+  clearBtnText: { fontSize: 13, fontWeight: '600', color: th.brand },
+  saveBtn: { backgroundColor: th.brandBg, borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 },
+  saveBtnText: { fontSize: 15, fontWeight: '500', color: th.brandOn },
   bottomSheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  bottomSheet: { backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 14, paddingBottom: 30 },
-  sheetHandle: { width: 36, height: 4, backgroundColor: '#e8d5d9', borderRadius: 2, alignSelf: 'center', marginBottom: 14 },
-  sheetBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
-  sheetBtnText: { fontSize: 13, color: '#2c1015' },
-  modal: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  bottomSheet: { backgroundColor: th.card, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 14, paddingBottom: 30 },
+  sheetHandle: { width: 36, height: 4, backgroundColor: th.softer, borderRadius: 2, alignSelf: 'center', marginBottom: 14 },
+  sheetBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderBottomWidth: 0.5, borderBottomColor: th.hair },
+  sheetBtnText: { fontSize: 13, color: th.ink },
+  modal: { flex: 1, backgroundColor: th.card, padding: 16 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  modalTitle: { fontSize: 16, fontWeight: '500', color: '#550a19' },
-  modalSearch: { backgroundColor: '#fdfbfb', borderWidth: 0.5, borderColor: '#ece0e3', borderRadius: 10, padding: 10, fontSize: 14, color: '#2c1015', marginBottom: 10 },
-  stockRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: '#f0e4e8' },
-};
+  modalTitle: { fontSize: 16, fontWeight: '500', color: th.brand },
+  modalSearch: { backgroundColor: th.bg, borderWidth: 0.5, borderColor: th.line, borderRadius: 10, padding: 10, fontSize: 14, color: th.ink, marginBottom: 10 },
+  stockRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: th.hair },
+});

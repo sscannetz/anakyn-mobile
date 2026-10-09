@@ -54,7 +54,7 @@ const fmt = (n) => {
 };
 
 export default function PromptPayModal({ payment, lang = 'th', onPaid, onClose }) {
-  const { styles: s, sc } = useScaledStyles(baseStyles);
+  const { styles: s, sc, t: th } = useScaledStyles(baseStyles);
   const t = T[lang] || T.th;
 
   const [status, setStatus] = useState(payment?.status || 'pending');
@@ -109,7 +109,7 @@ export default function PromptPayModal({ payment, lang = 'th', onPaid, onClose }
         <View style={s.header}>
           <Text style={s.title}>{t.title}</Text>
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onClose}>
-            <MaterialCommunityIcons name="close" size={sc(22)} color="#550a19" />
+            <MaterialCommunityIcons name="close" size={sc(22)} color={th.brand} />
           </TouchableOpacity>
         </View>
 
@@ -122,16 +122,16 @@ export default function PromptPayModal({ payment, lang = 'th', onPaid, onClose }
               {payment?.qr_image_url ? (
                 <Image source={{ uri: payment.qr_image_url }} style={s.qr} resizeMode="contain" />
               ) : (
-                <View style={[s.qr, s.qrEmpty]}><ActivityIndicator color="#550a19" /></View>
+                <View style={[s.qr, s.qrEmpty]}><ActivityIndicator color={th.brand} /></View>
               )}
 
               <View style={s.statusRow}>
-                <ActivityIndicator size="small" color="#854F0B" />
+                <ActivityIndicator size="small" color={th.warn} />
                 <Text style={s.waiting}>{t.waiting}</Text>
               </View>
 
               {left != null && (
-                <Text style={[s.timer, left <= 60 && { color: '#c62828' }]}>
+                <Text style={[s.timer, left <= 60 && { color: th.danger }]}>
                   {t.timeLeft} {mmss}
                 </Text>
               )}
@@ -143,15 +143,15 @@ export default function PromptPayModal({ payment, lang = 'th', onPaid, onClose }
 
           {isOk && (
             <View style={s.resultBox}>
-              <MaterialCommunityIcons name="check-circle" size={sc(56)} color="#2e7d32" />
-              <Text style={[s.resultText, { color: '#2e7d32' }]}>{t.success}</Text>
+              <MaterialCommunityIcons name="check-circle" size={sc(56)} color={th.ok} />
+              <Text style={[s.resultText, { color: th.ok }]}>{t.success}</Text>
             </View>
           )}
 
           {(status === 'expired' || status === 'failed') && (
             <View style={s.resultBox}>
-              <MaterialCommunityIcons name="close-circle" size={sc(56)} color="#c62828" />
-              <Text style={[s.resultText, { color: '#c62828' }]}>
+              <MaterialCommunityIcons name="close-circle" size={sc(56)} color={th.danger} />
+              <Text style={[s.resultText, { color: th.danger }]}>
                 {status === 'expired' ? t.expired : t.failed}
               </Text>
               <Text style={s.cancelledNote}>{t.cancelledNote}</Text>
@@ -164,8 +164,8 @@ export default function PromptPayModal({ payment, lang = 'th', onPaid, onClose }
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onClose} disabled={busy}
             style={[s.btn, isOk ? s.btnPrimary : s.btnPlain]}>
             {busy
-              ? <ActivityIndicator size="small" color={isOk ? '#fff' : '#550a19'} />
-              : <Text style={[s.btnText, isOk && { color: '#fff5f7' }]}>{isOk ? t.done : t.close}</Text>}
+              ? <ActivityIndicator size="small" color={isOk ? th.brandOn : th.brand} />
+              : <Text style={[s.btnText, isOk && { color: th.brandOn }]}>{isOk ? t.done : t.close}</Text>}
           </TouchableOpacity>
         </View>
       </View>
@@ -173,27 +173,27 @@ export default function PromptPayModal({ payment, lang = 'th', onPaid, onClose }
   );
 }
 
-const baseStyles = {
-  wrap:   { flex: 1, backgroundColor: '#f9f4f5' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#e8d5d9', paddingHorizontal: 16, paddingVertical: 14 },
-  title:  { flex: 1, fontSize: 16, fontWeight: '500', color: '#550a19' },
+const baseStyles = (th) => ({
+  wrap:   { flex: 1, backgroundColor: th.card2 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: th.card, borderBottomWidth: 0.5, borderBottomColor: th.line2, paddingHorizontal: 16, paddingVertical: 14 },
+  title:  { flex: 1, fontSize: 16, fontWeight: '500', color: th.brand },
   body:   { padding: 18, alignItems: 'center' },
-  amountLabel: { fontSize: 11, color: '#a07080' },
-  amount: { fontSize: 30, fontWeight: '600', color: '#550a19', marginTop: 2, marginBottom: 16 },
-  qr:     { width: 250, height: 250, backgroundColor: '#fff', borderRadius: 12, borderWidth: 0.5, borderColor: '#e8d5d9' },
+  amountLabel: { fontSize: 11, color: th.muted2 },
+  amount: { fontSize: 30, fontWeight: '600', color: th.brand, marginTop: 2, marginBottom: 16 },
+  qr:     { width: 250, height: 250, backgroundColor: th.card, borderRadius: 12, borderWidth: 0.5, borderColor: th.line2 },
   qrEmpty:{ justifyContent: 'center', alignItems: 'center' },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16 },
-  waiting:{ fontSize: 13, color: '#854F0B' },
-  timer:  { fontSize: 13, fontWeight: '600', color: '#854F0B', marginTop: 6 },
-  hint:   { fontSize: 11, color: '#a07080', textAlign: 'center', marginTop: 14, lineHeight: 17 },
-  pendingWarn: { fontSize: 10.5, color: '#b09090', textAlign: 'center', marginTop: 8, lineHeight: 16 },
+  waiting:{ fontSize: 13, color: th.warn },
+  timer:  { fontSize: 13, fontWeight: '600', color: th.warn, marginTop: 6 },
+  hint:   { fontSize: 11, color: th.muted2, textAlign: 'center', marginTop: 14, lineHeight: 17 },
+  pendingWarn: { fontSize: 10.5, color: th.dim, textAlign: 'center', marginTop: 8, lineHeight: 16 },
   resultBox: { alignItems: 'center', gap: 10, paddingVertical: 30 },
   resultText: { fontSize: 17, fontWeight: '600' },
-  cancelledNote: { fontSize: 11.5, color: '#a07080', textAlign: 'center' },
-  failCode: { fontSize: 10, color: '#b09090' },
-  footer: { borderTopWidth: 0.5, borderTopColor: '#e8d5d9', backgroundColor: '#fff', padding: 14 },
+  cancelledNote: { fontSize: 11.5, color: th.muted2, textAlign: 'center' },
+  failCode: { fontSize: 10, color: th.dim },
+  footer: { borderTopWidth: 0.5, borderTopColor: th.line2, backgroundColor: th.card, padding: 14 },
   btn:    { borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
-  btnPlain:   { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e8c0c8' },
-  btnPrimary: { backgroundColor: '#550a19' },
-  btnText: { fontSize: 14, fontWeight: '600', color: '#550a19' },
-};
+  btnPlain:   { backgroundColor: th.card, borderWidth: 1, borderColor: th.line3 },
+  btnPrimary: { backgroundColor: th.brandBg },
+  btnText: { fontSize: 14, fontWeight: '600', color: th.brand },
+});

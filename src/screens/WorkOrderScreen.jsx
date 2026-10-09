@@ -98,7 +98,7 @@ const emptyForm = () => ({
 });
 
 export default function WorkOrderScreen({ navigation }) {
-  const { styles: s, sc } = useScaledStyles(baseStyles);
+  const { styles: s, sc, t: th } = useScaledStyles(baseStyles);
   const insets = useSafeAreaInsets();
   const wide = useWide();
   const [lang, setLang] = useState('th');
@@ -378,13 +378,13 @@ export default function WorkOrderScreen({ navigation }) {
   const EditBtn = ({ o }) => (
     <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => openEdit(o)} style={s.editBtn}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-      <MaterialCommunityIcons name="pencil-outline" size={sc(13)} color="#550a19" />
+      <MaterialCommunityIcons name="pencil-outline" size={sc(13)} color={th.brand} />
       <Text style={s.editText}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</Text>
     </TouchableOpacity>
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fdfbfb', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: th.bg, paddingTop: insets.top }}>
       <Header title={lang === 'th' ? 'ใบสั่งทำ' : 'Custom Order'} subtitle={headDate}
         onBack={() => navigation.goBack()} lang={lang}
         onLangToggle={() => setLang(l => (l === 'th' ? 'en' : 'th'))} />
@@ -398,7 +398,7 @@ export default function WorkOrderScreen({ navigation }) {
             <Chip key={f.key} label={lang === 'th' ? f.th : f.en} on={filter === f.key} onPress={() => setFilter(f.key)} />
           ))}
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={printBlankWorkOrder} style={s.ghostBtn}>
-            <MaterialCommunityIcons name="file-outline" size={sc(14)} color="#550a19" />
+            <MaterialCommunityIcons name="file-outline" size={sc(14)} color={th.brand} />
             <Text style={s.ghostText}>{lang === 'th' ? 'ปริ้นใบเปล่า' : 'Blank form'}</Text>
           </TouchableOpacity>
           <PrimaryButton label={lang === 'th' ? 'เปิดใบสั่งทำใหม่' : 'New order'} onPress={openNew} />
@@ -413,18 +413,18 @@ export default function WorkOrderScreen({ navigation }) {
               <Text style={s.pickClearText}>{lang === 'th' ? 'ล้าง' : 'Clear'}</Text>
             </TouchableOpacity>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printPicked(false)} disabled={printing} style={s.pickBtn}>
-              {printing ? <ActivityIndicator size="small" color="#550a19" />
-                : <MaterialCommunityIcons name="printer" size={sc(15)} color="#550a19" />}
+              {printing ? <ActivityIndicator size="small" color={th.brand} />
+                : <MaterialCommunityIcons name="printer" size={sc(15)} color={th.brand} />}
               <Text style={s.pickBtnText}>{lang === 'th' ? 'ปริ้นที่เลือก' : 'Print selected'}</Text>
             </TouchableOpacity>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printPicked(true)} disabled={printing} style={s.pickBtn}>
-              <MaterialCommunityIcons name="file-pdf-box" size={sc(15)} color="#550a19" />
+              <MaterialCommunityIcons name="file-pdf-box" size={sc(15)} color={th.brand} />
               <Text style={s.pickBtnText}>{lang === 'th' ? 'PDF ที่เลือก' : 'Save PDF'}</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {loading && <ActivityIndicator color="#550a19" style={{ marginTop: 20, marginBottom: 12 }} />}
+        {loading && <ActivityIndicator color={th.brand} style={{ marginTop: 20, marginBottom: 12 }} />}
 
         <Panel title={lang === 'th' ? 'ใบสั่งทำทั้งหมด' : 'All orders'}
           right={`${shown.length} ${lang === 'th' ? 'ใบ' : 'orders'}`}>
@@ -438,7 +438,7 @@ export default function WorkOrderScreen({ navigation }) {
                 <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => togglePick(o.id)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                   <View style={[s.box, picked[o.id] && s.boxOn]}>
-                    {picked[o.id] && <MaterialCommunityIcons name="check" size={sc(11)} color="#fff" />}
+                    {picked[o.id] && <MaterialCommunityIcons name="check" size={sc(11)} color={th.brandOn} />}
                   </View>
                 </TouchableOpacity>,
                 <TdNo text={codeOf(o)} />,
@@ -456,7 +456,7 @@ export default function WorkOrderScreen({ navigation }) {
                 <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => togglePick(o.id)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 6 }}>
                   <View style={[s.box, picked[o.id] && s.boxOn]}>
-                    {picked[o.id] && <MaterialCommunityIcons name="check" size={sc(11)} color="#fff" />}
+                    {picked[o.id] && <MaterialCommunityIcons name="check" size={sc(11)} color={th.brandOn} />}
                   </View>
                 </TouchableOpacity>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -498,12 +498,12 @@ export default function WorkOrderScreen({ navigation }) {
               <Field label={lang === 'th' ? 'ชื่อลูกค้า' : 'Customer'} s={s} flex>
                 <TextInput dataSet={{ hov: 'field' }} style={s.input} value={form.customer_name}
                   onChangeText={(v) => upd({ customer_name: v })} placeholder="เช่น คุณณิชา รัตนพงศ์"
-                  placeholderTextColor="#c0a0a8" />
+                  placeholderTextColor={th.faint} />
               </Field>
               <Field label={lang === 'th' ? 'เบอร์โทร' : 'Phone'} s={s} flex>
                 <TextInput dataSet={{ hov: 'field' }} style={s.input} value={form.customer_phone}
                   onChangeText={(v) => upd({ customer_phone: v })} keyboardType="phone-pad"
-                  placeholder="081-234-5678" placeholderTextColor="#c0a0a8" />
+                  placeholder="081-234-5678" placeholderTextColor={th.faint} />
               </Field>
             </View>
             <View style={s.row3}>
@@ -515,7 +515,7 @@ export default function WorkOrderScreen({ navigation }) {
               </Field>
               <Field label={lang === 'th' ? 'ผู้รับออเดอร์' : 'Received by'} s={s} flex>
                 <View style={[s.input, s.lockBox]}>
-                  <MaterialCommunityIcons name="account-check-outline" size={sc(14)} color="#550a19" />
+                  <MaterialCommunityIcons name="account-check-outline" size={sc(14)} color={th.brand} />
                   <Text style={s.lockText}>{form.received_by || (lang === 'th' ? 'จากคนที่ล็อกอิน' : 'from login')}</Text>
                 </View>
               </Field>
@@ -529,7 +529,7 @@ export default function WorkOrderScreen({ navigation }) {
                   {form.jobs.length > 1 && (
                     <TouchableOpacity dataSet={{ hov: 'btn' }}
                       onPress={() => setForm(f => ({ ...f, jobs: f.jobs.filter(x => x.id !== j.id) }))}>
-                      <MaterialCommunityIcons name="close" size={sc(16)} color="#9b7d86" />
+                      <MaterialCommunityIcons name="close" size={sc(16)} color={th.muted} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -538,19 +538,19 @@ export default function WorkOrderScreen({ navigation }) {
                   <Field label={lang === 'th' ? 'รหัสงาน — รันให้เอง พิมพ์ทับได้' : 'Job code'} s={s} flex>
                     <TextInput dataSet={{ hov: 'field' }} style={[s.input, s.codeIn]} value={j.job_code}
                       onChangeText={(v) => updJ(j.id, { job_code: v })} placeholder="CUSTOM#00001"
-                      placeholderTextColor="#c0a0a8" autoCapitalize="characters" />
+                      placeholderTextColor={th.faint} autoCapitalize="characters" />
                   </Field>
                   <Field label={lang === 'th' ? 'ราคา (บาท)' : 'Price'} s={s} flex>
                     <TextInput dataSet={{ hov: 'field' }} style={s.input} value={j.price}
                       onChangeText={(v) => updJ(j.id, { price: v })} keyboardType="numeric"
-                      placeholder="0" placeholderTextColor="#c0a0a8" />
+                      placeholder="0" placeholderTextColor={th.faint} />
                   </Field>
                 </View>
 
                 <Field label={lang === 'th' ? 'ประเภทงาน' : 'Job type'} s={s}>
                   <TextInput dataSet={{ hov: 'field' }} style={s.input} value={j.job_type}
                     onChangeText={(v) => updJ(j.id, { job_type: v })} placeholder="เช่น แหวนหมั้น"
-                    placeholderTextColor="#c0a0a8" />
+                    placeholderTextColor={th.faint} />
                   <View style={s.chipRow}>
                     {JOB_TYPES.map(t => (
                       <TouchableOpacity dataSet={{ hov: 'btn' }} key={t} onPress={() => updJ(j.id, { job_type: t })}
@@ -579,10 +579,10 @@ export default function WorkOrderScreen({ navigation }) {
                       return (
                         <TouchableOpacity dataSet={{ hov: 'btn' }} key={tb.key} onPress={() => updJ(j.id, { metal_type: tb.key })}
                           style={[s.metalTab, {
-                            backgroundColor: on ? '#550a19' : '#fff',
+                            backgroundColor: on ? th.brandBg : th.card,
                             borderRightWidth: i < METAL_TABS.length - 1 ? 0.5 : 0,
                           }]}>
-                          <Text style={[s.metalTabText, { color: on ? '#fff' : '#550a19' }]}>{tb.label}</Text>
+                          <Text style={[s.metalTabText, { color: on ? th.brandOn : th.brand }]}>{tb.label}</Text>
                         </TouchableOpacity>
                       );
                     })}
@@ -593,15 +593,15 @@ export default function WorkOrderScreen({ navigation }) {
                   <Field label={lang === 'th' ? 'น้ำหนักทอง (กรัม)' : 'Gold (g)'} s={s} flex>
                     <TextInput dataSet={{ hov: 'field' }} style={s.input} value={j.unit_weight_g}
                       onChangeText={(v) => updJ(j.id, { unit_weight_g: v })} keyboardType="decimal-pad"
-                      placeholder="0.00" placeholderTextColor="#c0a0a8" />
+                      placeholder="0.00" placeholderTextColor={th.faint} />
                   </Field>
                   <Field label="Ring size" s={s} flex>
                     <TextInput dataSet={{ hov: 'field' }} style={s.input} value={j.ring_size}
-                      onChangeText={(v) => updJ(j.id, { ring_size: v })} placeholder="52" placeholderTextColor="#c0a0a8" />
+                      onChangeText={(v) => updJ(j.id, { ring_size: v })} placeholder="52" placeholderTextColor={th.faint} />
                   </Field>
                   <Field label="Engrave" s={s} flex>
                     <TextInput dataSet={{ hov: 'field' }} style={s.input} value={j.engrave}
-                      onChangeText={(v) => updJ(j.id, { engrave: v })} placeholder="ข้อความสลัก" placeholderTextColor="#c0a0a8" />
+                      onChangeText={(v) => updJ(j.id, { engrave: v })} placeholder="ข้อความสลัก" placeholderTextColor={th.faint} />
                   </Field>
                 </View>
 
@@ -614,7 +614,7 @@ export default function WorkOrderScreen({ navigation }) {
                       {j.stones.length > 1 && (
                         <TouchableOpacity dataSet={{ hov: 'btn' }}
                           onPress={() => updJ(j.id, { stones: j.stones.filter(x => x.id !== st.id) })}>
-                          <MaterialCommunityIcons name="close" size={sc(15)} color="#9b7d86" />
+                          <MaterialCommunityIcons name="close" size={sc(15)} color={th.muted} />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -654,12 +654,12 @@ export default function WorkOrderScreen({ navigation }) {
                       <Field label={lang === 'th' ? 'กะรัตรวม' : 'Carat'} s={s} flex>
                         <TextInput dataSet={{ hov: 'field' }} style={s.input} value={st.carat}
                           onChangeText={(v) => updS(j.id, st.id, { carat: v })} keyboardType="decimal-pad"
-                          placeholder="0.00" placeholderTextColor="#c0a0a8" />
+                          placeholder="0.00" placeholderTextColor={th.faint} />
                       </Field>
                       <Field label={lang === 'th' ? 'จำนวนเม็ด' : 'Pcs'} s={s} flex>
                         <TextInput dataSet={{ hov: 'field' }} style={s.input} value={st.qty}
                           onChangeText={(v) => updS(j.id, st.id, { qty: v.replace(/[^0-9]/g, '') })} keyboardType="number-pad"
-                          placeholder="1" placeholderTextColor="#c0a0a8" />
+                          placeholder="1" placeholderTextColor={th.faint} />
                       </Field>
                       <Field label="Certificate" s={s} flex>
                         <View style={s.chipRow}>
@@ -678,21 +678,21 @@ export default function WorkOrderScreen({ navigation }) {
                       <Field label={lang === 'th' ? 'เลขใบเซอร์' : 'Certificate no.'} s={s}>
                         <TextInput dataSet={{ hov: 'field' }} style={s.input} value={st.cert_no}
                           onChangeText={(v) => updS(j.id, st.id, { cert_no: v })} placeholder="IGI 2312345678"
-                          placeholderTextColor="#c0a0a8" />
+                          placeholderTextColor={th.faint} />
                       </Field>
                     )}
                   </View>
                 ))}
                 <TouchableOpacity dataSet={{ hov: 'btn' }} style={s.addBtn}
                   onPress={() => updJ(j.id, { stones: [...j.stones, newStone()] })}>
-                  <MaterialCommunityIcons name="plus" size={sc(14)} color="#550a19" />
+                  <MaterialCommunityIcons name="plus" size={sc(14)} color={th.brand} />
                   <Text style={s.addText}>{lang === 'th' ? 'เพิ่มเพชรอีกเม็ด' : 'Add diamond'}</Text>
                 </TouchableOpacity>
 
                 <Field label={lang === 'th' ? 'หมายเหตุงานชิ้นนี้' : 'Notes'} s={s}>
                   <TextInput dataSet={{ hov: 'field' }} style={[s.input, { height: 60, textAlignVertical: 'top' }]}
                     value={j.note} onChangeText={(v) => updJ(j.id, { note: v })} multiline
-                    placeholder="สิ่งที่ช่างต้องรู้" placeholderTextColor="#c0a0a8" />
+                    placeholder="สิ่งที่ช่างต้องรู้" placeholderTextColor={th.faint} />
                 </Field>
 
                 <Text style={s.subLabel}>{lang === 'th' ? `รูป — ${j.photos.length}/4` : `Photos — ${j.photos.length}/4`}</Text>
@@ -701,13 +701,13 @@ export default function WorkOrderScreen({ navigation }) {
                     <View key={i} style={s.photoBox}>
                       <Image source={{ uri: p }} style={s.photoImg} resizeMode="cover" />
                       <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => dropPhoto(j.id, i)} style={s.photoX}>
-                        <MaterialCommunityIcons name="close" size={sc(13)} color="#fff" />
+                        <MaterialCommunityIcons name="close" size={sc(13)} color={th.brandOn} />
                       </TouchableOpacity>
                     </View>
                   ))}
                   {j.photos.length < 4 && (
                     <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => pickPhoto(j.id)} style={[s.photoBox, s.photoAdd]}>
-                      <MaterialCommunityIcons name="image-plus" size={sc(18)} color="#c0a0a8" />
+                      <MaterialCommunityIcons name="image-plus" size={sc(18)} color={th.faint} />
                       <Text style={s.photoAddText}>{lang === 'th' ? 'เพิ่มรูป' : 'Add'}</Text>
                     </TouchableOpacity>
                   )}
@@ -716,7 +716,7 @@ export default function WorkOrderScreen({ navigation }) {
             ))}
 
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={addJob} style={s.addJobBtn}>
-              <MaterialCommunityIcons name="plus" size={sc(16)} color="#550a19" />
+              <MaterialCommunityIcons name="plus" size={sc(16)} color={th.brand} />
               <Text style={s.addJobText}>{lang === 'th' ? 'เพิ่มงานอีกชิ้น' : 'Add another job'}</Text>
             </TouchableOpacity>
 
@@ -727,24 +727,24 @@ export default function WorkOrderScreen({ navigation }) {
                 <Field label={lang === 'th' ? `ครั้งที่ ${pi + 1}` : `Payment ${pi + 1}`} s={s} flex>
                   <TextInput dataSet={{ hov: 'field' }} style={s.input} value={p.amount}
                     onChangeText={(v) => updP(p.id, { amount: v })} keyboardType="numeric"
-                    placeholder="0" placeholderTextColor="#c0a0a8" />
+                    placeholder="0" placeholderTextColor={th.faint} />
                 </Field>
                 <Field label={lang === 'th' ? 'หมายเหตุ' : 'Note'} s={s} flex>
                   <TextInput dataSet={{ hov: 'field' }} style={s.input} value={p.note}
                     onChangeText={(v) => updP(p.id, { note: v })} placeholder="มัดจำ / โอน"
-                    placeholderTextColor="#c0a0a8" />
+                    placeholderTextColor={th.faint} />
                 </Field>
                 {form.payments.length > 1 && (
                   <TouchableOpacity dataSet={{ hov: 'btn' }} style={s.payX}
                     onPress={() => setForm(f => ({ ...f, payments: f.payments.filter(x => x.id !== p.id) }))}>
-                    <MaterialCommunityIcons name="close" size={sc(15)} color="#9b7d86" />
+                    <MaterialCommunityIcons name="close" size={sc(15)} color={th.muted} />
                   </TouchableOpacity>
                 )}
               </View>
             ))}
             <TouchableOpacity dataSet={{ hov: 'btn' }} style={s.addBtn}
               onPress={() => setForm(f => ({ ...f, payments: [...f.payments, newPay()] }))}>
-              <MaterialCommunityIcons name="plus" size={sc(14)} color="#550a19" />
+              <MaterialCommunityIcons name="plus" size={sc(14)} color={th.brand} />
               <Text style={s.addText}>{lang === 'th' ? 'เพิ่มการชำระ' : 'Add payment'}</Text>
             </TouchableOpacity>
 
@@ -766,12 +766,12 @@ export default function WorkOrderScreen({ navigation }) {
             <Field label={lang === 'th' ? 'หมายเหตุใบนี้' : 'Order note'} s={s}>
               <TextInput dataSet={{ hov: 'field' }} style={[s.input, { height: 56, textAlignVertical: 'top' }]}
                 value={form.job_note} onChangeText={(v) => upd({ job_note: v })} multiline
-                placeholderTextColor="#c0a0a8" />
+                placeholderTextColor={th.faint} />
             </Field>
 
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => upd({ is_urgent: !form.is_urgent })} style={s.urgentRow}>
               <View style={[s.box, form.is_urgent && s.boxOn]}>
-                {form.is_urgent && <MaterialCommunityIcons name="check" size={sc(11)} color="#fff" />}
+                {form.is_urgent && <MaterialCommunityIcons name="check" size={sc(11)} color={th.brandOn} />}
               </View>
               <Text style={s.urgentText}>{lang === 'th' ? 'งานเร่ง' : 'Urgent'}</Text>
             </TouchableOpacity>
@@ -799,14 +799,14 @@ export default function WorkOrderScreen({ navigation }) {
             {!!sel && (
               <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { const o = sel; setSel(null); openEdit(o); }}
                 style={s.editBtn}>
-                <MaterialCommunityIcons name="pencil-outline" size={sc(13)} color="#550a19" />
+                <MaterialCommunityIcons name="pencil-outline" size={sc(13)} color={th.brand} />
                 <Text style={s.editText}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</Text>
               </TouchableOpacity>
             )}
           </View>
 
           <ScrollView contentContainerStyle={s.modalBody}>
-            {selBusy && <ActivityIndicator color="#550a19" style={{ marginBottom: 12 }} />}
+            {selBusy && <ActivityIndicator color={th.brand} style={{ marginBottom: 12 }} />}
             {!!sel && (
               <>
                 <View style={s.card}>
@@ -843,12 +843,12 @@ export default function WorkOrderScreen({ navigation }) {
                     <Text style={s.itemPrice}>฿{fmt(it.price)}</Text>
                     {it.stocked_product_id ? (
                       <View style={s.doneRow}>
-                        <MaterialCommunityIcons name="check-circle" size={sc(14)} color="#2e7d32" />
+                        <MaterialCommunityIcons name="check-circle" size={sc(14)} color={th.ok} />
                         <Text style={s.doneText}>เพิ่มเข้าสต๊อกแล้ว</Text>
                       </View>
                     ) : (
                       <TouchableOpacity dataSet={{ hov: 'btn' }} style={s.smallBtn} onPress={() => openStock(it)}>
-                        <MaterialCommunityIcons name="tray-arrow-down" size={sc(13)} color="#550a19" />
+                        <MaterialCommunityIcons name="tray-arrow-down" size={sc(13)} color={th.brand} />
                         <Text style={s.smallBtnText}>เพิ่มเข้าสต๊อก</Text>
                       </TouchableOpacity>
                     )}
@@ -857,11 +857,11 @@ export default function WorkOrderScreen({ navigation }) {
 
                 <View style={s.actRow}>
                   <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printWorkOrder(sel)} style={s.actBtn}>
-                    <MaterialCommunityIcons name="printer" size={sc(15)} color="#550a19" />
+                    <MaterialCommunityIcons name="printer" size={sc(15)} color={th.brand} />
                     <Text style={s.actText}>ปริ้น</Text>
                   </TouchableOpacity>
                   <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => saveWorkOrder(sel)} style={s.actBtn}>
-                    <MaterialCommunityIcons name="file-pdf-box" size={sc(15)} color="#550a19" />
+                    <MaterialCommunityIcons name="file-pdf-box" size={sc(15)} color={th.brand} />
                     <Text style={s.actText}>บันทึก PDF</Text>
                   </TouchableOpacity>
                 </View>
@@ -882,12 +882,12 @@ export default function WorkOrderScreen({ navigation }) {
             </Text>
             <View style={s.confirmBtns}>
               <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setAskDeliver(false)}
-                style={[s.confirmBtn, { backgroundColor: '#f9f4f5' }]}>
-                <Text style={[s.confirmBtnText, { color: '#806070' }]}>ยกเลิก</Text>
+                style={[s.confirmBtn, { backgroundColor: th.card2 }]}>
+                <Text style={[s.confirmBtnText, { color: th.dim }]}>ยกเลิก</Text>
               </TouchableOpacity>
               <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={confirmDeliver} disabled={statusBusy}
-                style={[s.confirmBtn, { backgroundColor: '#550a19', opacity: statusBusy ? 0.7 : 1 }]}>
-                <Text style={[s.confirmBtnText, { color: '#fff5f7' }]}>{statusBusy ? 'กำลังบันทึก...' : 'ยืนยันส่งมอบ'}</Text>
+                style={[s.confirmBtn, { backgroundColor: th.brandBg, opacity: statusBusy ? 0.7 : 1 }]}>
+                <Text style={[s.confirmBtnText, { color: th.brandOn }]}>{statusBusy ? 'กำลังบันทึก...' : 'ยืนยันส่งมอบ'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -907,23 +907,23 @@ export default function WorkOrderScreen({ navigation }) {
             <Field label="รหัสสินค้า (SKU) — รันให้ใหม่ ไม่ใช้รหัสงาน" s={s}>
               <TextInput dataSet={{ hov: 'field' }} style={s.input} value={stockForm?.sku || ''}
                 onChangeText={v => setStockForm(f => ({ ...f, sku: v }))}
-                autoCapitalize="characters" placeholder="ANAKYN#0001" placeholderTextColor="#c0a0a8" />
+                autoCapitalize="characters" placeholder="ANAKYN#0001" placeholderTextColor={th.faint} />
             </Field>
             <Field label="ราคาขาย" s={s}>
               <TextInput dataSet={{ hov: 'field' }} style={s.input} value={stockForm?.sale_price || ''}
                 onChangeText={v => setStockForm(f => ({ ...f, sale_price: v }))}
-                keyboardType="numeric" placeholder="0" placeholderTextColor="#c0a0a8" />
+                keyboardType="numeric" placeholder="0" placeholderTextColor={th.faint} />
             </Field>
             <View style={s.confirmBtns}>
               <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={skipStock}
-                style={[s.confirmBtn, { backgroundColor: '#f9f4f5' }]}>
-                <Text style={[s.confirmBtnText, { color: '#806070' }]}>
+                style={[s.confirmBtn, { backgroundColor: th.card2 }]}>
+                <Text style={[s.confirmBtnText, { color: th.dim }]}>
                   {stockForm?.fromDeliver ? 'ไม่เพิ่ม' : 'ยกเลิก'}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={sendToStock} disabled={stockBusy}
-                style={[s.confirmBtn, { backgroundColor: '#550a19', opacity: stockBusy ? 0.7 : 1 }]}>
-                <Text style={[s.confirmBtnText, { color: '#fff5f7' }]}>{stockBusy ? 'กำลังเพิ่ม...' : 'เพิ่ม'}</Text>
+                style={[s.confirmBtn, { backgroundColor: th.brandBg, opacity: stockBusy ? 0.7 : 1 }]}>
+                <Text style={[s.confirmBtnText, { color: th.brandOn }]}>{stockBusy ? 'กำลังเพิ่ม...' : 'เพิ่ม'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -950,121 +950,121 @@ function InfoLine({ k, v, s }) {
   );
 }
 
-const baseStyles = {
+const baseStyles = (th) => ({
   content: { padding: 14, paddingBottom: 30 },
-  box: { width: 17, height: 17, borderRadius: 4, borderWidth: 1, borderColor: '#d4bcc2', justifyContent: 'center', alignItems: 'center' },
-  boxOn: { backgroundColor: '#550a19', borderColor: '#550a19' },
+  box: { width: 17, height: 17, borderRadius: 4, borderWidth: 1, borderColor: th.line3, justifyContent: 'center', alignItems: 'center' },
+  boxOn: { backgroundColor: th.brandBg, borderColor: th.brandBg },
 
-  ghostBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 13, borderRadius: 9, borderWidth: 1, borderColor: '#e8d5d9', backgroundColor: '#fff' },
-  ghostText: { fontSize: 12.5, color: '#550a19', fontWeight: '500' },
+  ghostBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 13, borderRadius: 9, borderWidth: 1, borderColor: th.line2, backgroundColor: th.card },
+  ghostText: { fontSize: 12.5, color: th.brand, fontWeight: '500' },
 
-  pickBar: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, backgroundColor: '#fdf0f2', borderWidth: 1, borderColor: '#f0d3da', borderRadius: 12, padding: 11, marginBottom: 12 },
-  pickCount: { flex: 1, minWidth: 100, fontSize: 13, color: '#550a19', fontWeight: '600' },
+  pickBar: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, backgroundColor: th.soft, borderWidth: 1, borderColor: th.hair, borderRadius: 12, padding: 11, marginBottom: 12 },
+  pickCount: { flex: 1, minWidth: 100, fontSize: 13, color: th.brand, fontWeight: '600' },
   pickClear: { paddingVertical: 6, paddingHorizontal: 10 },
-  pickClearText: { fontSize: 12.5, color: '#9b7d86' },
-  pickBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e8d5d9', borderRadius: 9, paddingVertical: 8, paddingHorizontal: 13 },
-  pickBtnText: { fontSize: 12.5, color: '#550a19', fontWeight: '500' },
+  pickClearText: { fontSize: 12.5, color: th.muted },
+  pickBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: th.card, borderWidth: 1, borderColor: th.line2, borderRadius: 9, paddingVertical: 8, paddingHorizontal: 13 },
+  pickBtnText: { fontSize: 12.5, color: th.brand, fontWeight: '500' },
 
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: '#e8d5d9', backgroundColor: '#fff', alignSelf: 'flex-start' },
-  editText: { fontSize: 12, color: '#550a19', fontWeight: '500' },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: th.line2, backgroundColor: th.card, alignSelf: 'flex-start' },
+  editText: { fontSize: 12, color: th.brand, fontWeight: '500' },
 
-  mrow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
-  cardNo: { fontSize: 12, color: '#9b7d86', letterSpacing: 0.4 },
-  cardTitle: { fontSize: 14, color: '#2c1015', fontWeight: '500', marginTop: 1 },
-  cardSub: { fontSize: 12, color: '#9b7d86', marginTop: 2 },
-  cardAmt: { fontSize: 14, color: '#550a19', fontWeight: '600' },
+  mrow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: th.hair },
+  cardNo: { fontSize: 12, color: th.muted, letterSpacing: 0.4 },
+  cardTitle: { fontSize: 14, color: th.ink, fontWeight: '500', marginTop: 1 },
+  cardSub: { fontSize: 12, color: th.muted, marginTop: 2 },
+  cardAmt: { fontSize: 14, color: th.brand, fontWeight: '600' },
 
-  modal: { flex: 1, backgroundColor: '#fdfbfb' },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingRight: 56, borderBottomWidth: 1, borderBottomColor: '#ece0e3', backgroundColor: '#fff' },
-  modalTitle: { fontSize: 16, fontWeight: '600', color: '#550a19' },
+  modal: { flex: 1, backgroundColor: th.bg },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingRight: 56, borderBottomWidth: 1, borderBottomColor: th.line, backgroundColor: th.card },
+  modalTitle: { fontSize: 16, fontWeight: '600', color: th.brand },
   modalBody: { padding: 16, paddingBottom: 40 },
 
-  grpLabel: { fontSize: 11, letterSpacing: 1.4, color: '#9b7d86', fontWeight: '600', marginTop: 18, marginBottom: 10 },
-  subLabel: { fontSize: 12, color: '#9b7d86', fontWeight: '600', marginTop: 6, marginBottom: 6 },
+  grpLabel: { fontSize: 11, letterSpacing: 1.4, color: th.muted, fontWeight: '600', marginTop: 18, marginBottom: 10 },
+  subLabel: { fontSize: 12, color: th.muted, fontWeight: '600', marginTop: 6, marginBottom: 6 },
 
   field: { marginBottom: 12 },
-  fieldLabel: { fontSize: 12, color: '#9b7d86', marginBottom: 5 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, fontSize: 14, color: '#2c1015' },
-  codeIn: { fontWeight: '600', color: '#550a19', letterSpacing: 0.6 },
-  lockBox: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#fdf0f2', borderColor: '#f0d3da' },
-  lockText: { fontSize: 13.5, color: '#550a19', fontWeight: '500', flex: 1, minWidth: 0 },
+  fieldLabel: { fontSize: 12, color: th.muted, marginBottom: 5 },
+  input: { backgroundColor: th.card, borderWidth: 1, borderColor: th.line, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, fontSize: 14, color: th.ink },
+  codeIn: { fontWeight: '600', color: th.brand, letterSpacing: 0.6 },
+  lockBox: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: th.soft, borderColor: th.hair },
+  lockText: { fontSize: 13.5, color: th.brand, fontWeight: '500', flex: 1, minWidth: 0 },
 
   row2: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   row3: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', alignItems: 'flex-start' },
 
-  jobCard: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e8d5d9', borderRadius: 14, padding: 14, marginTop: 14 },
+  jobCard: { backgroundColor: th.card, borderWidth: 1, borderColor: th.line2, borderRadius: 14, padding: 14, marginTop: 14 },
   jobHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  jobNo: { fontSize: 14, fontWeight: '700', color: '#550a19' },
-  addJobBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 13, borderRadius: 11, borderWidth: 1, borderColor: '#e8d5d9', borderStyle: 'dashed', backgroundColor: '#fff', marginTop: 14 },
-  addJobText: { fontSize: 14, color: '#550a19', fontWeight: '600' },
+  jobNo: { fontSize: 14, fontWeight: '700', color: th.brand },
+  addJobBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 13, borderRadius: 11, borderWidth: 1, borderColor: th.line2, borderStyle: 'dashed', backgroundColor: th.card, marginTop: 14 },
+  addJobText: { fontSize: 14, color: th.brand, fontWeight: '600' },
 
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 7 },
-  tChip: { paddingVertical: 7, paddingHorizontal: 13, borderRadius: 999, borderWidth: 1, borderColor: '#e8d5d9', backgroundColor: '#fff' },
-  tChipOn: { backgroundColor: '#550a19', borderColor: '#550a19' },
-  tChipText: { fontSize: 12.5, color: '#a07080' },
-  tChipTextOn: { color: '#fff5f7' },
+  tChip: { paddingVertical: 7, paddingHorizontal: 13, borderRadius: 999, borderWidth: 1, borderColor: th.line2, backgroundColor: th.card },
+  tChipOn: { backgroundColor: th.brandBg, borderColor: th.brandBg },
+  tChipText: { fontSize: 12.5, color: th.muted2 },
+  tChipTextOn: { color: th.brandOn },
 
-  metalTabs: { flexDirection: 'row', borderWidth: 1, borderColor: '#e8d5d9', borderRadius: 10, overflow: 'hidden', marginTop: 7 },
-  metalTab: { flex: 1, paddingVertical: 11, alignItems: 'center', borderRightColor: '#e8d5d9' },
+  metalTabs: { flexDirection: 'row', borderWidth: 1, borderColor: th.line2, borderRadius: 10, overflow: 'hidden', marginTop: 7 },
+  metalTab: { flex: 1, paddingVertical: 11, alignItems: 'center', borderRightColor: th.line2 },
   metalTabText: { fontSize: 13, fontWeight: '600' },
 
   pickBox: { justifyContent: 'center', minHeight: 42 },
-  pickText: { fontSize: 13, color: '#2c1015' },
-  pickPh: { color: '#c0a0a8' },
-  optRow: { paddingVertical: 12, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: '#f5edef', borderRadius: 8 },
-  optText: { fontSize: 14, color: '#2c1015' },
+  pickText: { fontSize: 13, color: th.ink },
+  pickPh: { color: th.faint },
+  optRow: { paddingVertical: 12, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: th.hair, borderRadius: 8 },
+  optText: { fontSize: 14, color: th.ink },
 
-  stoneCard: { backgroundColor: '#fdfbfb', borderWidth: 1, borderColor: '#f0e4e7', borderRadius: 10, padding: 11, marginBottom: 9 },
+  stoneCard: { backgroundColor: th.bg, borderWidth: 1, borderColor: th.hair, borderRadius: 10, padding: 11, marginBottom: 9 },
   stoneHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 },
-  stoneNo: { fontSize: 12.5, fontWeight: '600', color: '#8c1b2f' },
+  stoneNo: { fontSize: 12.5, fontWeight: '600', color: th.brand2 },
 
-  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 13, borderRadius: 9, borderWidth: 1, borderColor: '#e8d5d9', backgroundColor: '#fff', marginBottom: 12 },
-  addText: { fontSize: 12.5, color: '#550a19', fontWeight: '500' },
+  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 13, borderRadius: 9, borderWidth: 1, borderColor: th.line2, backgroundColor: th.card, marginBottom: 12 },
+  addText: { fontSize: 12.5, color: th.brand, fontWeight: '500' },
 
   photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-  photoBox: { width: 88, height: 88, borderRadius: 9, overflow: 'hidden', borderWidth: 1, borderColor: '#ece0e3', backgroundColor: '#fff' },
+  photoBox: { width: 88, height: 88, borderRadius: 9, overflow: 'hidden', borderWidth: 1, borderColor: th.line, backgroundColor: th.card },
   photoImg: { width: '100%', height: '100%' },
   photoX: { position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(85,10,25,0.85)', alignItems: 'center', justifyContent: 'center' },
-  photoAdd: { borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 3, backgroundColor: '#fdfbfb' },
-  photoAddText: { fontSize: 11, color: '#9b7d86' },
+  photoAdd: { borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 3, backgroundColor: th.bg },
+  photoAddText: { fontSize: 11, color: th.muted },
 
   payX: { paddingVertical: 10, paddingHorizontal: 6, marginTop: 20 },
 
-  totalBox: { backgroundColor: '#fdf0f2', borderWidth: 1, borderColor: '#f0d3da', borderRadius: 12, padding: 14, marginBottom: 12, gap: 6 },
+  totalBox: { backgroundColor: th.soft, borderWidth: 1, borderColor: th.hair, borderRadius: 12, padding: 14, marginBottom: 12, gap: 6 },
   totalLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  totalLabel: { fontSize: 12.5, color: '#8c1b2f' },
-  totalVal: { fontSize: 18, fontWeight: '700', color: '#550a19' },
-  totalSub: { fontSize: 14, fontWeight: '600', color: '#8c1b2f' },
+  totalLabel: { fontSize: 12.5, color: th.brand2 },
+  totalVal: { fontSize: 18, fontWeight: '700', color: th.brand },
+  totalSub: { fontSize: 14, fontWeight: '600', color: th.brand2 },
 
   urgentRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 8, marginBottom: 6 },
-  urgentText: { fontSize: 13.5, color: '#2c1015' },
+  urgentText: { fontSize: 13.5, color: th.ink },
 
-  saveBtn: { backgroundColor: '#550a19', borderRadius: 11, paddingVertical: 14, alignItems: 'center', marginTop: 6 },
-  saveText: { color: '#fff5f7', fontSize: 15, fontWeight: '600' },
+  saveBtn: { backgroundColor: th.brandBg, borderRadius: 11, paddingVertical: 14, alignItems: 'center', marginTop: 6 },
+  saveText: { color: th.brandOn, fontSize: 15, fontWeight: '600' },
 
-  errBox: { backgroundColor: '#fdf0f2', borderWidth: 1, borderColor: '#e8c0c8', borderRadius: 8, padding: 10, marginBottom: 10 },
-  errText: { fontSize: 12, color: '#a32d2d' },
+  errBox: { backgroundColor: th.soft, borderWidth: 1, borderColor: th.line3, borderRadius: 8, padding: 10, marginBottom: 10 },
+  errText: { fontSize: 12, color: th.danger },
 
-  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ece0e3', borderRadius: 12, padding: 14, marginBottom: 12 },
-  secTitle: { fontSize: 13.5, fontWeight: '600', color: '#550a19', marginBottom: 4 },
-  itemPrice: { fontSize: 15, fontWeight: '700', color: '#550a19', marginTop: 6, marginBottom: 4 },
-  infoLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: '#f5edef' },
-  infoK: { width: 108, fontSize: 12.5, color: '#9b7d86' },
-  infoV: { flex: 1, fontSize: 13, color: '#2c1015', minWidth: 0 },
+  card: { backgroundColor: th.card, borderWidth: 1, borderColor: th.line, borderRadius: 12, padding: 14, marginBottom: 12 },
+  secTitle: { fontSize: 13.5, fontWeight: '600', color: th.brand, marginBottom: 4 },
+  itemPrice: { fontSize: 15, fontWeight: '700', color: th.brand, marginTop: 6, marginBottom: 4 },
+  infoLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: th.hair },
+  infoK: { width: 108, fontSize: 12.5, color: th.muted },
+  infoV: { flex: 1, fontSize: 13, color: th.ink, minWidth: 0 },
 
   doneRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  doneText: { fontSize: 12.5, color: '#2e7d32' },
-  smallBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 13, borderRadius: 9, borderWidth: 1, borderColor: '#e8d5d9', backgroundColor: '#fff', marginTop: 4 },
-  smallBtnText: { fontSize: 12.5, color: '#550a19', fontWeight: '500' },
+  doneText: { fontSize: 12.5, color: th.ok },
+  smallBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 13, borderRadius: 9, borderWidth: 1, borderColor: th.line2, backgroundColor: th.card, marginTop: 4 },
+  smallBtnText: { fontSize: 12.5, color: th.brand, fontWeight: '500' },
 
   actRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginTop: 4 },
-  actBtn: { flex: 1, minWidth: 130, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e8d5d9', backgroundColor: '#fff' },
-  actText: { fontSize: 13.5, color: '#550a19', fontWeight: '500' },
+  actBtn: { flex: 1, minWidth: 130, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: th.line2, backgroundColor: th.card },
+  actText: { fontSize: 13.5, color: th.brand, fontWeight: '500' },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  confirmBox: { backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '100%', maxWidth: 360 },
-  confirmMsg: { fontSize: 12.5, color: '#7d5f68', lineHeight: 20, marginTop: 8, marginBottom: 14 },
+  confirmBox: { backgroundColor: th.card, borderRadius: 16, padding: 20, width: '100%', maxWidth: 360 },
+  confirmMsg: { fontSize: 12.5, color: th.muted, lineHeight: 20, marginTop: 8, marginBottom: 14 },
   confirmBtns: { flexDirection: 'row', gap: 10, marginTop: 6 },
   confirmBtn: { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   confirmBtnText: { fontSize: 13.5, fontWeight: '600' },
-};
+});

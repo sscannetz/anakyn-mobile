@@ -16,6 +16,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { navRef, goTo, onDrawer, setDrawer, isDrawerOpen } from '../navRef';
 import { clearSession, getRole } from '../storage';
 import { LOGO_LIGHT_URI } from '../logoBase64';
+import { useTheme } from '../theme';
 
 export const SHELL_BP = 1024;      // ต่ำกว่านี้ใช้ลิ้นชักแทนแถบซ้าย
 export const SIDE_W = 242;   // ShellModal ใช้ค่านี้เว้นที่ให้แถบเมนู
@@ -44,6 +45,8 @@ const MENUS = [
 ];
 
 function NavList({ active, role, onPick, onLogout }) {
+  const { t: th } = useTheme();
+  const S = makeS(th);
   const items = MENUS.filter(m => !m.adminOnly || role === 'admin');
   return (
     <>
@@ -63,7 +66,7 @@ function NavList({ active, role, onPick, onLogout }) {
               style={[S.navItem, on && S.navItemOn]}
               activeOpacity={0.75}
             >
-              <MaterialCommunityIcons name={m.icon} size={17} color={on ? '#550a19' : '#e8c7cf'} />
+              <MaterialCommunityIcons name={m.icon} size={17} color={on ? th.brand : th.faint} />
               <Text style={[S.navText, on && S.navTextOn]}>{m.label}</Text>
             </TouchableOpacity>
           );
@@ -79,7 +82,7 @@ function NavList({ active, role, onPick, onLogout }) {
           <Text style={S.whoSub} numberOfLines={1}>Anakyn Gems</Text>
         </View>
         <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={onLogout} style={S.outBtn}>
-          <MaterialCommunityIcons name="logout" size={14} color="#f5e0e5" />
+          <MaterialCommunityIcons name="logout" size={14} color={th.brandOn} />
         </TouchableOpacity>
       </View>
     </>
@@ -87,6 +90,8 @@ function NavList({ active, role, onPick, onLogout }) {
 }
 
 export default function AppShell({ routeName, children }) {
+  const { t: th } = useTheme();
+  const S = makeS(th);
   const { width } = useWindowDimensions();
   const hasSide = Platform.OS === 'web' && width >= SHELL_BP;
   const show    = !!routeName && routeName !== 'Login';
@@ -203,10 +208,10 @@ export default function AppShell({ routeName, children }) {
   );
 }
 
-const S = {
+const makeS = (th) => ({
   side: {
     width: SIDE_W,
-    backgroundColor: '#550a19',
+    backgroundColor: th.brandBg,
     paddingTop: 16,
     paddingBottom: 12,
   },
@@ -221,7 +226,7 @@ const S = {
     width: DRAWER_W,
     zIndex: 60,
     paddingTop: 24,
-    shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 18, shadowOffset: { width: 6, height: 0 },
+    shadowColor: th.shadow, shadowOpacity: 0.4, shadowRadius: 18, shadowOffset: { width: 6, height: 0 },
     elevation: 16,
   },
   scrim: {
@@ -241,7 +246,7 @@ const S = {
   grp: {
     fontSize: 9,
     letterSpacing: 1.4,
-    color: '#c79eab',
+    color: th.brandOn,
     paddingHorizontal: 10,
     paddingTop: 13,
     paddingBottom: 4,
@@ -254,9 +259,9 @@ const S = {
     paddingVertical: 9,
     borderRadius: 9,
   },
-  navItemOn: { backgroundColor: '#fff5f7' },
-  navText: { fontSize: 12.5, color: '#fff5f7' },
-  navTextOn: { color: '#550a19', fontWeight: '600' },
+  navItemOn: { backgroundColor: th.soft },
+  navText: { fontSize: 12.5, color: th.brandOn },
+  navTextOn: { color: th.brand, fontWeight: '600' },
   sideFoot: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -268,15 +273,15 @@ const S = {
   },
   av: {
     width: 30, height: 30, borderRadius: 15,
-    backgroundColor: '#fff5f7',
+    backgroundColor: th.soft,
     justifyContent: 'center', alignItems: 'center',
   },
-  avText: { fontSize: 12, fontWeight: '600', color: '#550a19' },
-  whoName: { fontSize: 11.5, color: '#fff5f7', fontWeight: '600' },
-  whoSub:  { fontSize: 10, color: '#d9aebb' },
+  avText: { fontSize: 12, fontWeight: '600', color: th.brand },
+  whoName: { fontSize: 11.5, color: th.brandOn, fontWeight: '600' },
+  whoSub:  { fontSize: 10, color: th.brandOn },
   outBtn: {
     width: 28, height: 28, borderRadius: 8,
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
     justifyContent: 'center', alignItems: 'center',
   },
-};
+});
