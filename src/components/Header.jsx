@@ -45,7 +45,7 @@ export default function Header({ title, subtitle, onBack, lang, onLangToggle, ri
           <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={toggle} style={styles.themeBtn}
             accessibilityRole="button"
             accessibilityLabel={mourn ? 'กลับสู่โหมดปกติ' : 'เปิดโหมดไว้อาลัย'}>
-            <MaterialCommunityIcons name={mourn ? 'palette' : 'ribbon'}
+            <MaterialCommunityIcons name={mourn ? 'palette' : 'circle-half-full'}
               size={sc(14)} color={th.brand} />
           </TouchableOpacity>
           {rightComponent}
