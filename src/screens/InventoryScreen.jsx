@@ -109,6 +109,8 @@ export default function InventoryScreen({ navigation }) {
   const [qtySaving, setQtySaving] = useState({});
   const [qtyEdit, setQtyEdit]     = useState({});
   const [qtyErr, setQtyErr]       = useState('');
+  const [pubSaving, setPubSaving]  = useState({});
+  const [pubErr, setPubErr]        = useState('');
 
   useEffect(() => {
     getRole().then(r => setIsAdmin(r === 'admin')).catch(() => {});
@@ -177,9 +179,47 @@ export default function InventoryScreen({ navigation }) {
     { label: lang === 'th' ? 'ประเภท' : 'CATEGORY', w: 108 },
     { label: t.stock, w: 118 },
     { label: lang === 'th' ? 'ราคาขาย' : 'PRICE', w: 92, rt: true },
+    { label: 'Show in catalog', w: 112 },
     { label: lang === 'th' ? 'ป้ายที่จะปริ้น' : 'TAGS', w: 108 },
     { label: '', w: isAdmin ? 178 : 92, rt: true },
   ];
+
+  // ── Show in catalog ──
+  // ติ๊กแล้วบันทึกทันที ไม่ต้องเปิดฟอร์ม · ติ๊กให้เห็นก่อนแล้วค่อยยิง API
+  // ถ้ายิงไม่ผ่านให้คืนค่าเดิม ไม่งั้นหน้าจอจะโกหกว่าบันทึกแล้ว
+  const togglePublish = async (p) => {
+    if (pubSaving[p.id]) return;
+    const next = !(p.is_published === true);
+    setPubErr('');
+    setPubSaving(b => ({ ...b, [p.id]: true }));
+    setList(prev => prev.map(x => (x.id === p.id ? { ...x, is_published: next } : x)));
+    try {
+      const saved = await api.updateProduct(p.id, { is_published: next });
+      setList(prev => prev.map(x => (x.id === p.id ? { ...x, ...saved } : x)));
+    } catch (e) {
+      setList(prev => prev.map(x => (x.id === p.id ? { ...x, is_published: !next } : x)));
+      setPubErr(e?.message || (lang === 'th' ? 'บันทึก Show in catalog ไม่สำเร็จ' : 'Failed to save Show in catalog'));
+    } finally {
+      setPubSaving(b => { const n = { ...b }; delete n[p.id]; return n; });
+    }
+  };
+
+  // ช่องติ๊ก — ใช้ทั้งในตาราง (จอกว้าง) และในการ์ด (จอแคบ)
+  const pubCheck = (p) => (
+    <TouchableOpacity
+      dataSet={{ hov: 'btn' }}
+      onPress={() => togglePublish(p)}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      style={[s.pubCell, pubSaving[p.id] && { opacity: 0.45 }]}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: p.is_published === true }}
+      accessibilityLabel="Show in catalog"
+    >
+      <View style={[s.pubBox, p.is_published === true && { backgroundColor: th.brandBg, borderColor: th.brandBg }]}>
+        {p.is_published === true ? <MaterialCommunityIcons name="check" size={sc(12)} color={th.brandOn} /> : null}
+      </View>
+    </TouchableOpacity>
+  );
 
   const handleUpdate = async (payload) => {
     const saved = await api.updateProduct(editing.id, payload);
@@ -312,6 +352,7 @@ export default function InventoryScreen({ navigation }) {
         {!!loadErr && <View style={s.errBox}><Text style={s.errText}>{loadErr}</Text></View>}
         {!!delErr  && <View style={s.errBox}><Text style={s.errText}>{delErr}</Text></View>}
         {!!qtyErr  && <View style={s.errBox}><Text style={s.errText}>{qtyErr}</Text></View>}
+        {!!pubErr  && <View style={s.errBox}><Text style={s.errText}>{pubErr}</Text></View>}
         {loading   && <ActivityIndicator color={th.brand} style={{ marginTop: 20 }} />}
         {!wide && !loading && list.length === 0 && <Text style={s.emptyText}>{t.empty}</Text>}
         {!wide && !loading && list.length > 0 && filtered.length === 0 && <Text style={s.emptyText}>{t.noMatch}</Text>}
@@ -368,6 +409,8 @@ export default function InventoryScreen({ navigation }) {
                   </View>,
 
                   <Text style={s.rowPrice}>฿{fmt(p.sale_price)}</Text>,
+
+                  pubCheck(p),
 
                   <View style={s.stepper}>
                     <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => setCopies(p.id, n - 1)} style={s.stepBtn}>
@@ -426,7 +469,10 @@ export default function InventoryScreen({ navigation }) {
                     )}
                   </View>
                 </View>
-                <Text style={s.price}>฿{fmt(p.sale_price)}</Text>
+                <View style={s.priceCol}>
+                  <Text style={s.price}>฿{fmt(p.sale_price)}</Text>
+                  {pubCheck(p)}
+                </View>
               </View>
 
               <View style={s.cardBottom}>
@@ -583,6 +629,9 @@ const baseStyles = (th) => ({
   offBadge: { backgroundColor: th.softer, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1 },
   offBadgeText: { fontSize: 9, fontWeight: '600', color: th.muted2 },
   price: { fontSize: 14, fontWeight: '500', color: th.brand },
+  priceCol: { alignItems: 'flex-end', gap: 6 },
+  pubCell: { flexDirection: 'row', alignItems: 'center' },
+  pubBox: { width: 17, height: 17, borderRadius: 4, borderWidth: 1.2, borderColor: th.line2, alignItems: 'center', justifyContent: 'center' },
   cardBottom: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 10, flexWrap: 'wrap' },
   ctrlGroup: { gap: 3 },
   ctrlLabel: { fontSize: 9.5, color: th.muted2, marginLeft: 2 },

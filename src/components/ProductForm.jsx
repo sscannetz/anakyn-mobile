@@ -65,6 +65,7 @@ export const T = {
     addDiamond: 'เพิ่มเพชรเม็ดถัดไป',
     summarySection: 'สรุปราคา',
     totalCost: 'ราคาทุนรวม', sellingPrice: 'ราคาขาย (กรอกเอง)', profit: 'กำไร',
+    showInCatalog: 'Show in catalog',
     saveBtn: (sku) => `บันทึก ${sku} ลงสต๊อก`,
     updateBtn: 'บันทึกการแก้ไข',
     saving: 'กำลังบันทึก...',
@@ -109,6 +110,7 @@ export const T = {
     addDiamond: 'Add Next Diamond',
     summarySection: 'Price Summary',
     totalCost: 'Total Cost', sellingPrice: 'Selling Price (manual)', profit: 'Profit',
+    showInCatalog: 'Show in catalog',
     saveBtn: (sku) => `Save ${sku} to Stock`,
     updateBtn: 'Save changes',
     saving: 'Saving...',
@@ -183,6 +185,25 @@ function SecHead({ icon, children, col = th.brand }) {
     </View>
   );
 }
+// ช่องติ๊กสี่เหลี่ยม — คนละตัวกับ Toggle (สวิตช์) ที่ใช้กับใบเซอร์
+function CheckBox({ on, onChange, label }) {
+  const { styles: s, sc, t: th } = useScaledStyles(baseStyles);
+  return (
+    <TouchableOpacity
+      dataSet={{ hov: 'btn' }}
+      onPress={() => onChange(!on)}
+      style={s.cbRow}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: !!on }}
+    >
+      <View style={[s.cbBox, { backgroundColor: on ? th.brandBg : 'transparent', borderColor: on ? th.brandBg : th.line2 }]}>
+        {on ? <MaterialCommunityIcons name="check" size={sc(11)} color={th.brandOn} /> : null}
+      </View>
+      <Text style={[s.cbLabel, { color: on ? th.brand : th.muted2 }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
 function Toggle({ on, onChange }) {
   const { styles: s, t: th } = useScaledStyles(baseStyles);
   return (
@@ -234,6 +255,7 @@ export default function ProductForm({
   const [qty, setQty]                 = useState('1');
   const [diamonds, setDiamonds]       = useState([newDiamond()]);
   const [sellingPrice, setSellingPrice] = useState('');
+  const [showInCatalog, setShowInCatalog] = useState(false);
 
   const [saving, setSaving]           = useState(false);
   const [saveError, setSaveError]     = useState('');
@@ -279,6 +301,7 @@ export default function ProductForm({
     if (product.silver_price_at_creation) setSilverPrice(str(product.silver_price_at_creation));
     setDiamonds(parseDiamonds(product.diamonds));
     setSellingPrice(product.sale_price != null ? str(product.sale_price) : '');
+    setShowInCatalog(product.is_published === true);
     setSaveError(''); setSaveSuccess(false);
   }, [isEdit, product?.id]);
 
@@ -314,6 +337,7 @@ export default function ProductForm({
     setSkuEdit(null);
     setItemName(''); setCatCode(CAT_CODES[0]); setQty('1'); setLaborCost('');
     setMetalWeight(''); setSellingPrice(''); setDiamonds([newDiamond()]);
+    setShowInCatalog(false);
     setPhotos([]); setPhotosOrig([]); setMainIdx(0); setSaveError(''); setSaveSuccess(false);
   };
 
@@ -369,6 +393,7 @@ export default function ProductForm({
 
   const resetForm = () => {
     setItemName(''); setMetalWeight(''); setLaborCost(''); setSellingPrice('');
+    setShowInCatalog(false);
     setDiamonds([newDiamond()]); setQty('1');
     setPhotos([]); setPhotosOrig([]); setMainIdx(0);
   };
@@ -420,6 +445,7 @@ export default function ProductForm({
         cost_price: totalCost,
         sale_price: parseFloat(sellingPrice) || 0,
         stock_qty: parseInt(qty, 10) || 0,
+        is_published: showInCatalog,
       };
       // ส่ง photos อย่างเดียวพอ — backend ตั้ง photo_url = photos[0] ให้เอง
       // (ถ้าส่งทั้งคู่มาเองมีโอกาสหลุดกัน หน้าสต๊อกจะโชว์คนละรูปกับที่ติดดาวไว้)
@@ -659,6 +685,7 @@ export default function ProductForm({
         <View style={s.sellingBox}>
           <Text style={s.fieldLabel}>{t.sellingPrice}</Text>
           <TextInput dataSet={{ hov: 'field' }} style={s.input} value={sellingPrice} onChangeText={setSellingPrice} keyboardType="numeric" placeholder="0" placeholderTextColor={th.faint} />
+          <CheckBox on={showInCatalog} onChange={setShowInCatalog} label={t.showInCatalog} />
           {!!sellingPrice && totalCost > 0 && (
             <View style={s.profitRow}>
               <Text style={s.profitLabel}>{t.profit}</Text>
@@ -866,6 +893,9 @@ const baseStyles = (th) => ({
   diamondTitle: { fontSize: 10, fontWeight: '500', color: th.brand, letterSpacing: 1 },
   dInput: { backgroundColor: th.soft, borderColor: th.line },
   certRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  cbRow:   { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 9 },
+  cbBox:   { width: 16, height: 16, borderRadius: 4, borderWidth: 1.2, alignItems: 'center', justifyContent: 'center' },
+  cbLabel: { fontSize: 12, fontWeight: '500' },
   toggle: { width: 36, height: 20, borderRadius: 10, position: 'relative' },
   toggleKnob: { position: 'absolute', top: 2, width: 16, height: 16, borderRadius: 8, backgroundColor: th.card },
   toggleLabel: { fontSize: 12, fontWeight: '500' },
