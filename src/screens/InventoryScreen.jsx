@@ -630,7 +630,7 @@ const baseStyles = (th) => ({
   offBadgeText: { fontSize: 9, fontWeight: '600', color: th.muted2 },
   price: { fontSize: 14, fontWeight: '500', color: th.brand },
   priceCol: { alignItems: 'flex-end', gap: 6 },
-  pubCell: { flexDirection: 'row', alignItems: 'center' },
+  pubCell: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   pubBox: { width: 17, height: 17, borderRadius: 4, borderWidth: 1.2, borderColor: th.line2, alignItems: 'center', justifyContent: 'center' },
   cardBottom: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 10, flexWrap: 'wrap' },
   ctrlGroup: { gap: 3 },
