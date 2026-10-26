@@ -29,6 +29,7 @@ const T = {
     allCats: 'ทั้งหมด',
     printList: 'ปริ้นรายการ / PDF',
     selectAll: 'เลือกทั้งหมด', clearAll: 'ล้างทั้งหมด', matchQty: 'ตามจำนวนคงเหลือ',
+    showAll: 'Show all in catalog', hideAll: 'Hide all in catalog',
     tagHint: 'ป้ายขนาด 50 × 15 มม. — ตั้งขนาดกระดาษใน driver เครื่องพิมพ์เป็น 50×15 มม. ก่อนสั่งพิมพ์',
     stock: 'คงเหลือ', tag: 'ป้าย',
     edit: 'แก้ไข', del: 'ลบ', delConfirm: 'กดอีกครั้งเพื่อลบ',
@@ -49,6 +50,7 @@ const T = {
     allCats: 'All',
     printList: 'Print list / PDF',
     selectAll: 'Select all', clearAll: 'Clear all', matchQty: 'Match stock qty',
+    showAll: 'Show all in catalog', hideAll: 'Hide all in catalog',
     tagHint: 'Tag size 50 × 15 mm — set the printer driver paper size to 50×15 mm first',
     stock: 'In stock', tag: 'Tags',
     edit: 'Edit', del: 'Delete', delConfirm: 'Tap again to delete',
@@ -111,6 +113,7 @@ export default function InventoryScreen({ navigation }) {
   const [qtyErr, setQtyErr]       = useState('');
   const [pubSaving, setPubSaving]  = useState({});
   const [pubErr, setPubErr]        = useState('');
+  const [bulkBusy, setBulkBusy]    = useState(false);
 
   useEffect(() => {
     getRole().then(r => setIsAdmin(r === 'admin')).catch(() => {});
@@ -201,6 +204,28 @@ export default function InventoryScreen({ navigation }) {
       setPubErr(e?.message || (lang === 'th' ? 'บันทึก Show in catalog ไม่สำเร็จ' : 'Failed to save Show in catalog'));
     } finally {
       setPubSaving(b => { const n = { ...b }; delete n[p.id]; return n; });
+    }
+  };
+
+  // ติ๊ก/เอาออกทั้งรายการที่กรองอยู่ — ยิงรวบครั้งเดียว ไม่ยิงทีละชิ้น
+  // ปุ่มเดียวสลับไปมา: ถ้าติ๊กครบหมดแล้วจะกลายเป็น Hide all
+  const allPublished = filtered.length > 0 && filtered.every(p => p.is_published === true);
+
+  const bulkPublish = async () => {
+    if (bulkBusy || filtered.length === 0) return;
+    const next = !allPublished;
+    const ids  = filtered.map(p => p.id);
+    const idSet = new Set(ids);
+    const before = list;                 // เก็บไว้คืนถ้ายิงไม่ผ่าน
+    setBulkBusy(true); setPubErr('');
+    setList(prev => prev.map(x => (idSet.has(x.id) ? { ...x, is_published: next } : x)));
+    try {
+      await api.setProductsPublished(ids, next);
+    } catch (e) {
+      setList(before);
+      setPubErr(e?.message || (lang === 'th' ? 'บันทึก Show in catalog ไม่สำเร็จ' : 'Failed to save Show in catalog'));
+    } finally {
+      setBulkBusy(false);
     }
   };
 
@@ -307,6 +332,7 @@ export default function InventoryScreen({ navigation }) {
               setTagSel(a);
             }} />
             <Chip label={t.clearAll} onPress={() => setTagSel({})} />
+            <Chip label={allPublished ? t.hideAll : t.showAll} on={allPublished} onPress={bulkPublish} />
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => printStock(list)} style={s.toolBtnRight}>
               <MaterialCommunityIcons name="printer" size={sc(15)} color={th.brand} />
               <Text style={s.toolBtnText}>{t.printList}</Text>
@@ -330,6 +356,9 @@ export default function InventoryScreen({ navigation }) {
           </TouchableOpacity>
           <TouchableOpacity dataSet={{ hov: 'btn' }} style={s.tagBulkBtn} onPress={() => setTagSel({})}>
             <Text style={s.tagBulkText}>{t.clearAll}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity dataSet={{ hov: 'btn' }} style={[s.tagBulkBtn, bulkBusy && { opacity: 0.45 }]} onPress={bulkPublish}>
+            <Text style={s.tagBulkText}>{allPublished ? t.hideAll : t.showAll}</Text>
           </TouchableOpacity>
           <TouchableOpacity dataSet={{ hov: 'btn' }} style={s.tagBulkBtn}
             onPress={() => {

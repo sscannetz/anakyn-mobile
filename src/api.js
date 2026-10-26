@@ -60,6 +60,9 @@ export const api = {
   getProduct: (id) => request(`/products/${id}`),
   createProduct: (data) => request('/products', { method: 'POST', body: data }),
   updateProduct: (id, data) => request(`/products/${id}`, { method: 'PUT', body: data }),
+  // ติ๊ก Show in catalog หลายชิ้นในคำขอเดียว — ปุ่ม Show all ยิงทีละชิ้นไม่ไหว
+  setProductsPublished: (ids, is_published) =>
+    request('/products/publish', { method: 'PATCH', body: { ids, is_published } }),
   deleteProduct: (id) => request(`/products/${id}`, { method: 'DELETE' }),
 
   // ── Payment gateway (Omise) ──
