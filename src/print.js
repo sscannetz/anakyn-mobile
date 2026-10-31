@@ -889,7 +889,7 @@ const WO_METAL_COLOR = {
   white: 'White gold', yellow: 'Yellow gold', light: 'Light gold',
   rose: 'Rose gold', silver: 'Silver',
 };
-const WO_METAL_TYPE = { '9K': '9K', '14K': '14K', '18K': '18K', silver: 'Silver 925' };
+const WO_METAL_TYPE = { '9K': '9K', '14K': '14K', '18K': '18K', silver: 'Silver 925', platinum: 'Platinum' };
 
 const WO_STYLE = `
   @page { size: A4; margin: 12mm 11mm; }

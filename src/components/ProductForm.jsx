@@ -27,6 +27,7 @@ export const METAL_TABS = [
   { key: '14K',    label: '14K',    col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
   { key: '18K',    label: '18K',    col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
   { key: 'silver', label: 'Silver', col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
+  { key: 'platinum', label: 'Platinum', col: '#550a19', bg: '#fdf0f2', border: '#e8c0c8' },
 ];
 // ใช้ร่วมกับหน้าใบสั่งทำด้วย — แหล่งเดียวจะได้ไม่มีทางหลุดกัน
 export const SHAPES = [
@@ -55,6 +56,7 @@ export const T = {
     category: 'หมวดหมู่', stockQty: 'จำนวนในสต๊อก', laborCost: 'ค่าแรงช่าง (บาท)',
     metalSection: 'วัสดุโลหะ',
     goldPriceLabel: 'ราคาทองคำ / บาทละ (96.5%)', silverPriceLabel: 'ราคาเงิน 925 / กรัม',
+    platinumPriceLabel: 'ราคาแพลตินัม / กรัม', needPlatPrice: 'กรุณากรอกราคาแพลตินัมต่อกรัม',
     actualWeight: 'น้ำหนักจริง (g)', adjWeight: 'น้ำหนัก +10% (g)',
     diamondSection: 'ข้อมูลเพชร',
     dWeight: 'น้ำหนัก (ct)', dQty: 'จำนวน (เม็ด)',
@@ -100,6 +102,7 @@ export const T = {
     category: 'Category', stockQty: 'Stock Qty', laborCost: 'Labor Cost (THB)',
     metalSection: 'Metal',
     goldPriceLabel: 'Gold price per baht (96.5%)', silverPriceLabel: 'Silver 925 price per gram',
+    platinumPriceLabel: 'Platinum price per gram', needPlatPrice: 'Please enter the platinum price per gram',
     actualWeight: 'Actual Weight (g)', adjWeight: 'Weight +10% (g)',
     diamondSection: 'Diamond Info',
     dWeight: 'Weight (ct)', dQty: 'Qty (pcs)',
@@ -247,6 +250,7 @@ export default function ProductForm({
 
   const [goldPrice, setGoldPrice]     = useState('67300');
   const [silverPrice, setSilverPrice] = useState('33.50');
+  const [platinumPrice, setPlatinumPrice] = useState('');   // ไม่ตั้งค่าเริ่มต้น ราคาขยับบ่อย
   const [metalKey, setMetalKey]       = useState('18K');
   const [metalWeight, setMetalWeight] = useState('');
   const [laborCost, setLaborCost]     = useState('');
@@ -287,6 +291,7 @@ export default function ProductForm({
           const list = Array.isArray(full?.photos) ? full.photos.filter(Boolean).slice(0, PHOTO_MAX) : [];
           const next = list.length ? list : (full?.photo_url ? [full.photo_url] : []);
           setPhotos(next); setPhotosOrig(next); setMainIdx(0);
+          if (full?.platinum_price_at_creation != null) setPlatinumPrice(str(full.platinum_price_at_creation));
         })
         .catch(() => {})
         .finally(() => { if (token === photoReq.current) setPhotoBusy(''); });
@@ -299,14 +304,16 @@ export default function ProductForm({
     setMetalWeight(product.metal_weight_g ? str(product.metal_weight_g) : '');
     if (product.gold_price_at_creation)   setGoldPrice(str(product.gold_price_at_creation));
     if (product.silver_price_at_creation) setSilverPrice(str(product.silver_price_at_creation));
+    setPlatinumPrice(product.platinum_price_at_creation != null ? str(product.platinum_price_at_creation) : '');
     setDiamonds(parseDiamonds(product.diamonds));
     setSellingPrice(product.sale_price != null ? str(product.sale_price) : '');
     setShowInCatalog(product.is_published === true);
     setSaveError(''); setSaveSuccess(false);
   }, [isEdit, product?.id]);
 
-  const isGold   = metalKey !== 'silver';
   const isSilver = metalKey === 'silver';
+  const isPlat   = metalKey === 'platinum';
+  const isGold   = !isSilver && !isPlat;
   const tab      = METAL_TABS.find(m => m.key === metalKey) || METAL_TABS[2];
   const goldOpt  = GOLD_OPTIONS.find(o => o.key === metalKey) || GOLD_OPTIONS[2];
 
@@ -315,7 +322,8 @@ export default function ProductForm({
   const gpg        = (parseFloat(goldPrice) || 0) / GOLD_BAHT_GRAMS;
   const goldCost   = isGold   ? Math.round(wAdj * gpg * goldOpt.factor) : 0;
   const silvCost   = isSilver ? Math.round(wAdj * (parseFloat(silverPrice) || 0)) : 0;
-  const metalCost  = isGold ? goldCost : silvCost;
+  const platCost   = isPlat   ? Math.round(wAdj * (parseFloat(platinumPrice) || 0)) : 0;
+  const metalCost  = isGold ? goldCost : isPlat ? platCost : silvCost;
   const dTotalCost = diamonds.reduce((sum, d) => sum + (parseFloat(d.cost) || 0), 0);
   const totalCost  = metalCost + dTotalCost + (parseFloat(laborCost) || 0);
   const skuLabel   = `ANAKYN#${String(skuNum).padStart(4, '0')}`;
@@ -401,6 +409,7 @@ export default function ProductForm({
   const handleSave = async () => {
     if (!itemName.trim() || !sellingPrice) { setSaveError(t.needName); return; }
     if (isEdit && !sku.trim())             { setSaveError(t.needSku);  return; }
+    if (isPlat && !(parseFloat(platinumPrice) > 0)) { setSaveError(t.needPlatPrice); return; }
 
     setSaving(true); setSaveError(''); setSaveSuccess(false);
     try {
@@ -435,6 +444,7 @@ export default function ProductForm({
         metal_weight_adj_g: wNum > 0 ? wAdj : null,
         gold_price_at_creation:   isGold   ? parseFloat(goldPrice)   : null,
         silver_price_at_creation: isSilver ? parseFloat(silverPrice) : null,
+        platinum_price_at_creation: isPlat ? parseFloat(platinumPrice) : null,
         metal_cost: metalCost,
         labor_cost: parseFloat(laborCost) || 0,
         // POST: backend stringify ให้เอง — PUT: เขียนลงคอลัมน์ JSONB ตรง ๆ จึงต้อง stringify ที่นี่
@@ -569,11 +579,11 @@ export default function ProductForm({
           })}
         </View>
         <View style={[s.metalBox, { backgroundColor: tab.bg, borderColor: tab.border }]}>
-          <Field label={isGold ? t.goldPriceLabel : t.silverPriceLabel}>
+          <Field label={isGold ? t.goldPriceLabel : isPlat ? t.platinumPriceLabel : t.silverPriceLabel}>
             <TextInput dataSet={{ hov: 'field' }} style={[s.input, { borderColor: tab.border }]}
-              value={isGold ? goldPrice : silverPrice}
-              onChangeText={isGold ? setGoldPrice : setSilverPrice}
-              keyboardType="numeric" />
+              value={isGold ? goldPrice : isPlat ? platinumPrice : silverPrice}
+              onChangeText={isGold ? setGoldPrice : isPlat ? setPlatinumPrice : setSilverPrice}
+              keyboardType="numeric" placeholder={isPlat ? '0.00' : undefined} placeholderTextColor={th.faint} />
           </Field>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <View style={{ flex: 1 }}>
@@ -590,7 +600,7 @@ export default function ProductForm({
             </View>
           </View>
           <View style={[s.costBox, { backgroundColor: tab.bg, borderColor: tab.border }]}>
-            <Text style={[s.costBoxLabel, { color: tab.col }]}>{isGold ? `ต้นทุนทอง ${metalKey}` : 'ต้นทุนเงิน 925'}</Text>
+            <Text style={[s.costBoxLabel, { color: tab.col }]}>{isGold ? `ต้นทุนทอง ${metalKey}` : isPlat ? 'ต้นทุนแพลตินัม' : 'ต้นทุนเงิน 925'}</Text>
             <Text style={[s.costBoxValue, { color: tab.col }]}>฿{fmt(metalCost)}</Text>
           </View>
         </View>

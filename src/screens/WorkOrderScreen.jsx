@@ -80,6 +80,36 @@ const newJob = (code = '') => ({
 });
 const newPay = () => ({ id: uid(), amount: '', note: '' });
 
+// ── สินค้าในสต๊อก → ช่องของงาน 1 ชิ้น ──
+// เป็นสำเนาให้แก้ในใบสั่งทำได้อิสระ สินค้าในสต๊อกไม่ถูกแก้ตาม
+// ★ ทุกค่าต้องเป็น string — ตอนบันทึกเรียก .trim() ทุกช่อง เจอ null แล้วพังทั้งใบ
+const CAT_TO_JOB = { ring: 'แหวน', necklace: 'สร้อยคอ', earring: 'ต่างหู', bracelet: 'กำไล', pendant: 'จี้', other: 'อื่นๆ' };
+function jobFromProduct(p, cur) {
+  // เพชรในสต๊อกเก็บ "กะรัตต่อเม็ด × จำนวน" ส่วนใบสั่งทำใช้ "กะรัตรวม" ต้องคูณก่อน
+  const stones = jsonArr(p.diamonds)
+    .filter(d => d && (Number(d.weight) || d.shape))
+    .map(d => {
+      const q  = Math.max(1, parseInt(d.qty, 10) || 1);
+      const ct = (Number(d.weight) || 0) * q;
+      return {
+        id: uid(), shape: String(d.shape || ''), color: String(d.color || ''), clarity: String(d.clarity || ''),
+        carat: ct ? String(Math.round(ct * 1000) / 1000) : '', qty: String(q),
+        has_cert: !!d.hasCert, cert_no: String(d.certNo || ''),
+      };
+    });
+  const photos = jsonArr(p.photos).filter(Boolean).slice(0, 4);
+  return {
+    job_type: CAT_TO_JOB[p.category] || cur.job_type,
+    metal_type: METAL_TABS.some(m => m.key === p.metal_type) ? p.metal_type : cur.metal_type,
+    metal_color: p.metal_type === 'silver' ? 'silver' : cur.metal_color,
+    unit_weight_g: p.metal_weight_g ? String(Number(p.metal_weight_g)) : '',
+    price: p.sale_price != null ? String(Number(p.sale_price) || '') : '',
+    photos: photos.length ? photos : (p.photo_url ? [p.photo_url] : []),
+    stones: stones.length ? stones : [newStone()],
+    note: cur.note.trim() ? cur.note : `อ้างอิงสินค้า ${p.sku || ''} ${p.name || ''}`.trim(),
+  };
+}
+
 // รหัสงานถัดไปจากรหัสที่มีอยู่ เช่น CUSTOM#00834 → CUSTOM#00835
 const bumpCode = (code, step = 1) => {
   const m = String(code || '').match(/^(.*?)(\d+)$/);
@@ -125,6 +155,14 @@ export default function WorkOrderScreen({ navigation }) {
   const [statusErr, setStatusErr]   = useState('');
   const [askDeliver, setAskDeliver] = useState(false);
 
+  // ── อ้างอิงสินค้าในสต๊อก (เฉพาะตอนเปิดใบใหม่) ──
+  const [stockList, setStockList] = useState(null);   // null = ยังไม่โหลด
+  const [refQ, setRefQ]           = useState('');
+  const [refOpen, setRefOpen]     = useState(false);
+  const [refPicked, setRefPicked] = useState(null);
+  const [refBusy, setRefBusy]     = useState(false);
+  const [refErr, setRefErr]       = useState('');
+
   const load = async () => {
     setLoading(true);
     try { setOrders(await api.getWorkOrders()); } catch (_) {}
@@ -143,8 +181,37 @@ export default function WorkOrderScreen({ navigation }) {
   const grandTotal = useMemo(() => form.jobs.reduce((t, j) => t + num(j.price), 0), [form.jobs]);
   const paidTotal  = useMemo(() => form.payments.reduce((t, p) => t + num(p.amount), 0), [form.payments]);
 
+  // โหลดรายการสินค้าครั้งแรกที่แตะช่องค้นหา (light = ไม่ลากรูปมา)
+  const loadStock = async () => {
+    if (stockList) return;
+    try { setStockList(await api.getProducts({ light: 'true' })); }
+    catch (e) { setRefErr(e?.message || (lang === 'th' ? 'โหลดรายการสินค้าไม่สำเร็จ' : 'Failed to load products')); }
+  };
+
+  // ยังไม่พิมพ์ → โชว์ล่าสุด 8 ชิ้น (backend เรียงใหม่สุดก่อน) · พิมพ์แล้ว → ค้นรหัส/ชื่อ
+  const refResults = useMemo(() => {
+    if (!stockList) return [];
+    const q = refQ.trim().toLowerCase();
+    const hit = q
+      ? stockList.filter(p => [p.sku, p.name].some(v => String(v || '').toLowerCase().includes(q)))
+      : stockList;
+    return hit.slice(0, 8);
+  }, [stockList, refQ]);
+
+  // เลือกแล้วเติมลงงานที่ 1 — ต้องดึงตัวเต็มอีกรอบ เพราะรายการ light ไม่มีรูป
+  const pickRef = async (p) => {
+    setRefOpen(false); setRefQ(p.sku || ''); setRefBusy(true); setRefErr('');
+    let full = p;
+    try { full = await api.getProduct(p.id); }
+    catch (_) { setRefErr(lang === 'th' ? 'ดึงรูปสินค้าไม่สำเร็จ เติมข้อมูลอื่นให้แล้ว' : 'Photos could not be loaded'); }
+    setRefPicked(full);
+    setForm(f => ({ ...f, jobs: f.jobs.map((j, i) => (i === 0 ? { ...j, ...jobFromProduct(full, j) } : j)) }));
+    setRefBusy(false);
+  };
+
   const openNew = async () => {
     setForm(emptyForm()); setError(''); setShowForm(true);
+    setStockList(null); setRefQ(''); setRefOpen(false); setRefPicked(null); setRefErr('');
     try {
       const r = await api.nextWorkNo();
       setForm(cur => (cur.id ? cur : {
@@ -520,6 +587,63 @@ export default function WorkOrderScreen({ navigation }) {
                 </View>
               </Field>
             </View>
+
+            {/* ── อ้างอิงสินค้าในสต๊อก — เฉพาะใบใหม่ เลือกแล้วเติมงานที่ 1 ── */}
+            {!form.id && (
+              <View>
+                <Text style={s.grpLabel}>{lang === 'th' ? 'อ้างอิงสินค้าในสต๊อก' : 'From stock'}</Text>
+                <View style={[s.input, s.refBox]}>
+                  <MaterialCommunityIcons name="magnify" size={sc(16)} color={th.muted} />
+                  <TextInput dataSet={{ hov: 'field' }} style={s.refInput} value={refQ}
+                    onChangeText={(v) => { setRefQ(v); setRefOpen(true); }}
+                    onFocus={() => { setRefOpen(true); loadStock(); }}
+                    placeholder={lang === 'th' ? 'ค้นหารหัสสินค้าหรือชื่อ เช่น ANAKYN#0449' : 'Search SKU or name'}
+                    placeholderTextColor={th.faint} />
+                  {refBusy
+                    ? <ActivityIndicator size="small" color={th.brand} />
+                    : (refQ || refOpen) ? (
+                      <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setRefQ(''); setRefOpen(false); }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <MaterialCommunityIcons name="close-circle" size={sc(15)} color={th.dim} />
+                      </TouchableOpacity>
+                    ) : null}
+                </View>
+                {refOpen && (
+                  <View style={s.refList}>
+                    {stockList === null
+                      ? <ActivityIndicator color={th.brand} style={{ margin: 12 }} />
+                      : refResults.length === 0
+                        ? <Text style={s.refEmpty}>{lang === 'th' ? 'ไม่พบสินค้า' : 'No match'}</Text>
+                        : refResults.map((p, i) => (
+                          <TouchableOpacity dataSet={{ hov: 'btn' }} key={p.id} onPress={() => pickRef(p)}
+                            style={[s.refItem, i === refResults.length - 1 && { borderBottomWidth: 0 }]}>
+                            <Text style={s.refSku} numberOfLines={1}>{p.sku}</Text>
+                            <Text style={s.refName} numberOfLines={1}>{p.name}</Text>
+                            <Text style={s.refPrice}>฿{fmt(p.sale_price)}</Text>
+                          </TouchableOpacity>
+                        ))}
+                  </View>
+                )}
+                {refPicked && !refOpen && (
+                  <View style={s.refCard}>
+                    {(jsonArr(refPicked.photos)[0] || refPicked.photo_url)
+                      ? <Image source={{ uri: jsonArr(refPicked.photos)[0] || refPicked.photo_url }} style={s.refThumb} resizeMode="cover" />
+                      : <View style={[s.refThumb, { alignItems: 'center', justifyContent: 'center' }]}>
+                          <MaterialCommunityIcons name="diamond-stone" size={sc(16)} color={th.dim} />
+                        </View>}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={s.refCardTitle} numberOfLines={1}>{refPicked.sku} · {refPicked.name}</Text>
+                      <Text style={s.refCardSub}>
+                        {lang === 'th'
+                          ? 'เติมข้อมูลลงงานที่ 1 แล้ว แก้ไขด้านล่างได้ · สินค้าในสต๊อกไม่เปลี่ยน'
+                          : 'Filled into job 1 — edit below. Stock is not changed.'}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+                {!!refErr && <Text style={s.refErr}>{refErr}</Text>}
+              </View>
+            )}
 
             {/* ── งานแต่ละชิ้น ── */}
             {form.jobs.map((j, ji) => (
@@ -1044,6 +1168,19 @@ const baseStyles = (th) => ({
 
   errBox: { backgroundColor: th.soft, borderWidth: 1, borderColor: th.line3, borderRadius: 8, padding: 10, marginBottom: 10 },
   errText: { fontSize: 12, color: th.danger },
+  refBox: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 0 },
+  refInput: { flex: 1, minWidth: 0, paddingVertical: 10, fontSize: 14, color: th.ink },
+  refList: { backgroundColor: th.card, borderWidth: 1, borderColor: th.line2, borderRadius: 10, marginTop: 6, overflow: 'hidden' },
+  refItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9, paddingHorizontal: 12, borderBottomWidth: 0.5, borderBottomColor: th.hair },
+  refSku: { width: 104, fontSize: 12, fontWeight: '600', color: th.brand },
+  refName: { flex: 1, minWidth: 0, fontSize: 13, color: th.ink },
+  refPrice: { fontSize: 12.5, color: th.muted2 },
+  refEmpty: { padding: 12, fontSize: 12.5, color: th.muted },
+  refCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: th.soft, borderRadius: 10, padding: 10, marginTop: 8 },
+  refThumb: { width: 44, height: 44, borderRadius: 8, backgroundColor: th.card },
+  refCardTitle: { fontSize: 13, fontWeight: '600', color: th.ink },
+  refCardSub: { fontSize: 11.5, color: th.muted, marginTop: 2 },
+  refErr: { fontSize: 12, color: th.danger, marginTop: 6 },
 
   card: { backgroundColor: th.card, borderWidth: 1, borderColor: th.line, borderRadius: 12, padding: 14, marginBottom: 12 },
   secTitle: { fontSize: 13.5, fontWeight: '600', color: th.brand, marginBottom: 4 },
