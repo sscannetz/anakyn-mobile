@@ -24,7 +24,8 @@ async function kickToLogin() {
 //   - Android emulator: http://10.0.2.2:4000/api
 //   - iOS simulator:    http://localhost:4000/api
 //   - อุปกรณ์จริง:      http://<IP ของเครื่อง>:4000/api
-export const BASE_URL = 'https://anakyn-backend.onrender.com/api';
+// ย้ายจาก Oregon มา Singapore (2 พ.ย. 2569) ให้อยู่ภูมิภาคเดียวกับ Supabase — เร็วขึ้น 4–7 เท่า
+export const BASE_URL = 'https://anakyn-backend-sg.onrender.com/api';
 
 async function request(path, { method = 'GET', body, auth = true } = {}) {
   const headers = { 'Content-Type': 'application/json' };
