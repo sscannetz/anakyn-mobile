@@ -137,6 +137,7 @@ export const api = {
   getReceipts: () => request('/receipts'),
   getReceipt: (id) => request(`/receipts/${id}`),
   createReceipt: (data) => request('/receipts', { method: 'POST', body: data }),
+  updateReceipt: (id, data) => request(`/receipts/${id}`, { method: 'PATCH', body: data }),
   deleteReceipt: (id) => request(`/receipts/${id}`, { method: 'DELETE' }),
 
   // ── Customers ──

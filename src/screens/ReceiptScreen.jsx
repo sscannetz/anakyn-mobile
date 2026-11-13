@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════════════
 // ReceiptScreen.jsx — ใบเสร็จรับเงิน (ออกจากรายการขาย)
 // ══════════════════════════════════════════════════════
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   ActivityIndicator, Modal,
@@ -36,6 +36,14 @@ const payLabel = (key, lang) => {
   return o ? (lang === 'th' ? o.th : o.en) : (key || '—');
 };
 
+// วันที่ของใบเสร็จตามเวลาไทย → 'YYYY-MM-DD' (ใช้ในช่องแก้วันที่)
+const toYmd = (iso) => {
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  return new Date(d.getTime() + 7 * 3600e3).toISOString().slice(0, 10);
+};
+const n0 = (v) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
+
 const FILTERS = [
   { key: 'all', th: 'ทั้งหมด', en: 'All' },
 ];
@@ -66,6 +74,12 @@ export default function ReceiptScreen({ navigation, route }) {
   const [error, setError]       = useState('');
   const [selRc, setSelRc]       = useState(null);
   const [confirmDel, setConfirmDel] = useState(false);
+  // ── แก้ไขใบเสร็จ ──
+  const [edit, setEdit]         = useState(null);   // null = ปิด · object = ฟอร์มที่กำลังแก้
+  const [editErr, setEditErr]   = useState('');
+  const [saving, setSaving]     = useState(false);
+  const [stockList, setStockList] = useState(null); // null = ยังไม่โหลด
+  const [addQ, setAddQ]         = useState('');
 
   useEffect(() => {
     api.getReceipts().then(setReceipts).finally(() => setLoading(false));
@@ -104,6 +118,81 @@ export default function ReceiptScreen({ navigation, route }) {
       setSelRc(null);
     } catch (_) {}
     setConfirmDel(false);
+  };
+
+  // ── แก้ไขใบเสร็จ ──
+  const openEdit = () => {
+    const rc = selRc;
+    // ต้องรอรายละเอียดเต็ม (มีรายการสินค้า) โหลดเสร็จก่อน ไม่งั้นฟอร์มจะเริ่มจากรายการว่าง
+    if (!rc || !Array.isArray(rc.items)) return;
+    const items = (rc.items || []).map(it => ({
+      product_id: it.product_id, name: it.product_name || it.name || '', sku: it.sku || '',
+      qty: String(n0(it.qty) || 1), unit_price: String(n0(it.unit_price)),
+    }));
+    // ยอดรับเดิมเท่ากับยอดบิล → ให้ยอดรับตามยอดบิลใหม่อัตโนมัติ (จนกว่าจะพิมพ์แก้เอง)
+    const follow = Math.round(n0(rc.amount) * 100) === Math.round(n0(rc.sale_total ?? rc.total) * 100);
+    const form = {
+      issued_at: toYmd(rc.issued_at), payment_method: rc.payment_method || 'cash', note: rc.note || '',
+      customer_name: rc.customer_name || '', customer_phone: rc.phone || '',
+      vip_discount: String(n0(rc.vip_discount)), extra_discount: String(n0(rc.extra_discount)),
+      amount: String(n0(rc.amount)), followTotal: follow, items,
+    };
+    setEdit({ ...form, orig: JSON.parse(JSON.stringify(form)) });
+    setEditErr(''); setAddQ('');
+    if (!stockList) api.getProducts({ light: 'true' }).then(setStockList).catch(() => setStockList([]));
+  };
+  const setE = (patch) => setEdit(prev => ({ ...prev, ...patch }));
+  const setItem = (i, patch) => setEdit(prev => ({ ...prev, items: prev.items.map((it, k) => (k === i ? { ...it, ...patch } : it)) }));
+  const removeItem = (i) => setEdit(prev => ({ ...prev, items: prev.items.filter((_, k) => k !== i) }));
+  const addItem = (p) => {
+    setEdit(prev => ({ ...prev, items: [...prev.items, {
+      product_id: p.id, name: p.name || '', sku: p.sku || '', qty: '1', unit_price: String(n0(p.sale_price)),
+    }] }));
+    setAddQ('');
+  };
+  const addResults = useMemo(() => {
+    const qq = addQ.trim().toLowerCase();
+    if (!stockList || !qq) return [];
+    return stockList.filter(p => [p.sku, p.name].some(v => String(v || '').toLowerCase().includes(qq))).slice(0, 8);
+  }, [stockList, addQ]);
+  // ยอดบิลใหม่ (สูตรเดียวกับ backend: ส่วนลดก่อน แล้วค่อยคิด VAT 7% ถ้าบิลนี้มี VAT)
+  const editTotal = useMemo(() => {
+    if (!edit) return 0;
+    const sub = edit.items.reduce((a, it) => a + n0(it.qty) * n0(it.unit_price), 0);
+    const after = sub - n0(edit.vip_discount) - n0(edit.extra_discount);
+    return after + (selRc?.vat_enabled === false ? 0 : Math.round(after * 0.07));
+  }, [edit, selRc]);
+  const editAmount = edit ? (edit.followTotal ? String(editTotal) : edit.amount) : '';
+
+  const handleSaveEdit = async () => {
+    const e = edit, o = e.orig, L = (a, b) => (lang === 'th' ? a : b);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(e.issued_at) || isNaN(new Date(e.issued_at))) { setEditErr(L('วันที่ไม่ถูกต้อง (ปปปป-ดด-วว เช่น 2026-11-13)', 'Invalid date (YYYY-MM-DD)')); return; }
+    if (e.items.length === 0) { setEditErr(L('ต้องมีสินค้าอย่างน้อย 1 รายการ', 'At least 1 item required')); return; }
+    if (e.items.some(it => !/^\d+$/.test(String(it.qty).trim()) || Number(it.qty) < 1)) { setEditErr(L('จำนวนสินค้าต้องเป็นเลขเต็มตั้งแต่ 1 ขึ้นไป', 'Qty must be a whole number ≥ 1')); return; }
+    if (e.items.some(it => String(it.unit_price).trim() === '' || !(Number(it.unit_price) >= 0))) { setEditErr(L('ราคาสินค้าไม่ถูกต้อง', 'Invalid price')); return; }
+    if (!(Number(e.vip_discount || 0) >= 0) || !(Number(e.extra_discount || 0) >= 0)) { setEditErr(L('ส่วนลดไม่ถูกต้อง', 'Invalid discount')); return; }
+    if (String(editAmount).trim() === '' || !(Number(editAmount) >= 0)) { setEditErr(L('จำนวนเงินที่รับไม่ถูกต้อง', 'Invalid amount')); return; }
+
+    // ส่งเฉพาะส่วนของบิลขายที่แก้จริง (กันไปยุ่งสต๊อก/ลูกค้าโดยไม่จำเป็น)
+    const body = { issued_at: e.issued_at, payment_method: e.payment_method, note: e.note.trim(), amount: Number(editAmount) };
+    if (e.customer_name.trim() !== o.customer_name.trim() || e.customer_phone.trim() !== o.customer_phone.trim()) {
+      body.customer_name = e.customer_name.trim(); body.customer_phone = e.customer_phone.trim();
+    }
+    const pack = (arr) => JSON.stringify(arr.map(it => [it.product_id, Number(it.qty), Number(it.unit_price)]));
+    if (pack(e.items) !== pack(o.items)) {
+      body.items = e.items.map(it => ({ product_id: it.product_id, qty: Number(it.qty), unit_price: Number(it.unit_price) }));
+    }
+    if (Number(e.vip_discount || 0) !== Number(o.vip_discount)) body.vip_discount = Number(e.vip_discount || 0);
+    if (Number(e.extra_discount || 0) !== Number(o.extra_discount)) body.extra_discount = Number(e.extra_discount || 0);
+
+    setSaving(true); setEditErr('');
+    try {
+      const full = await api.updateReceipt(selRc.id, body);
+      setSelRc(full);
+      setReceipts(prev => prev.map(r => (r.id === full.id ? { ...r, ...full } : r)));
+      setEdit(null);
+    } catch (err) { setEditErr(err.message || L('ไม่สามารถแก้ไขใบเสร็จได้', 'Could not update receipt')); }
+    finally { setSaving(false); }
   };
 
   const wide = useWide();
@@ -246,6 +335,11 @@ export default function ReceiptScreen({ navigation, route }) {
               <DocFooter>ขอบคุณที่ใช้บริการ · Anakyn Gems Co., Ltd.</DocFooter>
             </DocWrapper>
             <DocActions lang={lang} onPrint={() => printReceipt(selRc)} onSavePdf={() => saveReceipt(selRc)} />
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={openEdit} disabled={!Array.isArray(selRc.items)}
+              style={[s.editBtn, !Array.isArray(selRc.items) && { opacity: 0.5 }]} activeOpacity={0.85}>
+              <MaterialCommunityIcons name="pencil-outline" size={sc(16)} color={th.brand} />
+              <Text style={s.editBtnText}>{lang === 'th' ? 'แก้ไขใบเสร็จ' : 'Edit receipt'}</Text>
+            </TouchableOpacity>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleDelete} style={[s.delBtn, confirmDel && s.delBtnConfirm]} activeOpacity={0.85}>
               <MaterialCommunityIcons name="trash-can-outline" size={sc(16)} color={confirmDel ? th.brandOn : th.danger} />
               <Text style={[s.delBtnText, confirmDel && { color: th.brandOn }]}>
@@ -253,6 +347,120 @@ export default function ReceiptScreen({ navigation, route }) {
                   ? (lang === 'th' ? 'แตะอีกครั้งเพื่อยืนยันลบ' : 'Tap again to confirm')
                   : (lang === 'th' ? 'ลบใบเสร็จ' : 'Delete')}
               </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        )}
+      </ShellModal>
+
+      {/* EDIT RECEIPT MODAL — ช่องลูกค้า/สินค้า/ส่วนลด แก้ที่บิลขายต้นทางด้วย */}
+      <ShellModal visible={!!edit} animationType="slide" presentationStyle="pageSheet"
+        onClose={() => !saving && setEdit(null)}>
+        {edit && (
+          <ScrollView style={s.modal} contentContainerStyle={{ paddingBottom: 30 }} keyboardShouldPersistTaps="handled">
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>{lang === 'th' ? 'แก้ไขใบเสร็จ' : 'Edit receipt'} · {selRc?.receipt_no}</Text>
+            </View>
+
+            <Text style={s.fieldLabel}>{lang === 'th' ? 'วันที่ (ปปปป-ดด-วว)' : 'Date (YYYY-MM-DD)'}</Text>
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={edit.issued_at}
+              onChangeText={v => setE({ issued_at: v })} placeholder="2026-11-13" placeholderTextColor={th.faint} />
+
+            <Text style={s.fieldLabel}>{lang === 'th' ? 'ช่องทางชำระเงิน' : 'Payment method'}</Text>
+            <View style={s.payRow}>
+              {PAY_OPTIONS.map(p => (
+                <TouchableOpacity dataSet={{ hov: 'btn' }} key={p.key} onPress={() => setE({ payment_method: p.key })}
+                  style={[s.payBtn, { backgroundColor: edit.payment_method === p.key ? th.brandBg : th.card2, borderColor: edit.payment_method === p.key ? th.brandBg : th.softer }]}>
+                  <Text style={[s.payBtnText, { color: edit.payment_method === p.key ? th.brandOn : th.muted2 }]}>{lang === 'th' ? p.th : p.en}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={s.fieldLabel}>{lang === 'th' ? 'ชื่อลูกค้า' : 'Customer name'}</Text>
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={edit.customer_name}
+              onChangeText={v => setE({ customer_name: v })} placeholder={lang === 'th' ? 'ไม่ระบุ' : 'Not specified'} placeholderTextColor={th.faint} />
+            <Text style={s.fieldLabel}>{lang === 'th' ? 'เบอร์โทร' : 'Phone'}</Text>
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={edit.customer_phone} keyboardType="phone-pad"
+              onChangeText={v => setE({ customer_phone: v })} placeholder="—" placeholderTextColor={th.faint} />
+
+            <Text style={s.fieldLabel}>{lang === 'th' ? 'รายการสินค้า' : 'Items'}</Text>
+            <View style={s.editItems}>
+              {edit.items.map((it, i) => (
+                <View key={`${it.product_id}-${i}`} style={[s.editItemRow, i === edit.items.length - 1 && { borderBottomWidth: 0 }]}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.cardNo} numberOfLines={1}>{it.name || '—'}</Text>
+                    {!!it.sku && <Text style={s.cardSub}>{it.sku}</Text>}
+                  </View>
+                  <View style={{ width: 54 }}>
+                    <Text style={s.miniLabel}>{lang === 'th' ? 'จำนวน' : 'Qty'}</Text>
+                    <TextInput dataSet={{ hov: 'field' }} style={s.miniInput} value={it.qty} keyboardType="number-pad"
+                      onChangeText={v => setItem(i, { qty: v.replace(/[^0-9]/g, '') })} />
+                  </View>
+                  <View style={{ width: 96 }}>
+                    <Text style={s.miniLabel}>{lang === 'th' ? 'ราคา/หน่วย' : 'Unit price'}</Text>
+                    <TextInput dataSet={{ hov: 'field' }} style={s.miniInput} value={it.unit_price} keyboardType="decimal-pad"
+                      onChangeText={v => setItem(i, { unit_price: v.replace(/[^0-9.]/g, '') })} />
+                  </View>
+                  <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => removeItem(i)} style={s.rmBtn}>
+                    <MaterialCommunityIcons name="close" size={sc(16)} color={th.danger} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {edit.items.length === 0 && <Text style={s.emptyText}>{lang === 'th' ? '— ไม่มีรายการ —' : '— No items —'}</Text>}
+            </View>
+            <TextInput dataSet={{ hov: 'field' }} style={[s.input, { marginBottom: addResults.length ? 4 : 14 }]} value={addQ} onChangeText={setAddQ}
+              placeholder={stockList === null
+                ? (lang === 'th' ? 'กำลังโหลดสต๊อก...' : 'Loading stock...')
+                : (lang === 'th' ? '+ เพิ่มสินค้า: ค้นหารหัสหรือชื่อสินค้า' : '+ Add item: search SKU or name')}
+              placeholderTextColor={th.faint} />
+            {addResults.length > 0 && (
+              <View style={[s.editItems, { marginBottom: 14 }]}>
+                {addResults.map((p, i) => (
+                  <TouchableOpacity dataSet={{ hov: 'btn' }} key={p.id} onPress={() => addItem(p)}
+                    style={[s.editItemRow, i === addResults.length - 1 && { borderBottomWidth: 0 }]}>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={s.cardNo} numberOfLines={1}>{p.sku} · {p.name}</Text>
+                      <Text style={s.cardSub}>{lang === 'th' ? 'คงเหลือ' : 'In stock'} {n0(p.stock_qty)}</Text>
+                    </View>
+                    <Text style={s.cardAmt}>฿{fmt(p.sale_price)}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.fieldLabel}>{lang === 'th' ? 'ส่วนลด VIP' : 'VIP discount'}</Text>
+                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={edit.vip_discount} keyboardType="decimal-pad"
+                  onChangeText={v => setE({ vip_discount: v.replace(/[^0-9.]/g, '') })} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.fieldLabel}>{lang === 'th' ? 'ส่วนลดเพิ่ม' : 'Extra discount'}</Text>
+                <TextInput dataSet={{ hov: 'field' }} style={s.input} value={edit.extra_discount} keyboardType="decimal-pad"
+                  onChangeText={v => setE({ extra_discount: v.replace(/[^0-9.]/g, '') })} />
+              </View>
+            </View>
+            <Text style={s.totalHint}>
+              {lang === 'th' ? 'ยอดบิลขายใหม่' : 'New sale total'}{selRc?.vat_enabled === false ? '' : (lang === 'th' ? ' (รวม VAT 7%)' : ' (incl. VAT 7%)')}: ฿{fmt(editTotal)}
+            </Text>
+
+            <Text style={s.fieldLabel}>{lang === 'th' ? 'จำนวนเงินที่รับ' : 'Amount received'}</Text>
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={editAmount} keyboardType="decimal-pad"
+              onChangeText={v => setE({ amount: v.replace(/[^0-9.]/g, ''), followTotal: false })} />
+
+            <Text style={s.fieldLabel}>{lang === 'th' ? 'หมายเหตุ' : 'Note'}</Text>
+            <TextInput dataSet={{ hov: 'field' }} style={s.input} value={edit.note} onChangeText={v => setE({ note: v })}
+              placeholder={lang === 'th' ? 'หมายเหตุ (ถ้ามี)' : 'Note (optional)'} placeholderTextColor={th.faint} />
+
+            <Text style={s.editWarn}>
+              {lang === 'th'
+                ? 'ชื่อลูกค้า รายการสินค้า และส่วนลด จะแก้ที่บิลขายต้นทางด้วย (สต๊อก ยอดขาย และค่าคอมที่ยังไม่จ่ายจะปรับตาม)'
+                : 'Customer, items and discounts also update the linked sale (stock, sales total and unpaid commission follow).'}
+            </Text>
+            {!!editErr && <View style={s.errBox}><Text style={s.errText}>{editErr}</Text></View>}
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={handleSaveEdit} disabled={saving}
+              style={[s.issueBtn, { opacity: saving ? 0.7 : 1 }]}>
+              {saving ? <ActivityIndicator color={th.brandOn} size="small" /> : <MaterialCommunityIcons name="content-save-outline" size={sc(18)} color={th.brandOn} />}
+              <Text style={s.issueBtnText}>{saving ? (lang === 'th' ? 'กำลังบันทึก...' : 'Saving...') : (lang === 'th' ? 'บันทึกการแก้ไข' : 'Save changes')}</Text>
             </TouchableOpacity>
           </ScrollView>
         )}
@@ -291,6 +499,15 @@ const baseStyles = (th) => ({
   input:      { backgroundColor: th.card2, borderWidth: 0.5, borderColor: th.line2, borderRadius: 10, padding: 10, fontSize: 14, color: th.ink, marginBottom: 14 },
   issueBtn:   { backgroundColor: th.brandBg, borderRadius: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   issueBtnText: { fontSize: 15, fontWeight: '500', color: th.brandOn },
+  editBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: th.line2, backgroundColor: th.card },
+  editBtnText:{ fontSize: 13, fontWeight: '600', color: th.brand },
+  editItems:  { borderWidth: 0.5, borderColor: th.line2, borderRadius: 10, marginBottom: 8, overflow: 'hidden' },
+  editItemRow:{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: th.hair, backgroundColor: th.card },
+  miniLabel:  { fontSize: 9.5, color: th.muted2, marginBottom: 2 },
+  miniInput:  { backgroundColor: th.card2, borderWidth: 0.5, borderColor: th.line2, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, fontSize: 13, color: th.ink },
+  rmBtn:      { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
+  totalHint:  { fontSize: 12.5, fontWeight: '600', color: th.ink, marginTop: -4, marginBottom: 12 },
+  editWarn:   { fontSize: 11, color: th.muted2, marginBottom: 12, lineHeight: 16 },
   delBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: th.line3, backgroundColor: th.card },
   delBtnConfirm: { backgroundColor: th.danger, borderColor: th.danger },
   delBtnText: { fontSize: 13, fontWeight: '600', color: th.danger },
