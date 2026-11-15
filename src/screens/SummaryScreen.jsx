@@ -3,7 +3,7 @@
 // ══════════════════════════════════════════════════════
 import { useState, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator,
+  View, Text, TouchableOpacity, Pressable, ScrollView, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -97,10 +97,12 @@ export default function SummaryScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   // แถบ "กำลังเชื่อมต่อ" โชว์แค่รอบแรก — สลับช่วงเวลาแล้วโหลดใหม่ไม่ต้องโชว์ซ้ำ
   const [firstLoad, setFirstLoad] = useState(true);
+  const [hoverBar, setHoverBar] = useState(null);   // แท่งที่เมาส์ชี้อยู่ (มือถือ = แท่งที่แตะ)
   const t = T[lang];
 
   useEffect(() => {
     setLoading(true);
+    setHoverBar(null);
     const arg = (period === 4 && range) ? range : (t.periodKeys[period] || 'month');
     api.getSummary(arg).then(setSummary).catch(() => setSummary(null)).finally(() => { setLoading(false); setFirstLoad(false); });
   }, [period, range, lang]);
@@ -206,17 +208,27 @@ export default function SummaryScreen({ navigation }) {
             : (
               <View style={[s.chart, { height: chartH, gap: wide ? 10 : 5 }]}>
                 {bars.map((c, i) => {
-                  const hi = i === bars.length - 1;   // แท่งสุดท้าย = วันนี้ / เดือนนี้
+                  const last = bars.length - 1;
+                  const hi = i === last;   // แท่งสุดท้าย = วันนี้ / เดือนนี้
+                  const hov = hoverBar === i;
+                  // ป้ายยอด: แท่งที่ชี้อยู่ · ไม่ได้ชี้แท่งไหน → แท่งปัจจุบัน (ถ้ามียอด)
+                  const showTip = hoverBar !== null ? hov : (hi && c.total > 0);
                   const barH = Math.max(4, Math.round((c.total / chartMax) * barArea));
                   return (
-                    <View key={c.key} style={s.chartCol}>
-                      {hi && c.total > 0 && (
-                        <View style={s.tip}><Text style={s.tipText} numberOfLines={1}>฿{fmt(c.total)}</Text></View>
+                    <Pressable key={c.key} style={s.chartCol}
+                      onHoverIn={() => setHoverBar(i)}
+                      onHoverOut={() => setHoverBar(h => (h === i ? null : h))}
+                      onPress={() => setHoverBar(i)}>
+                      {showTip && (
+                        // แท่งริมซ้าย/ขวา ป้ายชิดขอบด้านใน ไม่ให้ล้นการ์ด
+                        <View style={[s.tip, { alignSelf: i === 0 ? 'flex-start' : i === last ? 'flex-end' : 'center' }]}>
+                          <Text style={s.tipText} numberOfLines={1}>฿{fmt(c.total)}</Text>
+                        </View>
                       )}
                       <View style={[s.chartBar, { height: barH, borderRadius: wide ? 14 : 8 },
-                        hi ? s.chartBarHi : (c.total === 0 && { opacity: 0.5 })]} />
-                      <Text style={[s.barLabel, hi && { color: th.brand, fontWeight: '700' }]} numberOfLines={1}>{c.label}</Text>
-                    </View>
+                        hov ? s.chartBarHover : hi ? s.chartBarHi : (c.total === 0 && { opacity: 0.5 })]} />
+                      <Text style={[s.barLabel, (hi || hov) && { color: th.brand, fontWeight: '700' }]} numberOfLines={1}>{c.label}</Text>
+                    </Pressable>
                   );
                 })}
               </View>
@@ -286,7 +298,10 @@ export default function SummaryScreen({ navigation }) {
                 </View>
               ))}
               {allLines.length > SALE_LINES_MAX && (
-                <Text style={s.moreText}>{t.moreLines(allLines.length - SALE_LINES_MAX)}</Text>
+                <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => navigation.navigate('Receipt')} style={s.moreBtn}>
+                  <Text style={s.moreLink}>{t.moreLines(allLines.length - SALE_LINES_MAX)}</Text>
+                  <MaterialCommunityIcons name="chevron-right" size={sc(14)} color={th.brand} />
+                </TouchableOpacity>
               )}
             </>)
           }
@@ -348,8 +363,9 @@ const baseStyles = (th) => ({
   chartCol:   { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'flex-end', height: '100%', gap: 6 },
   chartBar:   { width: '100%', backgroundColor: th.line2, borderWidth: 1, borderColor: th.line3 },
   chartBarHi: { backgroundColor: th.brandBg, borderColor: th.brandBg },
+  chartBarHover: { backgroundColor: th.danger, borderColor: th.danger, opacity: 0.45 },   // แดงอ่อน (โหมดขาวดำ = เทา)
   barLabel:   { fontSize: 10.5, color: th.muted2 },
-  tip:        { alignSelf: 'flex-end', backgroundColor: th.ink, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 4, marginBottom: 2 },  // แท่งที่มีป้ายอยู่ขวาสุด → ชิดขวา ป้ายยื่นไปทางซ้าย ไม่ล้นการ์ด
+  tip:        { backgroundColor: th.ink, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 4, marginBottom: 2 },
   tipText:    { fontSize: 10.5, color: th.card, fontWeight: '600' },
   row2:       { flexDirection: 'row', gap: 12, alignItems: 'stretch' },
   row2Main:   { flexGrow: 1.25, flexShrink: 1, flexBasis: 0 },
@@ -374,7 +390,8 @@ const baseStyles = (th) => ({
   topBill:    { fontSize: 10, color: th.muted2, width: 72, textAlign: 'right' },
   topQty:     { fontSize: 12, color: th.ink, width: 30, textAlign: 'center' },
   topAmt:     { fontSize: 12, fontWeight: '500', color: th.brand, width: 60, textAlign: 'right' },
-  moreText:   { fontSize: 10, color: th.muted2, textAlign: 'center', paddingTop: 4 },
+  moreBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, alignSelf: 'center', paddingTop: 6, paddingHorizontal: 10, paddingBottom: 2 },
+  moreLink:   { fontSize: 11.5, color: th.brand, fontWeight: '600', textDecorationLine: 'underline' },
   overlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
   rangeBox:   { backgroundColor: th.card, borderRadius: 16, padding: 20, width: 300 },
   rangeTitle: { fontSize: 14, fontWeight: '600', color: th.brand, marginBottom: 12, textAlign: 'center' },
