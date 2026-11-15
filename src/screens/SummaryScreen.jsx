@@ -32,6 +32,10 @@ const T = {
     pendingSection: 'รายการค้างอยู่',
     pendingPO: 'PO ค้าง', pendingSrv: 'งานซ่อมค้าง', pendingQt: 'ใบเสนอราคา',
     chartTitle: 'ยอดขายรายวัน (7 วันล่าสุด)',
+    chartMonthly: 'ยอดขายรายเดือน (12 เดือนล่าสุด)',
+    salesOf: 'ยอดขาย', vsPrev: 'เทียบช่วงก่อน', noPrev: 'ไม่มีข้อมูลช่วงก่อน',
+    g3: 'เติบโต 3 เดือน', g6: 'เติบโต 6 เดือน', g12: 'เติบโต 1 ปี',
+    pendingUnit: 'รายการ',
     noData: 'ไม่มีข้อมูล', loading: 'กำลังโหลด...',
   },
   en: {
@@ -49,6 +53,10 @@ const T = {
     pendingSection: 'Pending items',
     pendingPO: 'Purchase orders', pendingSrv: 'Service orders', pendingQt: 'Quotations',
     chartTitle: 'Daily sales (last 7 days)',
+    chartMonthly: 'Monthly sales (last 12 months)',
+    salesOf: 'Sales', vsPrev: 'vs previous period', noPrev: 'no previous data',
+    g3: '3m growth', g6: '6m growth', g12: '1y growth',
+    pendingUnit: 'items',
     noData: 'No data', loading: 'Loading...',
   },
 };
@@ -56,24 +64,24 @@ const T = {
 const fmt    = (n) => { const x = Number(n); return Math.round(Number.isFinite(x) ? x : 0).toLocaleString('th-TH'); };
 const fmtCp  = (n) => { n = Number(n); if (!Number.isFinite(n)) n = 0; return n >= 1000000 ? `${(n/1000000).toFixed(1)}M` : n >= 1000 ? `${(n/1000).toFixed(0)}k` : String(Math.round(n)); };
 
-function KPICard({ label, value, sub, icon, col, bg, subUp, wide, unit }) {
-  const { styles: s, sc, center, t: th } = useScaledStyles(baseStyles);
+// % เปลี่ยนแปลงเทียบช่วงก่อน — ช่วงก่อนไม่มียอด = คิดไม่ได้ (null)
+const pctChange = (cur, prev) => {
+  const c = Number(cur) || 0, p = Number(prev) || 0;
+  return p > 0 ? ((c - p) / p) * 100 : null;
+};
+
+// "▲ +18.2% เทียบช่วงก่อน" — ขึ้นเขียว ลงแดง
+function Change({ pct, label, empty }) {
+  const { styles: s, t: th } = useScaledStyles(baseStyles);
+  if (pct === null || pct === undefined) return <Text style={s.cmpText}>— {empty}</Text>;
+  const up = pct >= 0;
   return (
-    <View style={[s.kpiCard, wide && s.kpiCardWide]}>
-      <View style={s.kpiTop}>
-        <Text style={s.kpiLabel}>{label}</Text>
-        <View style={[s.kpiIcon, { backgroundColor: bg }]}>
-          <MaterialCommunityIcons name={icon} size={sc(13)} color={col} />
-        </View>
-      </View>
-      {/* ใส่ unit มา = เป็นจำนวนนับ ไม่ใช่เงิน (ห้ามขึ้น ฿ หน้าเลข) */}
-      <Text style={s.kpiVal}>{unit ? `${fmt(value)} ${unit}` : `฿${fmtCp(value)}`}</Text>
-      {sub && (
-        <Text style={[s.kpiSub, { color: subUp ? th.ok : th.danger }]}>
-          {subUp ? '▲' : '▼'} {sub}
-        </Text>
-      )}
-    </View>
+    <Text style={s.cmpText}>
+      <Text style={{ color: up ? th.ok : th.danger, fontWeight: '600' }}>
+        {up ? '+' : '−'}{Math.abs(pct).toFixed(1)}% {up ? '↑' : '↓'}
+      </Text>
+      {label ? `  ${label}` : ''}
+    </Text>
   );
 }
 
@@ -99,9 +107,19 @@ export default function SummaryScreen({ navigation }) {
 
   const d = summary || { total_sales: 0, order_count: 0, estimated_profit: 0, vat_collected: 0, top_items: [], sale_lines: [], payment_breakdown: {}, daily_chart: [], pending_po: 0, pending_service: 0, pending_quotation: 0 };
   const margin = d.total_sales > 0 ? ((d.estimated_profit / d.total_sales) * 100).toFixed(1) : '0.0';
-  const chartDays = d.daily_chart || [];
-  const chartMax  = Math.max(1, ...chartDays.map(c => c.total));
-  const todayStr  = new Date().toISOString().slice(0, 10);
+  const prev   = d.prev || {};
+  const growth = d.growth || {};
+  // ปีนี้ → แท่งรายเดือน 12 แท่ง · ช่วงอื่น → แท่งรายวัน 7 วันล่าสุด (backend เก่าไม่มีรายเดือน → ถอยไปรายวัน)
+  const useMonthly = period === 3 && Array.isArray(d.monthly_chart) && d.monthly_chart.length > 0;
+  const bars = useMonthly
+    ? d.monthly_chart.map(c => ({ key: c.month, total: c.total,
+        label: new Date(`${c.month}-01T00:00:00`).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US', { month: 'short' }) }))
+    : (d.daily_chart || []).map(c => ({ key: c.day, total: c.total,
+        label: new Date(c.day).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US', { weekday: 'short' }) }));
+  const chartMax = Math.max(1, ...bars.map(c => c.total));
+  const chartH   = wide ? 240 : 180;
+  const barArea  = chartH - 52;   // เผื่อป้ายชื่อเดือน/วันด้านล่าง + ป้ายยอดเหนือแท่ง
+  const pendingTotal = (Number(d.pending_po) || 0) + (Number(d.pending_service) || 0) + (Number(d.pending_quotation) || 0);
   // 1 บรรทัด = สินค้า 1 รายการในบิล 1 ใบ (เลขที่บิลซ้ำกันได้) ไม่รวมยอดข้ามบิลแล้ว
   // backend เวอร์ชันเก่าไม่มี sale_lines → ถอยไปใช้ top_items (รวมตามสินค้า) เหมือนเดิม
   const SALE_LINES_MAX = 10;
@@ -110,7 +128,8 @@ export default function SummaryScreen({ navigation }) {
 
   const payEntries = Object.entries(d.payment_breakdown || {});
   const payTotal   = payEntries.reduce((s, [, v]) => s + v, 0) || 1;
-  const PAY_COL = { cash: th.ok, qr: th.info, card: th.brandBg, mobile: th.warn };
+  // ไล่เฉดสีแบรนด์ เข้ม → อ่อน ตามลำดับแถบ
+  const PAY_SHADE = [th.brandBg, th.brand2, th.line3, th.line2];
   const PAY_LABEL = { cash: lang === 'th' ? 'เงินสด' : 'Cash', qr: lang === 'th' ? 'โอน / QR' : 'Transfer', card: lang === 'th' ? 'บัตรเครดิต' : 'Card', mobile: lang === 'th' ? 'Mobile' : 'Mobile' };
 
   const dLocale  = lang === 'th' ? 'th-TH' : 'en-GB';
@@ -141,32 +160,62 @@ export default function SummaryScreen({ navigation }) {
         {loading && <ActivityIndicator color={th.brand} style={{ marginTop: 20 }} />}
 
 
-        {/* KPI GRID */}
-        <View style={s.kpiGrid}>
-          <KPICard wide={wide} label={t.revenue} value={d.total_sales} icon="currency-usd" col={th.brandBg} bg={th.soft} />
-          <KPICard wide={wide} label={t.orders} value={d.order_count} unit={t.unitPcs} icon="cart" col="#2e7d32" bg={th.okBg} />
-          <KPICard wide={wide} label={t.profit} value={d.estimated_profit} sub={`${margin}% ${t.profitMargin}`} subUp={d.estimated_profit >= 0} icon="trending-up" col="#1a3a60" bg={th.infoBg} />
-          <KPICard wide={wide} label={t.vatCollected} value={d.vat_collected} icon="receipt" col="#854F0B" bg={th.warnBg} />
+        {/* KPI — กล่องเดียวแบ่งช่อง */}
+        <View style={s.kpiStrip}>
+          {[
+            [t.revenue, `฿${fmt(d.total_sales)}`, <Change pct={pctChange(d.total_sales, prev.total_sales)} label={t.vsPrev} empty={t.noPrev} />],
+            [t.orders, <Text>{fmt(d.order_count)}<Text style={s.kpiUnit}>  {t.unitPcs}</Text></Text>, <Change pct={pctChange(d.order_count, prev.order_count)} label={t.vsPrev} empty={t.noPrev} />],
+            [t.profit, `฿${fmt(d.estimated_profit)}`, <Text style={s.cmpText}><Text style={{ color: d.estimated_profit >= 0 ? th.ok : th.danger, fontWeight: '600' }}>{margin}%</Text>  {t.profitMargin}</Text>],
+            [t.vatCollected, `฿${fmt(d.vat_collected)}`, <Change pct={pctChange(d.vat_collected, prev.vat_collected)} label={t.vsPrev} empty={t.noPrev} />],
+          ].map(([label, val, cmp], i) => (
+            <View key={label} style={[s.kpiCell, { width: wide ? '25%' : '50%' },
+              (wide ? i > 0 : i % 2 === 1) && s.kpiCellL, (!wide && i >= 2) && s.kpiCellT]}>
+              <Text style={s.kpiLabel}>{label}</Text>
+              <Text style={[s.kpiVal, !wide && { fontSize: sc(19) }]} numberOfLines={1} adjustsFontSizeToFit>{val}</Text>
+              {cmp}
+            </View>
+          ))}
         </View>
 
-        <View style={[s.cols, !wide && s.colsNarrow]}>
-        <View style={[s.colMain, !wide && s.colFull]}>
+        {/* ยอดขาย + กราฟแท่งใหญ่ */}
+        <View style={s.card}>
+          <View style={s.revTop}>
+            <View style={{ flexShrink: 1 }}>
+              <Text style={s.cardLabel}>{t.salesOf} · {periodLabel}</Text>
+              <Text style={[s.revVal, !wide && { fontSize: sc(26) }]}>฿{fmt(d.total_sales)}</Text>
+              <Change pct={pctChange(d.total_sales, prev.total_sales)} label={t.vsPrev} empty={t.noPrev} />
+            </View>
+            <View style={s.growthRow}>
+              {[[t.g3, growth.m3], [t.g6, growth.m6], [t.g12, growth.m12]].map(([label, g]) => {
+                const pc = g ? pctChange(g.cur, g.prev) : null;
+                return (
+                  <View key={label} style={s.growthBox}>
+                    <Text style={s.growthLabel}>{label}</Text>
+                    <Text style={[s.growthVal, { color: pc === null ? th.muted : pc >= 0 ? th.ok : th.danger }]}>
+                      {pc === null ? '—' : `${pc >= 0 ? '+' : '−'}${Math.abs(pc).toFixed(0)}% ${pc >= 0 ? '↑' : '↓'}`}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
 
-        {/* BAR CHART */}
-        <View style={s.sec}>
-          <Text style={s.secTitle}>{t.chartTitle}</Text>
-          {chartDays.length === 0
+          <Text style={[s.cardLabel, { marginTop: 16 }]}>{useMonthly ? t.chartMonthly : t.chartTitle}</Text>
+          {bars.length === 0
             ? <Text style={s.emptyText}>{t.noData}</Text>
             : (
-              <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 80, gap: 6 }}>
-                {chartDays.map(c => {
-                  const isToday = c.day === todayStr;
-                  const barH = Math.max(2, Math.round((c.total / chartMax) * 72));
-                  const dayLabel = new Date(c.day).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US', { weekday: 'short' });
+              <View style={[s.chart, { height: chartH, gap: wide ? 10 : 5 }]}>
+                {bars.map((c, i) => {
+                  const hi = i === bars.length - 1;   // แท่งสุดท้าย = วันนี้ / เดือนนี้
+                  const barH = Math.max(4, Math.round((c.total / chartMax) * barArea));
                   return (
-                    <View key={c.day} style={{ flex: 1, alignItems: 'center', gap: 3 }}>
-                      <View style={{ width: '100%', borderRadius: 3, backgroundColor: isToday ? th.brandBg : '#f0d5d8', height: barH }} />
-                      <Text style={[s.barLabel, { color: isToday ? th.brand : th.muted2, fontWeight: isToday ? '500' : '400' }]}>{dayLabel}</Text>
+                    <View key={c.key} style={s.chartCol}>
+                      {hi && c.total > 0 && (
+                        <View style={s.tip}><Text style={s.tipText} numberOfLines={1}>฿{fmt(c.total)}</Text></View>
+                      )}
+                      <View style={[s.chartBar, { height: barH, borderRadius: wide ? 14 : 8 },
+                        hi ? s.chartBarHi : (c.total === 0 && { opacity: 0.5 })]} />
+                      <Text style={[s.barLabel, hi && { color: th.brand, fontWeight: '700' }]} numberOfLines={1}>{c.label}</Text>
                     </View>
                   );
                 })}
@@ -175,16 +224,57 @@ export default function SummaryScreen({ navigation }) {
           }
         </View>
 
-        {/* TOP SALES */}
-        <View style={s.sec}>
-          <Text style={s.secTitle}>{t.topSales}</Text>
+        <View style={[s.row2, !wide && { flexDirection: 'column' }]}>
+          {/* ช่องทางชำระเงิน — แถบแนวนอน */}
+          <View style={[s.card, s.row2Main]}>
+            <Text style={s.cardLabel}>{t.payBreakdown}</Text>
+            <Text style={s.bigNum}>{fmt(d.order_count)}<Text style={s.bigUnit}>  {t.unitPcs}</Text></Text>
+            {payEntries.length === 0
+              ? <Text style={s.emptyText}>{t.noData}</Text>
+              : payEntries.map(([key, val], i) => {
+                const pct = Math.round((val / payTotal) * 100);
+                return (
+                  <View key={key} style={s.hbRow}>
+                    <Text style={s.hbLabel} numberOfLines={1}>{PAY_LABEL[key] || key}</Text>
+                    <View style={s.hbTrack}>
+                      <View style={[s.hbFill, { width: `${pct}%`, backgroundColor: PAY_SHADE[i % PAY_SHADE.length] }]} />
+                    </View>
+                    <Text style={s.hbPct}>{pct}%</Text>
+                  </View>
+                );
+              })}
+          </View>
+
+          {/* รายการค้าง */}
+          <View style={[s.card, s.row2Side]}>
+            <Text style={s.cardLabel}>{t.pendingSection}</Text>
+            <Text style={s.bigNum}>{fmt(pendingTotal)}<Text style={s.bigUnit}>  {t.pendingUnit}</Text></Text>
+            <View style={s.pendingGrid}>
+              {[
+                [t.pendingPO,  d.pending_po,        'truck-delivery'],
+                [t.pendingSrv, d.pending_service,   'tools'],
+                [t.pendingQt,  d.pending_quotation, 'file-document'],
+              ].map(([label, count, icon]) => (
+                <View key={label} style={s.pendingCard}>
+                  <MaterialCommunityIcons name={icon} size={sc(16)} color={th.brand} />
+                  <Text style={s.pendingCount}>{fmt(count)}</Text>
+                  <Text style={s.pendingLabel}>{label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        {/* สินค้าขายดี */}
+        <View style={s.card}>
+          <Text style={s.cardLabel}>{t.topSales}</Text>
           {shownLines.length === 0
             ? <Text style={s.emptyText}>{t.noData}</Text>
             : (<>
               {shownLines.map((item, i) => (
                 <View key={`${item.sale_no || ''}:${item.sku}:${i}`} style={s.topRow}>
-                  <View style={[s.rankBadge, { backgroundColor: i === 0 ? th.brandBg : i === 1 ? '#b87020' : th.softer }]}>
-                    <Text style={[s.rankText, { color: i < 2 ? th.brandOn : th.muted2 }]}>{i + 1}</Text>
+                  <View style={[s.rankBadge, { backgroundColor: i === 0 ? th.brandBg : th.softer }]}>
+                    <Text style={[s.rankText, { color: i === 0 ? th.brandOn : th.muted2 }]}>{i + 1}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={s.topName} numberOfLines={1}>{item.name}</Text>
@@ -201,53 +291,6 @@ export default function SummaryScreen({ navigation }) {
             </>)
           }
         </View>
-
-        </View>
-        <View style={[s.colSide, !wide && s.colFull]}>
-
-        {/* PAYMENT BREAKDOWN */}
-        {payEntries.length > 0 && (
-          <View style={s.sec}>
-            <Text style={s.secTitle}>{t.payBreakdown}</Text>
-            {payEntries.map(([key, val]) => {
-              const pct = Math.round((val / payTotal) * 100);
-              const col = PAY_COL[key] || '#555';
-              return (
-                <View key={key} style={{ marginBottom: 8 }}>
-                  <View style={s.payLabelRow}>
-                    <Text style={s.payLabel}>{PAY_LABEL[key] || key}</Text>
-                    <Text style={[s.payLabel, { fontWeight: '500' }]}>{pct}%</Text>
-                  </View>
-                  <View style={s.payBar}>
-                    <View style={[s.payBarFill, { width: `${pct}%`, backgroundColor: col }]} />
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        {/* PENDING */}
-        <View style={s.sec}>
-          <Text style={s.secTitle}>{t.pendingSection}</Text>
-          <View style={s.pendingGrid}>
-            {[
-              [t.pendingPO,  d.pending_po,        'truck-delivery', '#1a3a60', '#e0f0ff'],
-              [t.pendingSrv, d.pending_service,    'tools',          '#854F0B', '#fff8e1'],
-              [t.pendingQt,  d.pending_quotation,  'file-document',  '#550a19', '#fdf0f2'],
-            ].map(([label, count, icon, col, bg]) => (
-              <View key={label} style={[s.pendingCard, { backgroundColor: bg }]}>
-                <MaterialCommunityIcons name={icon} size={sc(18)} color={col} />
-                <Text style={[s.pendingCount, { color: col }]}>{count ?? 0}</Text>
-                <Text style={[s.pendingLabel, { color: col }]}>{label}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        </View>
-        </View>
-
         <View style={{ height: 20 }} />
       </ScrollView>
 
@@ -281,27 +324,48 @@ const baseStyles = (th) => ({
   bar: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', backgroundColor: th.card, borderBottomWidth: 1, borderBottomColor: th.line, paddingHorizontal: 14, paddingVertical: 11 },
   exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 'auto', backgroundColor: th.card, borderWidth: 1, borderColor: th.line, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
   exportText: { fontSize: 12, color: th.brand, fontWeight: '600' },
-  cols:    { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  colMain: { flexGrow: 1.4, flexShrink: 1, flexBasis: 380, minWidth: 0 },
-  colSide: { flexGrow: 1, flexShrink: 1, flexBasis: 300, minWidth: 0 },
-  colsNarrow: { flexDirection: 'column', alignItems: 'stretch', gap: 0 },
-  colFull:    { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: '100%', alignSelf: 'stretch' },
-  kpiCardWide: { width: 'auto', flexGrow: 1, flexShrink: 1, flexBasis: 170, minWidth: 150 },
   periodTabs: { flexDirection: 'row', backgroundColor: th.card, borderBottomWidth: 1, borderBottomColor: th.line },
   periodTab:  { flex: 1, paddingVertical: 10, alignItems: 'center' },
   periodTabText: { fontSize: 11 },
-  content:    { padding: 14, paddingBottom: 30 },
-  kpiGrid:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
-  kpiCard:    { width: '48%', backgroundColor: th.card, borderRadius: 12, borderWidth: 1, borderColor: th.line, padding: 13 },
-  kpiTop:     { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  kpiLabel:   { fontSize: 10, color: th.muted2, flex: 1 },
-  kpiIcon:    { width: 22, height: 22, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
-  kpiVal:     { fontSize: 18, fontWeight: '500', color: th.ink },
-  kpiSub:     { fontSize: 10, marginTop: 2 },
-  sec:        { backgroundColor: th.card, borderRadius: 12, borderWidth: 1, borderColor: th.line, padding: 13, marginBottom: 10 },
-  secTitle:   { fontSize: 11, fontWeight: '500', color: th.brand, letterSpacing: 1.5, marginBottom: 10 },
+  content:    { padding: 14, paddingBottom: 30, gap: 12, width: '100%', maxWidth: 1180 },
+  kpiStrip:   { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: th.card, borderWidth: 1, borderColor: th.line, borderRadius: 16, overflow: 'hidden' },
+  kpiCell:    { paddingHorizontal: 16, paddingVertical: 15 },
+  kpiCellL:   { borderLeftWidth: 1, borderLeftColor: th.line },
+  kpiCellT:   { borderTopWidth: 1, borderTopColor: th.line },
+  kpiLabel:   { fontSize: 12, color: th.muted },
+  kpiVal:     { fontSize: 24, fontWeight: '600', color: th.ink, marginTop: 6, marginBottom: 12, fontVariant: ['tabular-nums'] },
+  kpiUnit:    { fontSize: 13, fontWeight: '400', color: th.muted },
+  cmpText:    { fontSize: 11.5, color: th.muted },
+  card:       { backgroundColor: th.card, borderRadius: 16, borderWidth: 1, borderColor: th.line, paddingHorizontal: 16, paddingVertical: 15 },
+  cardLabel:  { fontSize: 12, color: th.muted, marginBottom: 2 },
+  revTop:     { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 },
+  revVal:     { fontSize: 32, fontWeight: '600', color: th.ink, marginVertical: 4, fontVariant: ['tabular-nums'] },
+  growthRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' },
+  growthBox:  { backgroundColor: th.soft, borderRadius: 12, paddingHorizontal: 13, paddingVertical: 8, minWidth: 104 },
+  growthLabel:{ fontSize: 11, color: th.muted2 },
+  growthVal:  { fontSize: 14, fontWeight: '600', marginTop: 2, fontVariant: ['tabular-nums'] },
+  chart:      { flexDirection: 'row', alignItems: 'flex-end', marginTop: 10 },
+  chartCol:   { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'flex-end', height: '100%', gap: 6 },
+  chartBar:   { width: '100%', backgroundColor: th.line2, borderWidth: 1, borderColor: th.line3 },
+  chartBarHi: { backgroundColor: th.brandBg, borderColor: th.brandBg },
+  barLabel:   { fontSize: 10.5, color: th.muted2 },
+  tip:        { alignSelf: 'flex-end', backgroundColor: th.ink, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 4, marginBottom: 2 },  // แท่งที่มีป้ายอยู่ขวาสุด → ชิดขวา ป้ายยื่นไปทางซ้าย ไม่ล้นการ์ด
+  tipText:    { fontSize: 10.5, color: th.card, fontWeight: '600' },
+  row2:       { flexDirection: 'row', gap: 12, alignItems: 'stretch' },
+  row2Main:   { flexGrow: 1.25, flexShrink: 1, flexBasis: 0 },
+  row2Side:   { flexGrow: 1, flexShrink: 1, flexBasis: 0 },
+  bigNum:     { fontSize: 26, fontWeight: '600', color: th.ink, fontVariant: ['tabular-nums'] },
+  bigUnit:    { fontSize: 12.5, fontWeight: '400', color: th.muted },
+  hbRow:      { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14 },
+  hbLabel:    { width: 84, fontSize: 12, color: th.muted2 },
+  hbTrack:    { flex: 1, height: 20, borderRadius: 10, backgroundColor: th.softer, overflow: 'hidden' },
+  hbFill:     { height: '100%', borderRadius: 10 },
+  hbPct:      { width: 42, fontSize: 12, color: th.ink, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  pendingGrid:{ flexDirection: 'row', gap: 8, marginTop: 14 },
+  pendingCard:{ flex: 1, borderRadius: 12, padding: 11, backgroundColor: th.soft, gap: 3 },
+  pendingCount:{ fontSize: 22, fontWeight: '600', color: th.brand },
+  pendingLabel:{ fontSize: 11, color: th.muted2 },
   emptyText:  { fontSize: 12, color: th.muted2, textAlign: 'center', paddingVertical: 10 },
-  barLabel:   { fontSize: 9 },
   topRow:     { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8, paddingBottom: 8, borderBottomWidth: 0.5, borderBottomColor: th.hair },
   rankBadge:  { width: 22, height: 22, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
   rankText:   { fontSize: 10, fontWeight: '500' },
@@ -311,14 +375,6 @@ const baseStyles = (th) => ({
   topQty:     { fontSize: 12, color: th.ink, width: 30, textAlign: 'center' },
   topAmt:     { fontSize: 12, fontWeight: '500', color: th.brand, width: 60, textAlign: 'right' },
   moreText:   { fontSize: 10, color: th.muted2, textAlign: 'center', paddingTop: 4 },
-  payLabelRow:{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 },
-  payLabel:   { fontSize: 11, color: th.dim },
-  payBar:     { height: 6, backgroundColor: th.softer, borderRadius: 3, overflow: 'hidden' },
-  payBarFill: { height: '100%', borderRadius: 3 },
-  pendingGrid:{ flexDirection: 'row', gap: 8 },
-  pendingCard:{ flex: 1, borderRadius: 10, padding: 10, alignItems: 'center', gap: 4 },
-  pendingCount:{ fontSize: 22, fontWeight: '500' },
-  pendingLabel:{ fontSize: 10, textAlign: 'center' },
   overlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
   rangeBox:   { backgroundColor: th.card, borderRadius: 16, padding: 20, width: 300 },
   rangeTitle: { fontSize: 14, fontWeight: '600', color: th.brand, marginBottom: 12, textAlign: 'center' },
