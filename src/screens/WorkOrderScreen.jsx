@@ -370,7 +370,7 @@ export default function WorkOrderScreen({ navigation }) {
     setStockErr('');
     setStockForm({ item, sku: '', sale_price: String(num(item.price) || ''), fromDeliver });
     try {
-      const r = await api.nextStockSku();
+      const r = await api.nextStockSku(item.metal_type);   // รหัสตามโลหะของงานชิ้นนี้
       setStockForm(cur => (cur && cur.item.id === item.id ? { ...cur, sku: r.sku || '' } : cur));
     } catch (_) {}
   };

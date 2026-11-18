@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useScaledStyles } from '../responsive';
+import { skuPrefixForMetal } from '../scan';
 
 const GOLD_BAHT_GRAMS = 15.244;
 const GOLD_OPTIONS = [
@@ -220,19 +221,27 @@ function Toggle({ on, onChange }) {
  * mode        'create' | 'edit'
  * lang        'th' | 'en'
  * product     สินค้าที่จะแก้ (เฉพาะ mode="edit")
- * nextSkuNum  เลข SKU ถัดไป (เฉพาะ mode="create")
+ * nextSkuNum  เลข SKU ถัดไป (เฉพาะ mode="create") — ใช้เมื่อไม่มี nextSkuNums
+ * nextSkuNums เลขถัดไปแยกตามคำนำหน้า { ANAKYN, SVAKYN, PLAKYN } (คำนำหน้าเปลี่ยนตามแท็บวัสดุโลหะ)
  * stockCount  จำนวนสินค้าในสต๊อก ใช้กับปุ่ม Reset ของ SKU
  * onSubmit    async (payload) => saved — โยน error ออกมาได้เลย ฟอร์มจะโชว์ให้
  */
 export default function ProductForm({
   mode = 'create', lang = 'th', product = null,
-  nextSkuNum = 1, stockCount = 0, onSubmit, wide = false,
+  nextSkuNum = 1, nextSkuNums = null, stockCount = 0, onSubmit, wide = false,
 }) {
   const { styles: s, sc, t: th } = useScaledStyles(baseStyles);
   const t = T[lang];
   const isEdit = mode === 'edit';
 
-  const [skuNum, setSkuNum] = useState(nextSkuNum);
+  // เลข SKU แยกตามคำนำหน้า — ทอง ANAKYN# · เงิน SVAKYN# · แพลตตินัม PLAKYN# (นับแยกกัน)
+  const buildSkuNums = () => ({
+    ANAKYN: nextSkuNums?.ANAKYN ?? nextSkuNum,
+    SVAKYN: nextSkuNums?.SVAKYN ?? 1,
+    PLAKYN: nextSkuNums?.PLAKYN ?? 1,
+  });
+  const [skuNums, setSkuNums] = useState(buildSkuNums);
+  const [skuBase, setSkuBase] = useState(buildSkuNums);   // ค่าที่ปุ่ม Reset จะย้อนกลับไป
   // เลขที่พิมพ์ค้างอยู่ในช่อง — null = ไม่ได้แก้ ให้โชว์ skuNum ที่รันเอง
   const [skuEdit, setSkuEdit] = useState(null);
   const [sku, setSku]       = useState('');
@@ -252,6 +261,10 @@ export default function ProductForm({
   const [silverPrice, setSilverPrice] = useState('33.50');
   const [platinumPrice, setPlatinumPrice] = useState('');   // ไม่ตั้งค่าเริ่มต้น ราคาขยับบ่อย
   const [metalKey, setMetalKey]       = useState('18K');
+  // คำนำหน้า SKU ตามแท็บโลหะ (หน้าแก้ไขไม่ใช้ — รหัสเดิมคงไว้)
+  const skuPrefix = skuPrefixForMetal(metalKey);
+  const skuNum = skuNums[skuPrefix];
+  const setSkuNum = (v) => setSkuNums(m => ({ ...m, [skuPrefix]: typeof v === 'function' ? v(m[skuPrefix]) : v }));
   const [metalWeight, setMetalWeight] = useState('');
   const [laborCost, setLaborCost]     = useState('');
   const [itemName, setItemName]       = useState('');
@@ -272,7 +285,11 @@ export default function ProductForm({
 
 
   // create: เลข SKU วิ่งตามหน้าแม่
-  useEffect(() => { if (!isEdit) setSkuNum(nextSkuNum); }, [nextSkuNum, isEdit]);
+  useEffect(() => {
+    if (isEdit) return;
+    const n = buildSkuNums();
+    setSkuNums(n); setSkuBase(n);
+  }, [nextSkuNum, nextSkuNums, isEdit]);
 
   // edit: เติมค่าจากสินค้าที่เลือก ทุกครั้งที่เปลี่ยนตัว
   useEffect(() => {
@@ -326,7 +343,7 @@ export default function ProductForm({
   const metalCost  = isGold ? goldCost : isPlat ? platCost : silvCost;
   const dTotalCost = diamonds.reduce((sum, d) => sum + (parseFloat(d.cost) || 0), 0);
   const totalCost  = metalCost + dTotalCost + (parseFloat(laborCost) || 0);
-  const skuLabel   = `ANAKYN#${String(skuNum).padStart(4, '0')}`;
+  const skuLabel   = `${skuPrefix}#${String(skuNum).padStart(4, '0')}`;
 
   const updD = (id, k, v) => setDiamonds(ds => ds.map(d => d.id === id ? { ...d, [k]: v } : d));
 
@@ -481,7 +498,11 @@ export default function ProductForm({
       if (isEdit && photoList !== undefined) {
         setPhotos(ordered); setPhotosOrig(ordered); setMainIdx(0);
       }
-      else { setSkuNum(n => n + 1); resetForm(); }
+      else {
+        // Reset จะกลับมาที่ "ถัดจากเลขที่เพิ่งบันทึก" ของชุดนั้น
+        setSkuBase(b => ({ ...b, [skuPrefix]: Math.max(b[skuPrefix], skuNum + 1) }));
+        setSkuNum(n => n + 1); resetForm();
+      }
     } catch (err) {
       setSaveError(err?.message || (lang === 'th' ? 'ไม่สามารถบันทึกสินค้าได้' : 'Failed to save product'));
     } finally {
@@ -506,7 +527,7 @@ export default function ProductForm({
             autoCapitalize="characters" placeholder="ANAKYN#0001" placeholderTextColor={th.faint} />
         ) : (
           <View style={s.skuRow}>
-            <View style={s.skuPrefix}><Text style={s.skuPrefixText}>ANAKYN</Text></View>
+            <View style={s.skuPrefix}><Text style={s.skuPrefixText}>{skuPrefix}</Text></View>
             <Text style={s.skuHash}>#</Text>
             <TextInput
               dataSet={{ hov: 'field' }}
@@ -523,7 +544,7 @@ export default function ProductForm({
               textAlign="center"
               maxLength={4} />
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setSkuEdit(null); setSkuNum(n => Math.max(1, n - 1)); }} style={s.skuBtn}><Text style={s.skuBtnText}>−1</Text></TouchableOpacity>
-            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setSkuEdit(null); setSkuNum(stockCount + 1); }} style={s.skuBtn}><Text style={s.skuBtnText}>Reset</Text></TouchableOpacity>
+            <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setSkuEdit(null); setSkuNum(skuBase[skuPrefix]); }} style={s.skuBtn}><Text style={s.skuBtnText}>Reset</Text></TouchableOpacity>
             <TouchableOpacity dataSet={{ hov: 'btn' }} onPress={() => { setSkuEdit(null); setSkuNum(n => n + 1); }} style={[s.skuBtn, s.skuBtnPlus]}><Text style={[s.skuBtnText, { color: th.brand }]}>+1</Text></TouchableOpacity>
           </View>
         )}

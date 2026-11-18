@@ -125,7 +125,8 @@ export const api = {
   // เลขที่ถัดไป — หน้าจอเอาไปโชว์ในช่องรหัสงานก่อนกดบันทึก (พิมพ์ทับได้)
   nextWorkNo: () => request('/work-orders/next-no'),
   // รหัสสินค้าถัดไปสำหรับตอนเพิ่มงานเข้าสต๊อก (คนละชุดกับรหัสงาน)
-  nextStockSku: () => request('/work-orders/next-sku'),
+  // metal = วัสดุโลหะ (silver → SVAKYN#, platinum → PLAKYN#, อื่นๆ → ANAKYN#) · ตอบ { sku, next:{ANAKYN,SVAKYN,PLAKYN} }
+  nextStockSku: (metal) => request(`/work-orders/next-sku${metal ? `?metal=${encodeURIComponent(metal)}` : ''}`),
   updateWorkOrderStatus: (id, status) =>
     request(`/work-orders/${id}/status`, { method: 'PATCH', body: { status } }),
   deleteWorkOrder: (id) => request(`/work-orders/${id}`, { method: 'DELETE' }),

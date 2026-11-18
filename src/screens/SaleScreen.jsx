@@ -198,7 +198,8 @@ export default function SaleScreen({ navigation, route }) {
     // 2) ไม่เจอ → ถามเซิร์ฟเวอร์ตรง ๆ (เผื่อสินค้าถูกปิดขาย / รายการยังไม่อัปเดต)
     setScanNote({ reason: 'busy', text: code });
     try {
-      const rows = await api.getProducts({ search: key, light: 'true' });
+      // รูปย่อของเงิน/แพลตตินัม (s0001 / p0001) ค้นด้วยเลขล้วน แล้วค่อยเทียบรหัสเต็มด้านล่าง
+      const rows = await api.getProducts({ search: key.replace(/^[sp](?=\d)/, ''), light: 'true' });
       const hit = (rows || []).find(x => normSku(x.sku) === key);
       if (!hit) { setScanNote({ reason: 'notfound', text: code }); return; }
       if (hit.is_available === false) { setScanNote({ reason: 'sold', text: `${hit.name} · ${hit.sku}` }); return; }

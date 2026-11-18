@@ -26,6 +26,8 @@ export default function StockScreen({ navigation }) {
   // (ถ้าอัปเดต prop ทุกครั้งที่บันทึก จะไปทับเลขที่ผู้ใช้กดปรับเอง)
   const [stockCount, setStockCount] = useState(0);
   const [nextSku, setNextSku]       = useState(1);
+  // เลขถัดไปแยกตามคำนำหน้า { ANAKYN, SVAKYN, PLAKYN } — ฟอร์มสลับตามแท็บวัสดุโลหะ
+  const [nextSkus, setNextSkus]     = useState(null);
   const [loading, setLoading]       = useState(true);
 
   useEffect(() => {
@@ -38,6 +40,8 @@ export default function StockScreen({ navigation }) {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+    // เลขสูงสุด + 1 ของแต่ละชุด (backend เก่าไม่มี next → ใช้ จำนวน+1 แบบเดิม)
+    api.nextStockSku().then(r => { if (r && r.next) setNextSkus(r.next); }).catch(() => {});
   }, []);
 
   const handleCreate = async (payload) => {
@@ -60,6 +64,7 @@ export default function StockScreen({ navigation }) {
           wide={wide}
           lang={lang}
           nextSkuNum={nextSku}
+          nextSkuNums={nextSkus}
           stockCount={stockCount}
           onSubmit={handleCreate}
         />
